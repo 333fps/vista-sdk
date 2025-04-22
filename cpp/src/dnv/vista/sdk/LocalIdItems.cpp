@@ -179,11 +179,33 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------------
 	// Comparison Operators
 	//-------------------------------------------------------------------------
-
 	bool LocalIdItems::operator==( const LocalIdItems& other ) const
 	{
-		return m_primaryItem == other.m_primaryItem &&
-			   m_secondaryItem == other.m_secondaryItem;
+		if ( !m_primaryItem.has_value() && !other.m_primaryItem.has_value() &&
+			 !m_secondaryItem.has_value() && !other.m_secondaryItem.has_value() )
+		{
+			return true;
+		}
+
+		if ( m_primaryItem.has_value() != other.m_primaryItem.has_value() )
+			return false;
+
+		if ( m_primaryItem.has_value() && other.m_primaryItem.has_value() &&
+			 !( *m_primaryItem == *other.m_primaryItem ) )
+		{
+			return false;
+		}
+
+		if ( m_secondaryItem.has_value() != other.m_secondaryItem.has_value() )
+			return false;
+
+		if ( m_secondaryItem.has_value() && other.m_secondaryItem.has_value() &&
+			 !( *m_secondaryItem == *other.m_secondaryItem ) )
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 	bool LocalIdItems::operator!=( const LocalIdItems& other ) const

@@ -74,16 +74,6 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "Created Gmod with {} nodes in dictionary",
 				!gmod.isEmpty() ? "non-empty" : "EMPTY" );
 
-			if ( gmod.isEmpty() )
-			{
-				SPDLOG_WARN( "Node dictionary is empty after construction, reinitializing" );
-				if ( !gmod.initializeNodeDictionary( dto ) )
-				{
-					SPDLOG_ERROR( "Failed to initialize node dictionary, GMOD will not work correctly" );
-					throw std::runtime_error( "Failed to initialize GMOD node dictionary" );
-				}
-			}
-
 			return gmod;
 		} );
 	}

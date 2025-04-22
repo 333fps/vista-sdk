@@ -1,20 +1,19 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.20)
 
 find_package(spdlog CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
 include(CTest)
 include(Catch)
 
-# Set correct output directory for test executables
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(TESTS
-	ImoNumberTests_catch2
-	ISOStringTests_catch2
-	CodebookTests_catch2
-	CodebooksTests_catch2
-   # GmodTests
-	LocalIdTests_catch2
+	ImoNumber_catch2
+	ISOString_catch2
+	Codebook_catch2
+	Codebooks_catch2
+	Gmod_catch2
+	LocalId_catch2
 )
 
 foreach(TEST ${TESTS})

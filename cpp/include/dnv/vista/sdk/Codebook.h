@@ -1,3 +1,11 @@
+/**
+ * @file Codebook.h
+ * @brief Codebook components for validation and organization of maritime data
+ *
+ * This file defines codebook-related classes used throughout the VISTA SDK for
+ * validating and organizing maritime vessel data according to standardized vocabularies.
+ */
+
 #pragma once
 
 #include "CodebooksDto.h"
@@ -7,17 +15,29 @@ namespace dnv::vista::sdk
 	class MetadataTag;
 	enum class CodebookName;
 
+	//-------------------------------------------------------------------
+	// Validation Results
+	//-------------------------------------------------------------------
+
 	/**
 	 * @brief Enumeration for validation results of position strings
 	 */
 	enum class PositionValidationResult
 	{
-		Invalid = 0,	 ///< Position is invalid
-		InvalidOrder,	 ///< Position components are in invalid order
-		InvalidGrouping, ///< Position components have invalid grouping
+		/** @brief Position is invalid */
+		Invalid = 0,
 
-		Valid = 100, ///< Position is valid
-		Custom = 101 ///< Position is valid but custom
+		/** @brief Position components are in invalid order */
+		InvalidOrder,
+
+		/** @brief Position components have invalid grouping */
+		InvalidGrouping,
+
+		/** @brief Position is valid */
+		Valid = 100,
+
+		/** @brief Position is valid but custom */
+		Custom = 101
 	};
 
 	/**
@@ -35,16 +55,28 @@ namespace dnv::vista::sdk
 		static PositionValidationResult fromString( const std::string& name );
 	};
 
+	//-------------------------------------------------------------------
+	// Standard Values Container
+	//-------------------------------------------------------------------
+
 	/**
 	 * @brief Container for standard values of a codebook
 	 */
 	class CodebookStandardValues final
 	{
 	public:
+		//-------------------------------------------------------------------
+		// Types
+		//-------------------------------------------------------------------
+
 		/**
 		 * @brief Iterator type for traversing standard values
 		 */
 		using iterator = std::unordered_set<std::string>::const_iterator;
+
+		//-------------------------------------------------------------------
+		// Construction / Destruction
+		//-------------------------------------------------------------------
 
 		/**
 		 * @brief Default constructor
@@ -58,11 +90,19 @@ namespace dnv::vista::sdk
 		 */
 		CodebookStandardValues( CodebookName name, const std::unordered_set<std::string>& standardValues );
 
+		//-------------------------------------------------------------------
+		// Capacity
+		//-------------------------------------------------------------------
+
 		/**
 		 * @brief Get the number of standard values
 		 * @return The count of standard values
 		 */
 		size_t count() const;
+
+		//-------------------------------------------------------------------
+		// Element Access
+		//-------------------------------------------------------------------
 
 		/**
 		 * @brief Check if a value is contained in standard values
@@ -70,6 +110,10 @@ namespace dnv::vista::sdk
 		 * @return True if the value is in standard values or is a numeric position
 		 */
 		bool contains( const std::string& tagValue ) const;
+
+		//-------------------------------------------------------------------
+		// Iterators
+		//-------------------------------------------------------------------
 
 		/**
 		 * @brief Get iterator to the beginning
@@ -84,9 +128,20 @@ namespace dnv::vista::sdk
 		iterator end() const;
 
 	private:
+		//-------------------------------------------------------------------
+		// Member Variables
+		//-------------------------------------------------------------------
+
+		/** @brief The name of the codebook */
 		CodebookName m_name;
+
+		/** @brief The set of standard values */
 		std::unordered_set<std::string> m_standardValues;
 	};
+
+	//-------------------------------------------------------------------
+	// Groups Container
+	//-------------------------------------------------------------------
 
 	/**
 	 * @brief Container for groups of a codebook
@@ -94,10 +149,18 @@ namespace dnv::vista::sdk
 	class CodebookGroups final
 	{
 	public:
+		//-------------------------------------------------------------------
+		// Types
+		//-------------------------------------------------------------------
+
 		/**
 		 * @brief Iterator type for traversing groups
 		 */
 		using iterator = std::unordered_set<std::string>::const_iterator;
+
+		//-------------------------------------------------------------------
+		// Construction / Destruction
+		//-------------------------------------------------------------------
 
 		/**
 		 * @brief Default constructor
@@ -110,11 +173,19 @@ namespace dnv::vista::sdk
 		 */
 		CodebookGroups( const std::unordered_set<std::string>& groups );
 
+		//-------------------------------------------------------------------
+		// Capacity
+		//-------------------------------------------------------------------
+
 		/**
 		 * @brief Get the number of groups
 		 * @return The count of groups
 		 */
 		size_t count() const;
+
+		//-------------------------------------------------------------------
+		// Element Access
+		//-------------------------------------------------------------------
 
 		/**
 		 * @brief Check if a group is contained
@@ -122,6 +193,10 @@ namespace dnv::vista::sdk
 		 * @return True if the group exists
 		 */
 		bool contains( const std::string& group ) const;
+
+		//-------------------------------------------------------------------
+		// Iterators
+		//-------------------------------------------------------------------
 
 		/**
 		 * @brief Get iterator to the beginning
@@ -136,8 +211,17 @@ namespace dnv::vista::sdk
 		iterator end() const;
 
 	private:
+		//-------------------------------------------------------------------
+		// Member Variables
+		//-------------------------------------------------------------------
+
+		/** @brief The set of groups */
 		std::unordered_set<std::string> m_groups;
 	};
+
+	//-------------------------------------------------------------------
+	// Main Codebook Class
+	//-------------------------------------------------------------------
 
 	/**
 	 * @brief A codebook containing standard values and their groups
@@ -145,6 +229,10 @@ namespace dnv::vista::sdk
 	class Codebook final
 	{
 	public:
+		//-------------------------------------------------------------------
+		// Construction / Destruction
+		//-------------------------------------------------------------------
+
 		/**
 		 * @brief Default constructor
 		 */
@@ -156,6 +244,10 @@ namespace dnv::vista::sdk
 		 * @throws std::invalid_argument If the DTO has an unknown name
 		 */
 		Codebook( const CodebookDto& dto );
+
+		//-------------------------------------------------------------------
+		// Accessors
+		//-------------------------------------------------------------------
 
 		/**
 		 * @brief Get the codebook name
@@ -181,6 +273,10 @@ namespace dnv::vista::sdk
 		 */
 		const std::unordered_map<std::string, std::vector<std::string>>& rawData() const;
 
+		//-------------------------------------------------------------------
+		// Queries
+		//-------------------------------------------------------------------
+
 		/**
 		 * @brief Check if a group exists
 		 * @param group The group to check
@@ -195,12 +291,16 @@ namespace dnv::vista::sdk
 		 */
 		bool hasStandardValue( const std::string& value ) const;
 
+		//-------------------------------------------------------------------
+		// Operations
+		//-------------------------------------------------------------------
+
 		/**
 		 * @brief Try to create a metadata tag
 		 * @param value The tag value
 		 * @return The metadata tag, or none if invalid
 		 */
-		std::optional<MetadataTag> tryCreateTag( const std::string_view value ) const;
+		std::optional<MetadataTag> tryCreateTag( const std::string_view valueView ) const;
 
 		/**
 		 * @brief Create a metadata tag
@@ -218,10 +318,23 @@ namespace dnv::vista::sdk
 		PositionValidationResult validatePosition( const std::string& position ) const;
 
 	private:
+		//-------------------------------------------------------------------
+		// Member Variables
+		//-------------------------------------------------------------------
+
+		/** @brief The name of this codebook */
 		CodebookName m_name;
+
+		/** @brief Mapping from values to their group names */
 		std::unordered_map<std::string, std::string> m_groupMap;
+
+		/** @brief Container for standard values */
 		CodebookStandardValues m_standardValues;
+
+		/** @brief Container for groups */
 		CodebookGroups m_groups;
+
+		/** @brief Raw mapping of groups to their values */
 		std::unordered_map<std::string, std::vector<std::string>> m_rawData;
 	};
 }

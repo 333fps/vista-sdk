@@ -15,7 +15,7 @@ namespace dnv::vista::sdk
 	void ParsingErrors::addError( const std::string& type, const std::string& message )
 	{
 		m_errors.emplace_back( type, message );
-		SPDLOG_INFO( "Added parsing error: {} - {}", type, message );
+		SPDLOG_ERROR( "Added parsing error: {} - {}", type, message );
 	}
 
 	bool ParsingErrors::hasErrors() const

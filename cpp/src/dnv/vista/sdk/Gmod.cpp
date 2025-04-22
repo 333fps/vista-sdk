@@ -8,6 +8,10 @@
 
 namespace dnv::vista::sdk
 {
+	//-------------------------------------------------------------------
+	// Parents Implementation
+	//-------------------------------------------------------------------
+
 	void Parents::push( const GmodNode* parent )
 	{
 		m_nodes.push_back( parent );
@@ -41,9 +45,18 @@ namespace dnv::vista::sdk
 
 	int Parents::occurrences( const GmodNode& node ) const
 	{
-		SPDLOG_INFO( "node: {}", node.toString() );
-		auto it = m_occurrences.find( node.code() );
-		return it != m_occurrences.end() ? it->second : 0;
+		try
+		{
+			const std::string nodeCode = node.code();
+			SPDLOG_INFO( "node code: {}", nodeCode );
+			auto it = m_occurrences.find( nodeCode );
+			return it != m_occurrences.end() ? it->second : 0;
+		}
+		catch ( const std::exception& ex )
+		{
+			SPDLOG_ERROR( "Exception in occurrences method: {}", ex.what() );
+			return 0;
+		}
 	}
 
 	const GmodNode* Parents::lastOrDefault() const
@@ -66,6 +79,10 @@ namespace dnv::vista::sdk
 	{
 		return m_nodes;
 	}
+
+	//-------------------------------------------------------------------
+	// Constructors / Destructor
+	//-------------------------------------------------------------------
 
 	Gmod::Gmod( VisVersion version, const GmodDto& dto )
 		: m_visVersion( version )
@@ -158,9 +175,6 @@ namespace dnv::vista::sdk
 				m_nodeMap.isEmpty() ? "empty" : "non-empty" );
 		}
 
-		SPDLOG_INFO( "Copying Gmod with {} nodes in dictionary",
-			other.m_nodeMap.isEmpty() ? "empty" : "non-empty" );
-
 		if ( m_nodeMap.isEmpty() && !other.m_nodeMap.isEmpty() )
 		{
 			SPDLOG_ERROR( "Dictionary copy failed! Source had data but destination is empty" );
@@ -189,6 +203,10 @@ namespace dnv::vista::sdk
 		}
 		return *this;
 	}
+
+	//-------------------------------------------------------------------
+	// Basic Access Methods
+	//-------------------------------------------------------------------
 
 	const GmodNode& Gmod::operator[]( const std::string& key ) const
 	{
@@ -234,7 +252,7 @@ namespace dnv::vista::sdk
 
 	const GmodNode& Gmod::rootNode() const
 	{
-		SPDLOG_WARN( "Getting root node: '{}'", m_rootNode.code() );
+		SPDLOG_INFO( "Getting root node: '{}'", m_rootNode.code() );
 		return m_rootNode;
 	}
 
@@ -272,7 +290,7 @@ namespace dnv::vista::sdk
 
 			if ( !m_nodeMap.tryGetValue( code, &node ) )
 			{
-				SPDLOG_INFO( "TryGetNode: Node '{}' not found in GMOD", code );
+				SPDLOG_WARN( "TryGetNode: Node '{}' not found in GMOD", code );
 				return false;
 			}
 
@@ -285,6 +303,15 @@ namespace dnv::vista::sdk
 			return false;
 		}
 	}
+
+	bool Gmod::isPotentialParent( const std::string& type )
+	{
+		return s_potentialParentScopeTypes.find( type ) != s_potentialParentScopeTypes.end();
+	}
+
+	//-------------------------------------------------------------------
+	// Path Parsing Methods
+	//-------------------------------------------------------------------
 
 	GmodPath Gmod::parsePath( const std::string& item ) const
 	{
@@ -315,6 +342,10 @@ namespace dnv::vista::sdk
 		return false;
 	}
 
+	//-------------------------------------------------------------------
+	// Traversal Methods
+	//-------------------------------------------------------------------
+
 	bool Gmod::traverse( const TraverseHandler& handler, const TraversalOptions& options ) const
 	{
 		return traverse( rootNode(), handler, options );
@@ -325,6 +356,7 @@ namespace dnv::vista::sdk
 		TraversalContext context( handler, options.maxTraversalOccurrence, options.maxNodes );
 		TraversalHandlerResult result = traverseNode( context, rootNode );
 
+		SPDLOG_INFO( "Traversal completed with result: {}", static_cast<int>( result ) );
 		return result != TraversalHandlerResult::Stop;
 	}
 
@@ -335,198 +367,235 @@ namespace dnv::vista::sdk
 			return TraversalHandlerResult::Stop;
 		}
 
-		if ( node.metadata().installSubstructure().has_value() &&
-			 !node.metadata().installSubstructure().value() )
+		if ( node.metadata().installSubstructure().has_value() && !node.metadata().installSubstructure().value() )
 		{
 			return TraversalHandlerResult::Continue;
 		}
 
 		context.nodesVisited++;
 
-		bool skipOccurrenceCheck = isProductSelectionAssignment( context.parents.lastOrDefault(), &node );
-		if ( !skipOccurrenceCheck )
+		std::vector<GmodNode> currentPath;
+		try
 		{
-			int occ = context.parents.occurrences( node );
-			if ( occ == context.maxTraversalOccurrence )
-			{
-				return TraversalHandlerResult::SkipSubtree;
-			}
-			if ( occ > context.maxTraversalOccurrence )
-			{
-				SPDLOG_ERROR( "Invalid state - node occurred more than expected" );
-				return TraversalHandlerResult::Stop;
-			}
+			currentPath = context.parents.nodes();
+		}
+		catch ( const std::exception& ex )
+		{
+			SPDLOG_ERROR( "Failed to get path nodes: {}", ex.what() );
+			return TraversalHandlerResult::Stop;
 		}
 
-		std::vector<GmodNode> currentPath = context.parents.nodes();
-
-		TraversalHandlerResult result = context.handler( currentPath, node );
+		TraversalHandlerResult result;
+		try
+		{
+			result = context.handler( currentPath, node );
+		}
+		catch ( const std::exception& ex )
+		{
+			SPDLOG_ERROR( "Handler exception: {}", ex.what() );
+			return TraversalHandlerResult::Stop;
+		}
 
 		if ( result == TraversalHandlerResult::Stop || result == TraversalHandlerResult::SkipSubtree )
 		{
 			return result;
 		}
 
-		context.parents.push( &node );
-
-		for ( const GmodNode* child : node.children() )
-		{
-			if ( child == nullptr )
-				continue;
-
-			result = traverseNode( context, *child );
-
-			if ( result == TraversalHandlerResult::Stop )
-			{
-				return result;
-			}
-		}
-
-		context.parents.pop();
-
-		return TraversalHandlerResult::Continue;
-	}
-
-	bool Gmod::initializeNodeDictionary( const GmodDto& dto )
-	{
 		try
 		{
-			SPDLOG_INFO( "Building GMOD node dictionary from DTO with {} items and {} relations",
-				dto.items.size(), dto.relations.size() );
-
-			std::unordered_map<std::string, GmodNode> nodeMap;
-			for ( const auto& nodeDto : dto.items )
-			{
-				GmodNode node( m_visVersion, nodeDto );
-				nodeMap.emplace( nodeDto.code, std::move( node ) );
-				SPDLOG_INFO( "Created node for code: {}", nodeDto.code );
-			}
-
-			for ( const auto& relation : dto.relations )
-			{
-				if ( relation.size() >= 2 )
-				{
-					const std::string& parentCode = relation[0];
-					const std::string& childCode = relation[1];
-
-					auto parentIt = nodeMap.find( parentCode );
-					auto childIt = nodeMap.find( childCode );
-
-					if ( parentIt != nodeMap.end() && childIt != nodeMap.end() )
-					{
-						parentIt->second.addChild( &childIt->second );
-						childIt->second.addParent( &parentIt->second );
-					}
-				}
-			}
-
-			for ( auto& [code, node] : nodeMap )
-			{
-				node.trim();
-			}
-
-			auto rootIt = nodeMap.find( "VE" );
-			if ( rootIt != nodeMap.end() )
-			{
-				m_rootNode = rootIt->second;
-			}
-			else
-			{
-				SPDLOG_WARN( "Root node 'VE' not found in GMOD" );
-			}
-
-			std::vector<std::pair<std::string, GmodNode>> nodePairs;
-			nodePairs.reserve( nodeMap.size() );
-			for ( const auto& [code, node] : nodeMap )
-			{
-				nodePairs.emplace_back( code, node );
-			}
-
-			m_nodeMap = ChdDictionary<GmodNode>( std::move( nodePairs ) );
-			if ( m_nodeMap.isEmpty() )
-			{
-				SPDLOG_ERROR( "Node dictionary is empty after initialization!" );
-			}
-
-			SPDLOG_INFO( "Successfully built node dictionary with {} entries", nodeMap.size() );
-
-			return !m_nodeMap.isEmpty();
+			context.parents.push( &node );
 		}
 		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Failed to initialize node dictionary: {}", ex.what() );
+			SPDLOG_ERROR( "Failed to push node: {}", ex.what() );
+			return TraversalHandlerResult::Stop;
+		}
+
+		try
+		{
+			const auto& children = node.children();
+			for ( const GmodNode* child : children )
+			{
+				if ( child == nullptr )
+					continue;
+
+				result = traverseNode( context, *child );
+
+				if ( result == TraversalHandlerResult::Stop )
+				{
+					context.parents.pop();
+					return result;
+				}
+			}
+		}
+		catch ( const std::exception& ex )
+		{
+			SPDLOG_ERROR( "Error traversing children: {}", ex.what() );
+			context.parents.pop();
+			return TraversalHandlerResult::Stop;
+		}
+
+		context.parents.pop();
+		return TraversalHandlerResult::Continue;
+	}
+
+	bool Gmod::pathExistsBetween(
+		const std::vector<GmodNode>& fromPath,
+		const GmodNode& to,
+		std::vector<GmodNode>& remainingParents ) const
+	{
+		if ( fromPath.empty() )
+		{
+			SPDLOG_INFO( "pathExistsBetween called with empty fromPath" );
 			return false;
 		}
+
+		const GmodNode& lastParent = fromPath.back();
+		SPDLOG_INFO( "Finding path from {} to {}", lastParent.code(), to.code() );
+
+		/* 		bool isSystemComponentRelationship =
+					( lastParent.code().find( '.' ) != std::string::npos &&
+						to.code().find( 'C' ) == 0 &&
+						to.code().find( '.' ) != std::string::npos );
+
+		if ( isSystemComponentRelationship )
+		{
+			SPDLOG_INFO( "System-component relationship detected between {} and {}",
+				lastParent.code(), to.code() );
+			remainingParents.clear();
+			return true;
+		}
+			*/
+
+		if ( lastParent.isChild( to.code() ) )
+		{
+			SPDLOG_INFO( "Direct path found: {} is direct child of {}", to.code(), lastParent.code() );
+			remainingParents.clear();
+			return true;
+		}
+
+		for ( const auto* childNode : lastParent.children() )
+		{
+			auto isParent = isPotentialParent( childNode->metadata().type() );
+			if ( isParent )
+			{
+				SPDLOG_INFO( "Checking child node {} for parent relationship", childNode->code() );
+			}
+			else
+			{
+				SPDLOG_INFO( "Child node {} is not a potential parent", childNode->code() );
+			}
+
+			if ( childNode && isParent )
+			{
+				SPDLOG_INFO( "Indirect path found via child node {} between {} and {}", childNode->code(), lastParent.code(), to.code() );
+
+				remainingParents.clear();
+				return true;
+			}
+		}
+
+		struct PathFindingState
+		{
+			const std::vector<GmodNode>* fromPath;
+			const GmodNode* target;
+			bool found = false;
+			std::vector<GmodNode> resultPath;
+		};
+
+		PathFindingState state;
+		state.fromPath = &fromPath;
+		state.target = &to;
+
+		auto handler = []( PathFindingState& s,
+						   const std::vector<GmodNode>& parents,
+						   const GmodNode& node ) -> TraversalHandlerResult {
+			if ( parents.size() < s.fromPath->size() )
+				return TraversalHandlerResult::Continue;
+
+			bool pathMatches = true;
+			for ( size_t i = 0; i < s.fromPath->size(); i++ )
+			{
+				if ( parents[i].code() != ( *s.fromPath )[i].code() )
+				{
+					pathMatches = false;
+					break;
+				}
+			}
+
+			if ( !pathMatches )
+				return TraversalHandlerResult::SkipSubtree;
+
+			if ( node.code() == s.target->code() )
+			{
+				s.resultPath.clear();
+				for ( size_t i = s.fromPath->size(); i < parents.size(); i++ )
+				{
+					s.resultPath.push_back( parents[i] );
+				}
+				s.resultPath.push_back( node );
+				s.found = true;
+				return TraversalHandlerResult::Stop;
+			}
+
+			return TraversalHandlerResult::Continue;
+		};
+
+		TraversalOptions options;
+		options.maxTraversalOccurrence = 3;
+		options.maxNodes = 1000;
+
+		const GmodNode* startNode = nullptr;
+
+		for ( auto it = fromPath.rbegin(); it != fromPath.rend(); ++it )
+		{
+			if ( isAssetFunctionNode( it->metadata() ) )
+			{
+				startNode = &( *it );
+				break;
+			}
+		}
+
+		if ( !startNode )
+		{
+			startNode = &rootNode();
+		}
+
+		if ( !traverse<PathFindingState>( state, *startNode, handler, options ) )
+		{
+			SPDLOG_DEBUG( "Traversal was stopped - path may have been found" );
+		}
+
+		if ( state.found )
+		{
+			SPDLOG_INFO( "Found path from {} to {} with {} intermediate nodes",
+				lastParent.code(), to.code(), state.resultPath.size() - 1 );
+
+			if ( !state.resultPath.empty() )
+			{
+				remainingParents.assign( state.resultPath.begin() + 1, state.resultPath.end() );
+			}
+			else
+			{
+				remainingParents.clear();
+			}
+			return true;
+		}
+
+		if ( lastParent.metadata().category() == to.metadata().category() )
+		{
+			SPDLOG_INFO( "Nodes share same category: {}", lastParent.metadata().category() );
+			remainingParents.clear();
+			return true;
+		}
+
+		SPDLOG_WARN( "No path found from {} to {}", lastParent.code(), to.code() );
+		return false;
 	}
 
-	bool Gmod::isLeafNode( const std::string& fullType )
-	{
-		return std::find( s_leafTypes.begin(), s_leafTypes.end(), fullType ) != s_leafTypes.end();
-	}
-
-	bool Gmod::isLeafNode( const GmodNodeMetadata& metadata )
-	{
-		return isLeafNode( metadata.fullType() );
-	}
-
-	bool Gmod::isFunctionNode( const std::string& category )
-	{
-		return category != "PRODUCT" && category != "ASSET";
-	}
-
-	bool Gmod::isFunctionNode( const GmodNodeMetadata& metadata )
-	{
-		return isFunctionNode( metadata.category() );
-	}
-
-	bool Gmod::isProductSelection( const GmodNodeMetadata& metadata )
-	{
-		return metadata.category() == "PRODUCT" && metadata.type() == "SELECTION";
-	}
-
-	bool Gmod::isProductType( const GmodNodeMetadata& metadata )
-	{
-		return metadata.category() == "PRODUCT" && metadata.type() == "TYPE";
-	}
-
-	bool Gmod::isAsset( const GmodNodeMetadata& metadata )
-	{
-		return metadata.category() == "ASSET";
-	}
-
-	bool Gmod::isAssetFunctionNode( const GmodNodeMetadata& metadata )
-	{
-		return metadata.category() == "ASSET FUNCTION";
-	}
-
-	bool Gmod::isProductTypeAssignment( const GmodNode* parent, const GmodNode* child )
-	{
-		if ( parent == nullptr || child == nullptr )
-			return false;
-
-		if ( parent->metadata().category().find( "FUNCTION" ) == std::string::npos )
-			return false;
-
-		if ( child->metadata().category() != "PRODUCT" || child->metadata().type() != "TYPE" )
-			return false;
-
-		return true;
-	}
-
-	bool Gmod::isProductSelectionAssignment( const GmodNode* parent, const GmodNode* child )
-	{
-		if ( parent == nullptr || child == nullptr )
-			return false;
-
-		if ( parent->metadata().category().find( "FUNCTION" ) == std::string::npos )
-			return false;
-
-		if ( child->metadata().category().find( "PRODUCT" ) == std::string::npos ||
-			 child->metadata().type() != "SELECTION" )
-			return false;
-
-		return true;
-	}
+	//-------------------------------------------------------------------
+	// Iterator Methods
+	//-------------------------------------------------------------------
 
 	Gmod::Iterator::Iterator( ChdDictionary<GmodNode>::Iterator innerIt )
 		: m_innerIt( std::move( innerIt ) )
@@ -574,5 +643,101 @@ namespace dnv::vista::sdk
 	Gmod::Iterator Gmod::end() const
 	{
 		return Iterator( m_nodeMap.end() );
+	}
+
+	//-------------------------------------------------------------------
+	// Static Node Classification Methods
+	//-------------------------------------------------------------------
+
+	bool Gmod::isLeafNode( const std::string& fullType )
+	{
+		return s_leafTypesSet.find( fullType ) != s_leafTypesSet.end();
+	}
+
+	bool Gmod::isLeafNode( const GmodNodeMetadata& metadata )
+	{
+		return isLeafNode( metadata.fullType() );
+	}
+
+	bool Gmod::isFunctionNode( const std::string& category )
+	{
+		return category != "PRODUCT" && category != "ASSET";
+	}
+
+	bool Gmod::isFunctionNode( const GmodNodeMetadata& metadata )
+	{
+		return isFunctionNode( metadata.category() );
+	}
+
+	bool Gmod::isProductSelection( const GmodNodeMetadata& metadata )
+	{
+		return metadata.category() == "PRODUCT" && metadata.type() == "SELECTION";
+	}
+
+	bool Gmod::isProductType( const GmodNodeMetadata& metadata )
+	{
+		return metadata.category() == "PRODUCT" && metadata.type() == "TYPE";
+	}
+
+	bool Gmod::isAsset( const GmodNodeMetadata& metadata )
+	{
+		return metadata.category() == "ASSET";
+	}
+
+	bool Gmod::isAssetFunctionNode( const GmodNodeMetadata& metadata )
+	{
+		return metadata.category() == "ASSET FUNCTION";
+	}
+
+	//-------------------------------------------------------------------
+	// Static Relationship Classification Methods
+	//-------------------------------------------------------------------
+
+	bool Gmod::isProductTypeAssignment( const GmodNode* parent, const GmodNode* child )
+	{
+		if ( parent == nullptr || child == nullptr )
+			return false;
+
+		if ( parent->metadata().category().find( "FUNCTION" ) == std::string::npos )
+			return false;
+
+		if ( child->metadata().category() != "PRODUCT" || child->metadata().type() != "TYPE" )
+			return false;
+
+		return true;
+	}
+
+	bool Gmod::isProductSelectionAssignment( const GmodNode* parent, const GmodNode* child )
+	{
+		try
+		{
+			if ( parent == nullptr || child == nullptr )
+				return false;
+
+			const auto& parentMetadata = parent->metadata();
+			const auto& childMetadata = child->metadata();
+
+			if ( parentMetadata.category().empty() || childMetadata.category().empty() )
+				return false;
+
+			if ( parentMetadata.category().find( "FUNCTION" ) == std::string::npos )
+				return false;
+
+			if ( childMetadata.category().find( "PRODUCT" ) == std::string::npos ||
+				 childMetadata.type().empty() || childMetadata.type() != "SELECTION" )
+				return false;
+
+			return true;
+		}
+		catch ( const std::exception& ex )
+		{
+			SPDLOG_ERROR( "Exception in isProductSelectionAssignment: {}", ex.what() );
+			return false;
+		}
+		catch ( ... )
+		{
+			SPDLOG_ERROR( "Unknown exception in isProductSelectionAssignment" );
+			return false;
+		}
 	}
 }

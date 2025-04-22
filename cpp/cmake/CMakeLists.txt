@@ -69,13 +69,10 @@ set(VISTA_SDK_SOURCES
 	../src/dnv/vista/sdk/VisVersion.cpp
 )
 
-# Add the library
 add_library(${PROJECT_NAME} SHARED ${VISTA_SDK_INCLUDES} ${VISTA_SDK_SOURCES})
 
-# Precompiled headers
 target_precompile_headers(${PROJECT_NAME} PRIVATE ../src/dnv/vista/sdk/pch.h)
 
-# Include directories
 target_include_directories(${PROJECT_NAME}
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
@@ -84,7 +81,6 @@ target_include_directories(${PROJECT_NAME}
 		${CMAKE_CURRENT_SOURCE_DIR}/../src
 )
 
-# Dependencies
 find_package(spdlog CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
 
@@ -98,18 +94,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
 find_package(cpuid CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE cpuid::cpuid)
 
-# Tests
-#if(VISTA_SDK_BUILD_TESTS)
-#    enable_testing()
-#    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../test ${CMAKE_CURRENT_BINARY_DIR}/test)
-#endif()
+find_package(async_mqtt_iface CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE async_mqtt_iface::async_mqtt_iface)
 
-# Examples
 if(VISTA_SDK_BUILD_SAMPLES)
 	#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../examples ${CMAKE_CURRENT_BINARY_DIR}/examples)
-endif()
-
-# MSVC-specific options
-if(MSVC)
-	#target_compile_options(${PROJECT_NAME} PRIVATE /wd4661 /W4)
 endif()

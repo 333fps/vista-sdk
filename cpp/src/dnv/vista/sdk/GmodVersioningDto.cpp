@@ -126,7 +126,6 @@ namespace dnv::vista::sdk
 		}
 		obj.AddMember( "operations", operationsArray, allocator );
 
-		// Serialize source, target and assignment fields
 		obj.AddMember( "source", rapidjson::Value( source.c_str(), allocator ).Move(), allocator );
 		obj.AddMember( "target", rapidjson::Value( target.c_str(), allocator ).Move(), allocator );
 		obj.AddMember( "oldAssignment", rapidjson::Value( oldAssignment.c_str(), allocator ).Move(), allocator );

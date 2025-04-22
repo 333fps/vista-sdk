@@ -39,8 +39,37 @@ namespace dnv::vista::sdk
 	}
 
 	LocalIdBuilder::LocalIdBuilder( const LocalIdBuilder& other )
-		: m_visVersion( other.m_visVersion ), m_verboseMode( other.m_verboseMode ), m_items( other.m_items ), m_quantity( other.m_quantity ), m_content( other.m_content ), m_calculation( other.m_calculation ), m_state( other.m_state ), m_command( other.m_command ), m_type( other.m_type ), m_position( other.m_position ), m_detail( other.m_detail )
 	{
+		if ( other.m_visVersion.has_value() )
+			m_visVersion.emplace( other.m_visVersion.value() );
+
+		m_verboseMode = other.m_verboseMode;
+		m_items = other.m_items;
+
+		if ( other.m_quantity.has_value() )
+			m_quantity.emplace( other.m_quantity.value() );
+
+		if ( other.m_content.has_value() )
+			m_content.emplace( other.m_content.value() );
+
+		if ( other.m_calculation.has_value() )
+			m_calculation.emplace( other.m_calculation.value() );
+
+		if ( other.m_state.has_value() )
+			m_state.emplace( other.m_state.value() );
+
+		if ( other.m_command.has_value() )
+			m_command.emplace( other.m_command.value() );
+
+		if ( other.m_type.has_value() )
+			m_type.emplace( other.m_type.value() );
+
+		if ( other.m_position.has_value() )
+			m_position.emplace( other.m_position.value() );
+
+		if ( other.m_detail.has_value() )
+			m_detail.emplace( other.m_detail.value() );
+
 		SPDLOG_INFO( "Created LocalIdBuilder via copy constructor" );
 	}
 
@@ -1401,7 +1430,7 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "Can't compare local IDs from different VIS versions" );
 
 		return m_items == other.m_items &&
-			   //   m_verboseMode == other.m_verboseMode &&
+			   m_verboseMode == other.m_verboseMode &&
 			   m_quantity == other.m_quantity &&
 			   m_content == other.m_content &&
 			   m_calculation == other.m_calculation &&

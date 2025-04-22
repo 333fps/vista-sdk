@@ -42,31 +42,51 @@ endif()
 
 include(CheckCXXSourceCompiles)
 
-# Test if SSE4.2 is available
-check_cxx_source_compiles("
-#include <immintrin.h>
-int main() {
-	unsigned int crc = 0;
-	const char* data = \"test\";
-	crc = _mm_crc32_u8(crc, data[0]);
-	return 0;
-}
-" HAVE_SSE42)
+# Compiler tuning
+if(MSVC)
+	add_compile_options(/std:c++20)
+	add_compile_options(/MP)
+	add_compile_options(/W4)
+	add_compile_options(/Wall)
+	add_compile_options(/WX-)
+	add_compile_options(/permissive-)
+	add_compile_options(/fp:precise)
+	add_compile_options(/Zc:__cplusplus)
+	add_compile_options(/Zc:inline)
+	add_compile_options(/Zc:preprocessor)
+	add_compile_options(/external:anglebrackets)
+	add_compile_options(/external:W0)
+	#add_compile_options(/analyze:WX-)
+	#add_compile_options(/analyze:external-)
+	#add_compile_options(/analyze)
 
-if(HAVE_SSE42)
-	message(STATUS "SSE4.2 support detected")
-	add_compile_definitions(HAS_SSE42=1)
-
-	if(MSVC)
-		add_compile_options(/arch:AVX)
-	else()
-		add_compile_options(-msse4.2)
-	endif()
-else()
-	message(STATUS "SSE4.2 support not detected")
-	add_compile_definitions(HAS_SSE42=0)
+	add_compile_options(/wd4061) # switch not handled
+	add_compile_options(/wd4100) # unreferenced formal parameter
+	add_compile_options(/wd4189) # local variable is initialized but not referenced
+	add_compile_options(/wd4267) # conversion from 'size_t' to 'type', possible loss of data
+	add_compile_options(/wd4365) # conversion signed/unsigned mismatch
+	add_compile_options(/wd4388) # signed/unsigned mismatch
+	add_compile_options(/wd4456) # declaration hides previous local declaration
+	add_compile_options(/wd4625) # copy constructor was implicitly defined as deleted
+	add_compile_options(/wd4626) # assignement operator was implicitly defined as deleted
+	add_compile_options(/wd4820) # padding
+	add_compile_options(/wd5026) # move constructor was implicitly defined as deleted
+	add_compile_options(/wd5027) # move assignement operator was implicitly defined as deleted
+	add_compile_options(/wd5038) # will be initialized after
+	add_compile_options(/wd5045) # Qspectre
+	add_compile_options(/wd5267) # definition of implicit copy constructor/assignment operator is deprecated because it has a user-provided assignment operator/copy constructor
+	add_compile_options(/wd6246) # local declaration of 'variable' hides declaration of same name in outer scope
+	add_compile_options(/wd6326) # potential comparison of a constant with another constant
+	add_compile_options(/wd6387) # 'argument' may be 'value': this does not adhere to the specification for the function
 endif()
 
+# Enable SSE4.2 instructions in the compiler
+if(MSVC)
+	add_compile_options(/arch:AVX)
+	add_compile_options(/arch:AVX2)
+else()
+	add_compile_options(-msse4.2)
+endif()
 
 # Add subdirectories
 add_subdirectory(cmake)

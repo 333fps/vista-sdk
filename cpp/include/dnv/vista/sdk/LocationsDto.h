@@ -16,7 +16,7 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Default constructor
 		 */
-		RelativeLocationsDto() = default; // TODO: C26495
+		RelativeLocationsDto() = default;
 
 		/**
 		 * @brief Constructor with parameters
