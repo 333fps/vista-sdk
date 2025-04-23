@@ -31,8 +31,11 @@ namespace dnv::vista::sdk::tests
 
 	std::size_t Occurrences( const std::vector<GmodNode>& parents, const GmodNode& node )
 	{
-		return std::count_if( parents.begin(), parents.end(),
-			[&node]( const GmodNode& p ) { return p.code() == node.code(); } );
+		return static_cast<size_t>(
+			std::count_if( parents.begin(), parents.end(),
+				[&node]( const GmodNode& p ) {
+					return p.code() == node.code();
+				} ) );
 	}
 
 	class GmodTests : public ::testing::TestWithParam<VisVersion>
@@ -302,7 +305,7 @@ namespace dnv::vista::sdk::tests
 
 		int pathCount = 0;
 		const int maxExpected = Gmod::TraversalOptions::DEFAULT_MAX_TRAVERSAL_OCCURRENCE;
-		int maxOccurrence = 0;
+		size_t maxOccurrence = 0;
 
 		bool completed = gmod.traverse(
 			[&]( const std::vector<GmodNode>& parents, const GmodNode& node ) {
@@ -321,7 +324,7 @@ namespace dnv::vista::sdk::tests
 				if ( skipOccurrenceCheck )
 					return Gmod::TraversalHandlerResult::Continue;
 
-				int occ = Occurrences( parents, node );
+				size_t occ = Occurrences( parents, node );
 				if ( occ > maxOccurrence )
 					maxOccurrence = occ;
 
@@ -338,7 +341,7 @@ namespace dnv::vista::sdk::tests
 		auto [vis, gmod] = GetVisAndGmod( VisVersion::v3_4a );
 
 		const int maxExpected = 2;
-		int maxOccurrence = 0;
+		size_t maxOccurrence = 0;
 
 		Gmod::TraversalOptions options;
 		options.maxTraversalOccurrence = maxExpected;
@@ -351,7 +354,7 @@ namespace dnv::vista::sdk::tests
 				if ( skipOccurrenceCheck )
 					return Gmod::TraversalHandlerResult::Continue;
 
-				int occ = Occurrences( parents, node );
+				size_t occ = Occurrences( parents, node );
 				if ( occ > maxOccurrence )
 					maxOccurrence = occ;
 

@@ -74,16 +74,6 @@ Each SDK makes use of the contents of the resources and schemas folders to gener
  ┃ ┃ ┣ 📜DataChannelList.xsd
  ┃ ┃ ┗ 📜TimeSeriesData.xsd
  ┣ 📂testdata
- ┃ ┣ 📜Codebook.json
- ┃ ┣ 📜GmodPaths.json
- ┃ ┣ 📜ImoNumbers.json
- ┃ ┣ 📜IndividualizableSets.json
- ┃ ┣ 📜InvalidLocalIds.json
- ┃ ┣ 📜LocalIds.txt
- ┃ ┣ 📜Locations.json
- ┃ ┣ 📜PmodData.json
- ┃ ┗ 📜VersioningTestCases.json
- ┣ 📂cpp
  ┣ 📂csharp
  ┣ 📂python
  ┣ 📂js

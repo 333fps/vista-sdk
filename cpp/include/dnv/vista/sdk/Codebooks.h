@@ -27,7 +27,7 @@ namespace dnv::vista::sdk
 			using pointer = const value_type*;
 			using reference = const value_type&;
 
-			Iterator( const std::vector<Codebook>* codebooks, int index );
+			Iterator( const std::vector<Codebook>* codebooks, size_t index );
 
 			reference operator*() const;
 			pointer operator->() const;
@@ -42,7 +42,7 @@ namespace dnv::vista::sdk
 
 		private:
 			const std::vector<Codebook>* m_codebooks;
-			int m_index;
+			size_t m_index;
 			mutable std::optional<value_type> m_current;
 		};
 

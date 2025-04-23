@@ -76,7 +76,7 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Building CHD dictionary with {} items, table size {}", items.size(), size );
 
 		// Group items into buckets based on primary hash
-		auto hashBuckets{ std::vector<std::vector<std::pair<int, uint32_t>>>( size ) };
+		auto hashBuckets{ std::vector<std::vector<std::pair<unsigned, uint32_t>>>( size ) };
 		for ( size_t i{ 0 }; i < items.size(); i++ )
 		{
 			const auto& key{ items[i].first };
@@ -90,7 +90,7 @@ namespace dnv::vista::sdk
 			return a.size() > b.size();
 		} );
 
-		auto indices{ std::vector<int>( size, 0 ) };
+		auto indices{ std::vector<unsigned int>( size, 0 ) };
 		auto seeds{ std::vector<int>( size, 0 ) };
 
 		// First pass: handle buckets with collisions by finding perfect seeds
@@ -98,7 +98,7 @@ namespace dnv::vista::sdk
 		for ( ; index < hashBuckets.size() && hashBuckets[index].size() > 1; ++index )
 		{
 			const auto& subKeys{ hashBuckets[index] };
-			auto entries{ std::unordered_map<uint32_t, int>() };
+			auto entries{ std::unordered_map<uint32_t, unsigned>() };
 			uint32_t seed{ 0 };
 
 			// Find a seed that gives unique positions for all items in this bucket
@@ -144,7 +144,7 @@ namespace dnv::vista::sdk
 		std::vector<int> free{};
 
 		// Second pass: process colliding items and identify free slots
-		for ( size_t i{ 0 }; i < indices.size(); i++ )
+		for ( size_t i{ 0 }; i < indices.size(); ++i )
 		{
 			if ( indices[i] == 0 )
 			{

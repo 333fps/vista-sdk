@@ -14,6 +14,8 @@ namespace dnv::vista::sdk
 			case VisVersion::v3_7a:
 			case VisVersion::v3_8a:
 				return true;
+			case VisVersion::Unknown:
+				return false;
 			default:
 				return false;
 		}
@@ -33,6 +35,8 @@ namespace dnv::vista::sdk
 				return "3-7a";
 			case VisVersion::v3_8a:
 				return "3-8a";
+			case VisVersion::Unknown:
+				return "Unknown";
 			default:
 			{
 				SPDLOG_ERROR( "Invalid VIS version: {}", static_cast<int>( version ) );
@@ -44,39 +48,35 @@ namespace dnv::vista::sdk
 
 	bool VisVersionExtensions::tryParse( const std::string& versionString, VisVersion& version )
 	{
-		if ( versionString == "3.4a" )
-			version = VisVersion::v3_4a;
-		if ( versionString == "3.5a" )
-			version = VisVersion::v3_5a;
-		else if ( versionString == "3.6a" )
-			version = VisVersion::v3_6a;
-		else if ( versionString == "3.7a" )
-			version = VisVersion::v3_7a;
-		else if ( versionString == "3.8a" )
-			version = VisVersion::v3_8a;
-		else if ( versionString == "3-4a" )
-			version = VisVersion::v3_4a;
-		else if ( versionString == "3-5a" )
-			version = VisVersion::v3_5a;
-		else if ( versionString == "3-6a" )
-			version = VisVersion::v3_6a;
-		else if ( versionString == "3-7a" )
-			version = VisVersion::v3_7a;
-		else if ( versionString == "3-8a" )
-			version = VisVersion::v3_8a;
-		else
-		{
-			std::string normalizedVersion = versionString;
-			std::replace( normalizedVersion.begin(), normalizedVersion.end(), '-', '.' );
+		static const std::unordered_map<std::string, VisVersion> versionMap = {
+			{ "3.4a", VisVersion::v3_4a },
+			{ "3.5a", VisVersion::v3_5a },
+			{ "3.6a", VisVersion::v3_6a },
+			{ "3.7a", VisVersion::v3_7a },
+			{ "3.8a", VisVersion::v3_8a },
 
-			if ( normalizedVersion != versionString )
-			{
-				return tryParse( normalizedVersion, version );
-			}
-			return false;
+			{ "3-4a", VisVersion::v3_4a },
+			{ "3-5a", VisVersion::v3_5a },
+			{ "3-6a", VisVersion::v3_6a },
+			{ "3-7a", VisVersion::v3_7a },
+			{ "3-8a", VisVersion::v3_8a } };
+
+		auto it{ versionMap.find( versionString ) };
+		if ( it != versionMap.end() )
+		{
+			version = it->second;
+			return true;
 		}
 
-		return true;
+		std::string normalizedVersion = versionString;
+		std::replace( normalizedVersion.begin(), normalizedVersion.end(), '-', '.' );
+
+		if ( normalizedVersion != versionString )
+		{
+			return tryParse( normalizedVersion, version );
+		}
+
+		return false;
 	}
 
 	VisVersion VisVersionExtensions::parse( const std::string& versionString )
@@ -104,7 +104,7 @@ namespace dnv::vista::sdk
 
 	VisVersion VisVersionExtensions::latestVersion()
 	{
-		auto versions = allVersions();
+		auto versions{ allVersions() };
 		return versions.empty() ? VisVersion::Unknown : versions.back();
 	}
 }

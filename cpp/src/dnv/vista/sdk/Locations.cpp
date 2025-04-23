@@ -131,8 +131,14 @@ namespace dnv::vista::sdk
 
 	std::optional<char>& LocationCharDict::operator[]( LocationGroup key )
 	{
-		int index = static_cast<int>( key ) - 1;
-		if ( index >= static_cast<int>( m_table.size() ) || index < 0 )
+		if ( static_cast<int>( key ) <= 0 )
+		{
+			SPDLOG_ERROR( "Invalid LocationGroup key: {}", static_cast<int>( key ) );
+			throw std::runtime_error( "Unsupported code: " + std::to_string( static_cast<int>( key ) ) );
+		}
+
+		auto index{ static_cast<size_t>( key ) - 1 };
+		if ( index >= m_table.size() )
 		{
 			SPDLOG_ERROR( "Index out of range for LocationCharDict: {}", index );
 			throw std::runtime_error( "Unsupported code: " + std::to_string( static_cast<int>( key ) ) );
@@ -480,7 +486,7 @@ namespace dnv::vista::sdk
 
 		try
 		{
-			std::string numStr( span.substr( start, length ) );
+			std::string numStr( span.substr( static_cast<size_t>( start ), static_cast<size_t>( length ) ) );
 			number = std::stoi( numStr );
 			SPDLOG_INFO( "Successfully parsed integer: {}", number );
 			return true;

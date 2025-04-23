@@ -200,7 +200,51 @@ namespace dnv::vista::sdk
 				case LocalIdParsingState::PrimaryItem:
 					stateStr = "PrimaryItem";
 					break;
-
+				case LocalIdParsingState::SecondaryItem:
+					stateStr = "SecondaryItem";
+					break;
+				case LocalIdParsingState::ItemDescription:
+					stateStr = "ItemDescription";
+					break;
+				case LocalIdParsingState::MetaQuantity:
+					stateStr = "MetaQuantity";
+					break;
+				case LocalIdParsingState::MetaContent:
+					stateStr = "MetaContent";
+					break;
+				case LocalIdParsingState::MetaCalculation:
+					stateStr = "MetaCalculation";
+					break;
+				case LocalIdParsingState::MetaState:
+					stateStr = "MetaState";
+					break;
+				case LocalIdParsingState::MetaCommand:
+					stateStr = "MetaCommand";
+					break;
+				case LocalIdParsingState::MetaType:
+					stateStr = "MetaType";
+					break;
+				case LocalIdParsingState::MetaPosition:
+					stateStr = "MetaPosition";
+					break;
+				case LocalIdParsingState::MetaDetail:
+					stateStr = "MetaDetail";
+					break;
+				case LocalIdParsingState::EmptyState:
+					stateStr = "EmptyState";
+					break;
+				case LocalIdParsingState::Formatting:
+					stateStr = "Formatting";
+					break;
+				case LocalIdParsingState::Completeness:
+					stateStr = "Completeness";
+					break;
+				case LocalIdParsingState::NamingEntity:
+					stateStr = "NamingEntity";
+					break;
+				case LocalIdParsingState::IMONumber:
+					stateStr = "IMONumber";
+					break;
 				default:
 					stateStr = "State" + std::to_string( static_cast<int>( state ) );
 					break;

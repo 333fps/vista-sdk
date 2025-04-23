@@ -32,11 +32,11 @@ namespace dnv::vista::sdk
 				Codebook codebook( typeDto );
 				CodebookName bookName = codebook.name();
 
-				int index = static_cast<int>( bookName ) - 1;
+				auto index{ static_cast<size_t>( bookName ) - 1 };
 				SPDLOG_INFO( "Mapped '{}' to index {} (enum value: {})",
 					typeDto.name, index, static_cast<int>( bookName ) );
 
-				if ( index >= 0 && index < numCodebooks )
+				if ( index < numCodebooks )
 				{
 					m_codebooks[index] = codebook;
 					SPDLOG_INFO( "Added codebook '{}' at index {}", typeDto.name, index );
@@ -57,8 +57,8 @@ namespace dnv::vista::sdk
 		CodebookDto detailDto( "detail", emptyValues );
 		Codebook detailCodebook( detailDto );
 
-		int detailIndex = static_cast<int>( detailCodebook.name() ) - 1;
-		if ( detailIndex >= 0 && detailIndex < numCodebooks )
+		auto detailIndex{ static_cast<size_t>( detailCodebook.name() ) - 1 };
+		if ( detailIndex < numCodebooks )
 		{
 			m_codebooks[detailIndex] = detailCodebook;
 			SPDLOG_INFO( "Added empty Detail codebook at index {}", detailIndex );
@@ -100,11 +100,11 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "Codebooks array is empty or uninitialized" );
 		}
 
-		int index = static_cast<int>( name ) - 1;
+		auto index{ static_cast<size_t>( name ) - 1 };
 
 		SPDLOG_DEBUG( "Accessing codebook[{}], vector size: {}", index, m_codebooks.size() );
 
-		if ( index >= static_cast<int>( m_codebooks.size() ) || index < 0 )
+		if ( index >= m_codebooks.size() )
 		{
 			std::stringstream ss;
 			ss << "Invalid codebook name: " << static_cast<int>( name );
@@ -162,14 +162,14 @@ namespace dnv::vista::sdk
 		return ( *this )[name];
 	}
 
-	Codebooks::Iterator::Iterator( const std::vector<Codebook>* codebooks, int index )
+	Codebooks::Iterator::Iterator( const std::vector<Codebook>* codebooks, size_t index )
 		: m_codebooks( codebooks ), m_index( index )
 	{
 	}
 
 	Codebooks::Iterator::reference Codebooks::Iterator::operator*() const
 	{
-		if ( static_cast<size_t>( m_index ) >= m_codebooks->size() )
+		if ( m_index >= m_codebooks->size() )
 		{
 			SPDLOG_ERROR( "Iterator out of range: index={}", m_index );
 			throw std::invalid_argument( "Iterator out of range" );
@@ -189,7 +189,7 @@ namespace dnv::vista::sdk
 
 	Codebooks::Iterator::pointer Codebooks::Iterator::operator->() const
 	{
-		if ( static_cast<size_t>( m_index ) >= m_codebooks->size() )
+		if ( m_index >= m_codebooks->size() )
 		{
 			SPDLOG_ERROR( "Iterator out of range: index={}", m_index );
 			throw std::invalid_argument( "Iterator out of range" );
@@ -232,7 +232,7 @@ namespace dnv::vista::sdk
 
 	void Codebooks::Iterator::reset()
 	{
-		m_index = -1;
+		m_index = 0;
 	}
 
 	Codebooks::Iterator Codebooks::begin() const
@@ -242,7 +242,7 @@ namespace dnv::vista::sdk
 
 	Codebooks::Iterator Codebooks::end() const
 	{
-		return Iterator( &m_codebooks, static_cast<int>( m_codebooks.size() ) );
+		return Iterator( &m_codebooks, m_codebooks.size() );
 	}
 
 	Codebooks::Enumerator Codebooks::enumerator() const

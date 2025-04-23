@@ -5,7 +5,7 @@
 namespace dnv::vista::sdk
 {
 	MetadataTag::MetadataTag( CodebookName name, const std::string& value, bool isCustom )
-		: m_name( name ), m_value( value ), m_custom( isCustom )
+		: m_name{ name }, m_value{ value }, m_custom{ isCustom }
 	{
 		SPDLOG_INFO( "Created MetadataTag: name={}, value='{}', custom={}",
 			static_cast<int>( name ), value, isCustom );
@@ -106,6 +106,7 @@ namespace dnv::vista::sdk
 			case CodebookName::Detail:
 				prefix = "detail";
 				break;
+			case CodebookName::Unknown:
 			default:
 			{
 				SPDLOG_ERROR( "Unknown metadata tag: {}", static_cast<int>( m_name ) );

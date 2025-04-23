@@ -12,24 +12,23 @@
 
 namespace dnv::vista::sdk
 {
-	std::optional<std::tuple<int, int, std::optional<Location>>> LocationSetsVisitor::Visit(
+	std::optional<std::tuple<size_t, size_t, std::optional<Location>>> LocationSetsVisitor::visit(
 		const GmodNode& node,
-		int i,
+		size_t i,
 		const std::vector<GmodNode>& parents,
 		const GmodNode& target )
 	{
 		SPDLOG_INFO( "LocationSetsVisitor: Visiting node '{}' at index {}", node.code(), i );
 
 		bool isParent = Gmod::isPotentialParent( node.metadata().type() );
-		bool isTargetNode = ( i == static_cast<int>( parents.size() ) );
+		bool isTargetNode = ( i == parents.size() );
 
-		SPDLOG_INFO( "Node '{}': isTargetNode={}, isParent={}, isIndividualizable={}",
-			node.code(), isTargetNode, isParent, node.isIndividualizable( isTargetNode ) );
+		SPDLOG_INFO( "Node '{}': isTargetNode={}, isParent={}, isIndividualizable={}", node.code(), isTargetNode, isParent, node.isIndividualizable( isTargetNode ) );
 
-		if ( currentParentStart == -1 )
+		if ( m_currentParentStart == 0 )
 		{
 			if ( isParent )
-				currentParentStart = i;
+				m_currentParentStart = i;
 			if ( node.isIndividualizable( isTargetNode ) )
 			{
 				SPDLOG_INFO( "Single node is individualizable: [{},{}] with location {}",
@@ -42,28 +41,28 @@ namespace dnv::vista::sdk
 			if ( isParent || isTargetNode )
 			{
 				std::optional<std::tuple<int, int, std::optional<Location>>> nodes = std::nullopt;
-				if ( currentParentStart + 1 == i )
+				if ( m_currentParentStart + 1 == i )
 				{
 					if ( node.isIndividualizable( isTargetNode ) )
 					{
-						nodes = std::make_tuple( currentParentStart, i, node.location() );
+						nodes = std::make_tuple( m_currentParentStart, i, node.location() );
 						SPDLOG_INFO( "Found adjacent individualizable nodes: [{},{}] with location {}",
-							currentParentStart, i, node.location() ? node.location()->toString() : "null" );
+							m_currentParentStart, i, node.location() ? node.location()->toString() : "null" );
 					}
 				}
 				else
 				{
-					int skippedOne = -1;
+					bool skippedOne = false;
 					bool hasComposition = false;
 
-					for ( int j = currentParentStart + 1; j <= i; j++ )
+					for ( size_t j = m_currentParentStart + 1; j <= i; j++ )
 					{
 						const auto& setNode = j < static_cast<int>( parents.size() ) ? parents[j] : target;
 
-						if ( !setNode.isIndividualizable( j == static_cast<int>( parents.size() ), /*isInSet=*/true ) )
+						if ( !setNode.isIndividualizable( j == parents.size(), true ) )
 						{
 							if ( nodes.has_value() )
-								skippedOne = j;
+								skippedOne = true;
 							continue;
 						}
 
@@ -76,11 +75,15 @@ namespace dnv::vista::sdk
 							throw std::runtime_error( "Mapping error: different locations in the same nodeset" );
 						}
 
-						if ( skippedOne != -1 )
+						if ( skippedOne )
+						{
 							throw std::runtime_error( "Can't skip in the middle of individualizable set" );
+						}
 
 						if ( setNode.isFunctionComposition() )
+						{
 							hasComposition = true;
+						}
 
 						auto location = !nodes.has_value() || !std::get<2>( *nodes ).has_value() ? setNode.location() : std::get<2>( *nodes );
 						auto start = nodes.has_value() ? std::get<0>( *nodes ) : j;
@@ -92,13 +95,13 @@ namespace dnv::vista::sdk
 						nodes = std::nullopt;
 				}
 
-				currentParentStart = i;
+				m_currentParentStart = i;
 				if ( nodes.has_value() )
 				{
 					bool hasLeafNode = false;
 					for ( int j = std::get<0>( *nodes ); j <= std::get<1>( *nodes ); j++ )
 					{
-						const auto& setNode = j < static_cast<int>( parents.size() ) ? parents[j] : target;
+						const auto& setNode = j < static_cast<int>( parents.size() ) ? parents[static_cast<size_t>( j )] : target;
 						if ( setNode.isLeafNode() || j == static_cast<int>( parents.size() ) )
 						{
 							hasLeafNode = true;
@@ -113,8 +116,7 @@ namespace dnv::vista::sdk
 
 			if ( isTargetNode && node.isIndividualizable( isTargetNode ) )
 			{
-				SPDLOG_INFO( "Target node forms singleton set: [{},{}] with location {}",
-					i, i, node.location() ? node.location()->toString() : "null" );
+				SPDLOG_INFO( "Target node forms singleton set: [{},{}] with location {}", i, i, node.location() ? node.location()->toString() : "null" );
 				return std::make_tuple( i, i, node.location() );
 			}
 		}
@@ -181,10 +183,10 @@ namespace dnv::vista::sdk
 			}
 
 			LocationSetsVisitor visitor;
-			for ( int i = 0; i < static_cast<int>( m_parents.size() + 1 ); i++ )
+			for ( size_t i = 0; i < m_parents.size() + 1; ++i )
 			{
-				const auto& n = i < static_cast<int>( m_parents.size() ) ? m_parents[i] : m_node;
-				auto _ = visitor.Visit( n, i, m_parents, m_node );
+				const auto& n = i < m_parents.size() ? m_parents[i] : m_node;
+				auto _ = visitor.visit( n, i, m_parents, m_node );
 			}
 		}
 	}
@@ -197,6 +199,36 @@ namespace dnv::vista::sdk
 	bool GmodPath::operator!=( const GmodPath& other ) const
 	{
 		return !equals( other );
+	}
+
+	const std::vector<GmodNode>& GmodPath::parents() const
+	{
+		return m_parents;
+	}
+
+	VisVersion GmodPath::visVersion() const
+	{
+		return m_visVersion;
+	}
+
+	const GmodNode& GmodPath::node() const
+	{
+		return m_node;
+	}
+
+	void GmodPath::setNode( const GmodNode& node )
+	{
+		m_node = node;
+	}
+
+	size_t GmodPath::length() const
+	{
+		return m_parents.size() + 1;
+	}
+
+	bool GmodPath::isMappable() const
+	{
+		return m_node.isMappable();
 	}
 
 	bool GmodPath::equals( const GmodPath& other ) const
@@ -236,40 +268,26 @@ namespace dnv::vista::sdk
 		return hash;
 	}
 
-	const GmodNode& GmodPath::operator[]( int depth ) const
+	const GmodNode& GmodPath::operator[]( size_t depth ) const
 	{
-		if ( depth < 0 )
+		if ( depth > m_parents.size() )
 		{
-			SPDLOG_ERROR( "GmodPath::operator[]: Negative depth {}", depth );
+			SPDLOG_ERROR( "GmodPath::operator[]: Depth {} exceeds path length {}", depth, m_parents.size() + 1 );
 			throw std::out_of_range( "Index out of range for GmodPath indexer" );
 		}
 
-		if ( depth > static_cast<int>( m_parents.size() ) )
-		{
-			SPDLOG_ERROR( "GmodPath::operator[]: Depth {} exceeds path length {}",
-				depth, m_parents.size() + 1 );
-			throw std::out_of_range( "Index out of range for GmodPath indexer" );
-		}
-
-		return depth < static_cast<int>( m_parents.size() ) ? m_parents[depth] : m_node;
+		return depth < m_parents.size() ? m_parents[depth] : m_node;
 	}
 
-	GmodNode& GmodPath::operator[]( int depth )
+	GmodNode& GmodPath::operator[]( size_t depth )
 	{
-		if ( depth < 0 )
+		if ( depth > m_parents.size() )
 		{
-			SPDLOG_ERROR( "GmodPath::operator[]: Negative depth {}", depth );
+			SPDLOG_ERROR( "GmodPath::operator[]: Depth {} exceeds path length {}", depth, m_parents.size() + 1 );
 			throw std::out_of_range( "Index out of range for GmodPath indexer" );
 		}
 
-		if ( depth > static_cast<int>( m_parents.size() ) )
-		{
-			SPDLOG_ERROR( "GmodPath::operator[]: Depth {} exceeds path length {}",
-				depth, m_parents.size() + 1 );
-			throw std::out_of_range( "Index out of range for GmodPath indexer" );
-		}
-
-		return depth < static_cast<int>( m_parents.size() ) ? m_parents[depth] : m_node;
+		return depth < m_parents.size() ? m_parents[depth] : m_node;
 	}
 
 	GmodPath GmodPath::withoutLocations() const
@@ -295,10 +313,10 @@ namespace dnv::vista::sdk
 		std::vector<GmodIndividualizableSet> result;
 
 		LocationSetsVisitor visitor;
-		for ( int i = 0; i < length(); i++ )
+		for ( size_t i{ 0 }; i < length(); i++ )
 		{
 			const auto& node = ( *this )[i];
-			auto set = visitor.Visit( node, i, m_parents, m_node );
+			auto set = visitor.visit( node, i, m_parents, m_node );
 
 			if ( !set.has_value() )
 				continue;
@@ -307,17 +325,19 @@ namespace dnv::vista::sdk
 
 			if ( start == end )
 			{
-				std::vector<int> singleNodeSet = { start };
+				std::vector<size_t> singleNodeSet{ static_cast<size_t>( start ) };
 				GmodPath pathCopy = *this;
 				result.emplace_back( singleNodeSet, pathCopy );
 				SPDLOG_DEBUG( "Added single-node individualizable set at index {}", start );
 				continue;
 			}
 
-			std::vector<int> indices;
-			indices.reserve( end - start + 1 );
-			for ( int j = start; j <= end; j++ )
+			std::vector<size_t> indices;
+			indices.reserve( static_cast<size_t>( end - start + 1 ) );
+			for ( size_t j{ start }; j <= end; j++ )
+			{
 				indices.push_back( j );
+			}
 
 			GmodPath pathCopy = *this;
 			result.emplace_back( indices, pathCopy );
@@ -333,10 +353,10 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Checking if path is individualizable" );
 
 		LocationSetsVisitor visitor;
-		for ( int i = 0; i < length(); i++ )
+		for ( size_t i = 0; i < length(); i++ )
 		{
 			const auto& node = ( *this )[i];
-			auto set = visitor.Visit( node, i, m_parents, m_node );
+			auto set = visitor.visit( node, i, m_parents, m_node );
 
 			if ( set.has_value() )
 			{
@@ -459,7 +479,7 @@ namespace dnv::vista::sdk
 		builder << " (Mappable: " << ( m_node.isMappable() ? "Yes" : "No" ) << ")";
 	}
 
-	std::optional<std::string> GmodPath::normalAssignmentName( int nodeDepth ) const
+	std::optional<std::string> GmodPath::normalAssignmentName( size_t nodeDepth ) const
 	{
 		const GmodNode& node = ( *this )[nodeDepth];
 		auto normalAssignmentNames = node.metadata().normalAssignmentNames();
@@ -467,7 +487,7 @@ namespace dnv::vista::sdk
 		if ( normalAssignmentNames.empty() )
 			return std::nullopt;
 
-		for ( int i = length() - 1; i >= 0; i-- )
+		for ( size_t i = length() - 1; i != 0; --i )
 		{
 			const auto& child = ( *this )[i];
 			auto it = normalAssignmentNames.find( child.code() );
@@ -478,29 +498,31 @@ namespace dnv::vista::sdk
 		return std::nullopt;
 	}
 
-	std::vector<std::pair<int, std::string>> GmodPath::commonNames() const
+	std::vector<std::pair<size_t, std::string>> GmodPath::commonNames() const
 	{
 		SPDLOG_INFO( "Getting all common names in path" );
-		std::vector<std::pair<int, std::string>> results;
+		std::vector<std::pair<size_t, std::string>> results;
 
-		for ( size_t i = 0; i < m_parents.size(); ++i )
+		results.reserve( m_parents.size() + 1 );
+
+		for ( size_t depth{ 0 }; depth < m_parents.size(); ++depth )
 		{
-			const GmodNode& node = m_parents[i];
-			auto commonName = node.metadata().commonName();
+			const GmodNode& node{ m_parents[depth] };
+			auto commonName{ node.metadata().commonName() };
+
 			if ( commonName.has_value() )
 			{
-				SPDLOG_INFO( "Found common name '{}' for parent node at depth {}",
-					commonName.value(), i );
-				results.emplace_back( static_cast<int>( i ), commonName.value() );
+
+				SPDLOG_INFO( "Found common name '{}' for parent node at depth {}", commonName.value(), depth );
+				results.emplace_back( depth, commonName.value() );
 			}
 		}
 
-		auto targetCommonName = m_node.metadata().commonName();
+		auto targetCommonName{ m_node.metadata().commonName() };
 		if ( targetCommonName.has_value() )
 		{
-			int depth = static_cast<int>( m_parents.size() );
-			SPDLOG_INFO( "Found common name '{}' for target node at depth {}",
-				targetCommonName.value(), depth );
+			auto depth{ m_parents.size() };
+			SPDLOG_INFO( "Found common name '{}' for target node at depth {}", targetCommonName.value(), depth );
 			results.emplace_back( depth, targetCommonName.value() );
 		}
 
@@ -512,7 +534,7 @@ namespace dnv::vista::sdk
 		return Enumerator( *this );
 	}
 
-	GmodPath::Enumerator GmodPath::fullPathFrom( int fromDepth ) const
+	GmodPath::Enumerator GmodPath::fullPathFrom( size_t fromDepth ) const
 	{
 		return Enumerator( *this, fromDepth );
 	}
@@ -582,9 +604,9 @@ namespace dnv::vista::sdk
 	{
 	}
 
-	GmodPath::Enumerator::Enumerator( const GmodPath& path, std::optional<int> fromDepth )
+	GmodPath::Enumerator::Enumerator( const GmodPath& path, std::optional<size_t> fromDepth )
 		: m_path( path ),
-		  m_current( -1 ),
+		  m_current( 0 ),
 		  m_depth( fromDepth.value_or( 0 ) - 1 ),
 		  m_fromDepth( fromDepth )
 	{
@@ -620,9 +642,9 @@ namespace dnv::vista::sdk
 		return true;
 	}
 
-	std::pair<int, std::reference_wrapper<const GmodNode>> GmodPath::Enumerator::current() const
+	std::pair<size_t, std::reference_wrapper<const GmodNode>> GmodPath::Enumerator::current() const
 	{
-		if ( m_current < 0 || m_current >= m_path.length() )
+		if ( m_current >= m_path.length() )
 		{
 			SPDLOG_ERROR( "Enumerator::current called with invalid position (m_current={})", m_current );
 			throw std::runtime_error( "Enumerator position is invalid" );
@@ -634,7 +656,7 @@ namespace dnv::vista::sdk
 	void GmodPath::Enumerator::reset()
 	{
 		SPDLOG_INFO( "Resetting enumerator" );
-		m_current = -1;
+		m_current = 0;
 		m_depth = m_fromDepth.value_or( 0 ) - 1;
 	}
 
@@ -707,7 +729,7 @@ namespace dnv::vista::sdk
 		return *m_cachedValue;
 	}
 
-	GmodIndividualizableSet::GmodIndividualizableSet( const std::vector<int>& nodes, GmodPath& path )
+	GmodIndividualizableSet::GmodIndividualizableSet( const std::vector<size_t>& nodes, GmodPath& path )
 		: m_nodes( nodes ), m_path( &path )
 	{
 		SPDLOG_INFO( "Creating individualizable set with {} nodes", nodes.size() );
@@ -718,12 +740,8 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "GmodIndividualizableSet cant be empty" );
 		}
 
-		for ( int nodeIndex : nodes )
+		for ( size_t nodeIndex : nodes )
 		{
-			if ( nodeIndex < 0 || nodeIndex >= path.length() )
-			{
-				throw std::invalid_argument( "Invalid node index: " + std::to_string( nodeIndex ) );
-			}
 
 			const auto& node = path[nodeIndex];
 			bool isTarget = ( nodeIndex == path.length() - 1 );
@@ -731,15 +749,14 @@ namespace dnv::vista::sdk
 
 			if ( !node.isIndividualizable( isTarget, isInSet ) )
 			{
-				throw std::invalid_argument( "Node at index " + std::to_string( nodeIndex ) +
-											 " is not individualizable" );
+				throw std::invalid_argument( "Node at index " + std::to_string( nodeIndex ) + " is not individualizable" );
 			}
 		}
 
 		std::optional<Location> firstLocation;
 		bool hasSetLocation = false;
 
-		for ( int nodeIndex : nodes )
+		for ( size_t nodeIndex : nodes )
 		{
 			const auto& nodeLoc = path[nodeIndex].location();
 
@@ -755,7 +772,7 @@ namespace dnv::vista::sdk
 		}
 
 		bool hasLeafOrTarget = false;
-		for ( int nodeIndex : nodes )
+		for ( size_t nodeIndex : nodes )
 		{
 			const auto& node = path[nodeIndex];
 			if ( node.isLeafNode() || nodeIndex == path.length() - 1 )
@@ -778,7 +795,7 @@ namespace dnv::vista::sdk
 		std::vector<GmodNode> result;
 		result.reserve( m_nodes.size() );
 
-		for ( int index : m_nodes )
+		for ( size_t index : m_nodes )
 		{
 			try
 			{
@@ -795,7 +812,7 @@ namespace dnv::vista::sdk
 		return result;
 	}
 
-	const std::vector<int>& GmodIndividualizableSet::nodeIndices() const
+	const std::vector<size_t>& GmodIndividualizableSet::nodeIndices() const
 	{
 		return m_nodes;
 	}
@@ -825,7 +842,7 @@ namespace dnv::vista::sdk
 			throw std::runtime_error( "Tried to modify individualizable set after it was built" );
 		}
 
-		for ( int index : m_nodes )
+		for ( size_t index : m_nodes )
 		{
 			try
 			{
@@ -834,8 +851,7 @@ namespace dnv::vista::sdk
 				else
 					( *m_path )[index] = ( *m_path )[index].withoutLocation();
 
-				SPDLOG_INFO( "Set location for node '{}' at index {}",
-					( *m_path )[index].code(), index );
+				SPDLOG_INFO( "Set location for node '{}' at index {}", ( *m_path )[index].code(), index );
 			}
 			catch ( const std::exception& e )
 			{
@@ -865,9 +881,9 @@ namespace dnv::vista::sdk
 		std::stringstream ss;
 
 		bool first = true;
-		for ( int i = 0; i < m_nodes.size(); ++i )
+		for ( size_t i = 0; i < m_nodes.size(); ++i )
 		{
-			int idx = m_nodes[i];
+			auto idx = m_nodes[i];
 			if ( ( *m_path )[idx].isLeafNode() || i == m_nodes.size() - 1 )
 			{
 				if ( !first )
