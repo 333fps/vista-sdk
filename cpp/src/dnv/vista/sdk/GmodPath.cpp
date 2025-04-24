@@ -40,7 +40,7 @@ namespace dnv::vista::sdk
 		{
 			if ( isParent || isTargetNode )
 			{
-				std::optional<std::tuple<int, int, std::optional<Location>>> nodes = std::nullopt;
+				std::optional<std::tuple<size_t, size_t, std::optional<Location>>> nodes = std::nullopt;
 				if ( m_currentParentStart + 1 == i )
 				{
 					if ( node.isIndividualizable( isTargetNode ) )
@@ -512,7 +512,6 @@ namespace dnv::vista::sdk
 
 			if ( commonName.has_value() )
 			{
-
 				SPDLOG_INFO( "Found common name '{}' for parent node at depth {}", commonName.value(), depth );
 				results.emplace_back( depth, commonName.value() );
 			}
@@ -742,7 +741,6 @@ namespace dnv::vista::sdk
 
 		for ( size_t nodeIndex : nodes )
 		{
-
 			const auto& node = path[nodeIndex];
 			bool isTarget = ( nodeIndex == path.length() - 1 );
 			bool isInSet = nodes.size() > 1;

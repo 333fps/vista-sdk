@@ -65,7 +65,6 @@ namespace dnv::vista::sdk
 			return;
 		}
 
-		// Calculate appropriate table size (power of 2, at least 2x items size)
 		uint64_t size{ 1 };
 		while ( size < items.size() )
 		{
@@ -75,7 +74,6 @@ namespace dnv::vista::sdk
 
 		SPDLOG_INFO( "Building CHD dictionary with {} items, table size {}", items.size(), size );
 
-		// Group items into buckets based on primary hash
 		auto hashBuckets{ std::vector<std::vector<std::pair<unsigned, uint32_t>>>( size ) };
 		for ( size_t i{ 0 }; i < items.size(); i++ )
 		{
@@ -85,7 +83,6 @@ namespace dnv::vista::sdk
 			hashBuckets[index].push_back( { static_cast<int>( i + 1 ), hashValue } );
 		}
 
-		// Sort buckets by size (largest first) for more efficient seed selection
 		std::sort( hashBuckets.begin(), hashBuckets.end(), []( const auto& a, const auto& b ) {
 			return a.size() > b.size();
 		} );
@@ -93,7 +90,6 @@ namespace dnv::vista::sdk
 		auto indices{ std::vector<unsigned int>( size, 0 ) };
 		auto seeds{ std::vector<int>( size, 0 ) };
 
-		// First pass: handle buckets with collisions by finding perfect seeds
 		size_t index{ 0 };
 		for ( ; index < hashBuckets.size() && hashBuckets[index].size() > 1; ++index )
 		{
@@ -101,7 +97,6 @@ namespace dnv::vista::sdk
 			auto entries{ std::unordered_map<uint32_t, unsigned>() };
 			uint32_t seed{ 0 };
 
-			// Find a seed that gives unique positions for all items in this bucket
 			while ( true )
 			{
 				++seed;
@@ -132,7 +127,6 @@ namespace dnv::vista::sdk
 				}
 			}
 
-			// Record placements and seed
 			for ( const auto& entry : entries )
 			{
 				indices[entry.first] = entry.second;
@@ -141,14 +135,13 @@ namespace dnv::vista::sdk
 		}
 
 		m_table.resize( size );
-		std::vector<int> free{};
+		std::vector<size_t> free{};
 
-		// Second pass: process colliding items and identify free slots
 		for ( size_t i{ 0 }; i < indices.size(); ++i )
 		{
 			if ( indices[i] == 0 )
 			{
-				free.push_back( static_cast<int>( i ) );
+				free.push_back( i );
 			}
 			else
 			{
@@ -157,8 +150,7 @@ namespace dnv::vista::sdk
 			}
 		}
 
-		// Third pass: handle single-item buckets using free slots
-		int freeIndex{ 0 };
+		size_t freeIndex{ 0 };
 		for ( size_t i{ 0 }; index < hashBuckets.size() && hashBuckets[index].size() > 0; i++, index++ )
 		{
 			const auto& k{ hashBuckets[index][0] };
@@ -166,7 +158,7 @@ namespace dnv::vista::sdk
 			{
 				auto slotIndex{ free[freeIndex++] };
 				m_table[slotIndex] = items[k.first - 1];
-				seeds[k.second & ( size - 1 )] = -( slotIndex + 1 );
+				seeds[k.second & ( size - 1 )] = -static_cast<int>( slotIndex + 1 );
 			}
 		}
 
@@ -293,27 +285,22 @@ namespace dnv::vista::sdk
 
 		SPDLOG_TRACE( "Key: '{}', Hash: {}, Index: {}, Seed: {}", key, hashValue, index, seed );
 
-		// Resolve final position based on seed value
 		const std::pair<std::string, TValue>* kvp{ nullptr };
 		if ( seed < 0 )
 		{
-			// Direct lookup (singleton bucket)
-			kvp = &m_table[0 - seed - 1];
+			kvp = &m_table[static_cast<size_t>( -seed - 1 )];
 		}
 		else
 		{
-			// Use second-level hash with seed
 			index = internal::Hashing::seed( static_cast<uint32_t>( seed ), hashValue, size );
 			kvp = &m_table[index];
 		}
 
-		// Verify key match
 		if ( !stringsEqual( key, kvp->first ) )
 		{
 			return false;
 		}
 
-		// Return value if found
 		if ( value )
 		{
 			*value = kvp->second;
@@ -333,7 +320,7 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	template <typename TValue>
-	ChdDictionary<TValue>::Iterator::Iterator( const std::vector<std::pair<std::string, TValue>>* table, int index )
+	ChdDictionary<TValue>::Iterator::Iterator( const std::vector<std::pair<std::string, TValue>>* table, size_t index )
 		: m_table{ table }, m_index{ index }
 	{
 		if ( m_table != nullptr && index == 0 )
@@ -387,7 +374,7 @@ namespace dnv::vista::sdk
 			}
 		}
 
-		m_index = static_cast<int>( m_table->size() );
+		m_index = m_table->size();
 
 		return *this;
 	}
@@ -416,7 +403,7 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	void ChdDictionary<TValue>::Iterator::reset()
 	{
-		m_index = -1;
+		m_index = std::numeric_limits<size_t>::max();
 	}
 
 	//-------------------------------------------------------------------
@@ -433,7 +420,7 @@ namespace dnv::vista::sdk
 			if ( !m_table[i].first.empty() )
 			{
 				SPDLOG_TRACE( "Found first valid entry at {}: key={}", i, m_table[i].first );
-				return Iterator{ &m_table, static_cast<int>( i ) };
+				return Iterator{ &m_table, i };
 			}
 		}
 
@@ -443,7 +430,7 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	typename ChdDictionary<TValue>::Iterator ChdDictionary<TValue>::end() const
 	{
-		return Iterator{ &m_table, static_cast<int>( m_table.size() ) };
+		return Iterator{ &m_table, m_table.size() };
 	}
 
 	template <typename TValue>

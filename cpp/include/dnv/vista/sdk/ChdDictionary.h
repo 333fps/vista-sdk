@@ -158,7 +158,7 @@ namespace dnv::vista::sdk
 			 * @param table The dictionary table to iterate
 			 * @param index The starting index position
 			 */
-			explicit Iterator( const std::vector<std::pair<std::string, TValue>>* table, int index );
+			explicit Iterator( const std::vector<std::pair<std::string, TValue>>* table, size_t index );
 
 			/** @brief Dereference operator */
 			reference operator*() const;
@@ -185,10 +185,10 @@ namespace dnv::vista::sdk
 
 		private:
 			/** @brief Reference to dictionary table */
-			const std::vector<std::pair<std::string, TValue>>* m_table = nullptr;
+			const std::vector<std::pair<std::string, TValue>>* m_table;
 
 			/** @brief Current position in table */
-			int m_index = 0;
+			size_t m_index;
 
 			/** @brief Current key-value pair */
 			mutable std::pair<std::string, TValue> m_current;
@@ -327,7 +327,7 @@ namespace dnv::vista::sdk
 		std::vector<int> m_seeds;
 
 		/** @brief Flag indicating if dictionary is empty */
-		bool m_empty{ true };
+		bool m_empty;
 
 		/** @brief Thread-local hash cache to improve performance on repeated lookups */
 		static thread_local inline std::array<std::pair<std::string, uint32_t>, 128> s_hashCache;
