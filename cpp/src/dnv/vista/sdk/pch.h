@@ -34,9 +34,9 @@
 #include <vector>
 
 /* Libs */
+#include <spdlog/spdlog.h>
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 #include <rapidjson/error/en.h>
 #include <zlib.h>
-#include <spdlog/spdlog.h>
 #include <libcpuid/libcpuid.h>

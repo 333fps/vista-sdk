@@ -30,9 +30,9 @@
 #include <vector>
 
 /* Libs */
+#include <spdlog/spdlog.h>
 #include <gtest/gtest.h>
 #include "gmock/gmock.h"
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 #include <zlib.h>
-#include <spdlog/spdlog.h>

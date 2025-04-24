@@ -99,7 +99,7 @@ namespace dnv::vista::sdk
 				if ( nodes.has_value() )
 				{
 					bool hasLeafNode = false;
-					for ( int j = std::get<0>( *nodes ); j <= std::get<1>( *nodes ); j++ )
+					for ( size_t j = std::get<0>( *nodes ); j <= std::get<1>( *nodes ); j++ )
 					{
 						const auto& setNode = j < static_cast<int>( parents.size() ) ? parents[static_cast<size_t>( j )] : target;
 						if ( setNode.isLeafNode() || j == static_cast<int>( parents.size() ) )

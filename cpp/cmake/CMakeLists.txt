@@ -82,7 +82,7 @@ target_include_directories(${PROJECT_NAME}
 )
 
 find_package(spdlog CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
 
 find_package(RapidJSON CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE RapidJSON rapidjson)
