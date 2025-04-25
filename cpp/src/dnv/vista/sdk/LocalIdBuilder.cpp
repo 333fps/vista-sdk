@@ -1094,16 +1094,264 @@ namespace dnv::vista::sdk
 				}
 
 				case LocalIdParsingState::SecondaryItem:
-				case LocalIdParsingState::ItemDescription:
-				case LocalIdParsingState::MetaQuantity:
-				case LocalIdParsingState::MetaContent:
-				case LocalIdParsingState::MetaCalculation:
-				case LocalIdParsingState::MetaState:
-				case LocalIdParsingState::MetaCommand:
-				case LocalIdParsingState::MetaType:
-				case LocalIdParsingState::MetaPosition:
-				case LocalIdParsingState::MetaDetail:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					size_t dashIndex = segment.find( '-' );
+					std::string_view code = ( dashIndex == std::string_view::npos ) ? segment : segment.substr( 0, dashIndex );
+
+					if ( !gmod )
+						return false;
+
+					if ( secondaryItemStart == static_cast<size_t>( -1 ) )
+					{
+						GmodNode tempNode;
+						if ( !gmod->tryGetNode( std::string( code ), tempNode ) )
+						{
+							SPDLOG_WARN( "Invalid start GmodNode in Secondary item: {}", code );
+							addError( errorBuilder, state,
+								"Invalid start GmodNode in Secondary item: " + std::string( code ) );
+						}
+
+						secondaryItemStart = i;
+						advanceParser( i, segment );
+					}
+					else
+					{
+						bool isMetaPrefix = segment == "meta";
+						bool isTildePrefix = !segment.empty() && segment[0] == '~';
+
+						LocalIdParsingState nextState = state;
+
+						if ( isMetaPrefix )
+							nextState = LocalIdParsingState::MetaQuantity;
+						else if ( isTildePrefix )
+							nextState = LocalIdParsingState::ItemDescription;
+
+						if ( nextState != state )
+						{
+							std::string_view pathView = localIdView.substr( secondaryItemStart,
+								i - 1 - secondaryItemStart );
+							std::string path( pathView );
+
+							if ( !gmod->tryParsePath( path, secondaryItem ) )
+							{
+								SPDLOG_WARN( "Invalid GmodPath in Secondary item: {}", path );
+								addError( errorBuilder, state,
+									"Invalid GmodPath in Secondary item: " + path );
+								invalidSecondaryItem = true;
+
+								auto [_, endOfNextStateIndex] = nextStateIndexes( localIdStr, state );
+								i = endOfNextStateIndex;
+								advanceParser( state, nextState );
+								break;
+							}
+
+							if ( isTildePrefix )
+								advanceParser( state, nextState );
+							else
+								advanceParser( i, segment, state, nextState );
+							break;
+						}
+
+						GmodNode tempNode;
+						if ( !gmod->tryGetNode( std::string( code ), tempNode ) )
+						{
+							SPDLOG_WARN( "Invalid GmodNode in Secondary item: {}", code );
+							addError( errorBuilder, state, "Invalid GmodNode in Secondary item: " + std::string( code ) );
+
+							auto [nextStateIndex, endOfNextStateIndex] = nextStateIndexes( localIdStr, state );
+
+							if ( nextStateIndex == static_cast<size_t>( -1 ) )
+							{
+								SPDLOG_ERROR( "Invalid or missing '/meta' prefix after Secondary item" );
+								addError( errorBuilder, state,
+									"Invalid or missing '/meta' prefix after Secondary item" );
+								return false;
+							}
+
+							std::string_view nextSegmentView{ localIdView.substr( nextStateIndex + 1 ) };
+							std::string nextSegment{};
+
+							if ( !nextSegmentView.empty() )
+							{
+								size_t nextSegmentSlash{ nextSegmentView.find( '/' ) };
+								if ( nextSegmentSlash != std::string_view::npos )
+									nextSegment = std::string( nextSegmentView.substr( 0, nextSegmentSlash ) );
+								else
+									nextSegment = std::string( nextSegmentView );
+							}
+
+							bool nextIsMetaPrefix{ nextSegment.length() >= 4 &&
+												   nextSegment.substr( 0, 4 ) == "meta" };
+							bool nextIsTildePrefix{ !nextSegment.empty() && nextSegment[0] == '~' };
+
+							if ( nextIsMetaPrefix )
+								nextState = LocalIdParsingState::MetaQuantity;
+							else if ( nextIsTildePrefix )
+								nextState = LocalIdParsingState::ItemDescription;
+
+							std::string_view invalidPathView{ localIdView.substr( i, nextStateIndex - i ) };
+							std::string invalidSecondaryItemPath{ invalidPathView };
+
+							addError( errorBuilder, state, "Invalid GmodPath: Last part in Secondary item: " + invalidSecondaryItemPath );
+
+							invalidSecondaryItem = true;
+							i = endOfNextStateIndex;
+							advanceParser( state, nextState );
+							break;
+						}
+
+						advanceParser( i, segment );
+					}
 					break;
+				}
+				case LocalIdParsingState::ItemDescription:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					verbose = true;
+
+					size_t metaIndex = localIdView.find( "/meta", i - 1 );
+					if ( metaIndex == std::string_view::npos )
+					{
+						SPDLOG_ERROR( "Missing required '/meta' marker after item description" );
+						addError( errorBuilder, state, predefinedMessage ? predefinedMessage : "Invalid item description: missing required '/meta' marker" );
+						return false;
+					}
+
+					segment = localIdView.substr( i - 1, ( metaIndex + 5 ) - ( i - 1 ) );
+
+					i += segment.length();
+					state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+					break;
+				}
+				case LocalIdParsingState::MetaQuantity:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					if ( !parseMetaTag( CodebookName::Quantity, state, i, segment, qty, codebooks, errorBuilder ) )
+					{
+						return false;
+					}
+					break;
+				}
+
+				case LocalIdParsingState::MetaContent:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					if ( !parseMetaTag( CodebookName::Content, state, i, segment, cnt, codebooks, errorBuilder ) )
+					{
+						return false;
+					}
+					break;
+				}
+				case LocalIdParsingState::MetaCalculation:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					if ( !parseMetaTag( CodebookName::Calculation, state, i, segment, calc, codebooks, errorBuilder ) )
+					{
+						return false;
+					}
+					break;
+				}
+
+				case LocalIdParsingState::MetaState:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					if ( !parseMetaTag( CodebookName::State, state, i, segment, stateTag, codebooks, errorBuilder ) )
+					{
+						return false;
+					}
+					break;
+				}
+
+				case LocalIdParsingState::MetaCommand:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					if ( !parseMetaTag( CodebookName::Command, state, i, segment, cmd, codebooks, errorBuilder ) )
+					{
+						return false;
+					}
+					break;
+				}
+
+				case LocalIdParsingState::MetaType:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					if ( !parseMetaTag( CodebookName::Type, state, i, segment, type, codebooks, errorBuilder ) )
+					{
+						return false;
+					}
+					break;
+				}
+
+				case LocalIdParsingState::MetaPosition:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					if ( !parseMetaTag( CodebookName::Position, state, i, segment, pos, codebooks, errorBuilder ) )
+					{
+						return false;
+					}
+					break;
+				}
+
+				case LocalIdParsingState::MetaDetail:
+				{
+					if ( segment.empty() )
+					{
+						state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
+						break;
+					}
+
+					if ( !parseMetaTag( CodebookName::Detail, state, i, segment, detail, codebooks, errorBuilder ) )
+					{
+						return false;
+					}
+					break;
+				}
 				case LocalIdParsingState::EmptyState:
 				case LocalIdParsingState::Formatting:
 				case LocalIdParsingState::Completeness:

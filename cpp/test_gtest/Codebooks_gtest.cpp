@@ -24,10 +24,10 @@ namespace dnv::vista::sdk::tests
 		const auto& positionCodebook = codebooks.codebook( CodebookName::Position );
 
 		SPDLOG_INFO( "Position codebook standard values count: {}", positionCodebook.standardValues().count() );
-		for ( auto& val : positionCodebook.standardValues() )
-		{
-			// SPDLOG_INFO( "Standard value: {}", val );
-		}
+		// for ( auto& val : positionCodebook.standardValues() )
+		//{
+		//  SPDLOG_INFO( "Standard value: {}", val );
+		//}
 
 		ASSERT_GT( positionCodebook.standardValues().count(), 0 );
 	}

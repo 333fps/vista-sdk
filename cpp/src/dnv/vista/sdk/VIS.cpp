@@ -245,8 +245,7 @@ namespace dnv::vista::sdk
 		return VisVersionExtensions::allVersions();
 	}
 
-	std::optional<GmodNode> VIS::convertNode( const GmodNode& sourceNode, VisVersion targetVersion,
-		const GmodNode* sourceParent )
+	std::optional<GmodNode> VIS::convertNode( const GmodNode& sourceNode, VisVersion targetVersion, [[maybe_unused]] const GmodNode* sourceParent )
 	{
 		return convertNode( sourceNode.visVersion(), sourceNode, targetVersion );
 	}

@@ -94,8 +94,7 @@ namespace dnv::vista::sdk
 		return node;
 	}
 
-	std::optional<GmodPath> GmodVersioning::convertPath(
-		VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const
+	std::optional<GmodPath> GmodVersioning::convertPath( VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const
 	{
 		SPDLOG_INFO( "Converting path with end node {} from version {} to {}",
 			sourcePath.node().code(),
@@ -106,12 +105,17 @@ namespace dnv::vista::sdk
 
 		auto targetEndNode = convertNode( sourceVersion, sourcePath.node(), targetVersion );
 		if ( !targetEndNode.has_value() )
+		{
+			SPDLOG_ERROR( "Failed to convert end node: {}", sourcePath.node().code() );
 			return std::nullopt;
+		}
 
 		if ( targetEndNode->isRoot() )
+		{
+			SPDLOG_INFO( "End node is a root node, returning simple path" );
 			return GmodPath( {}, *targetEndNode, true );
+		}
 
-		const auto& sourceGmod = VIS::instance().gmod( sourceVersion );
 		const auto& targetGmod = VIS::instance().gmod( targetVersion );
 
 		std::vector<std::pair<GmodNode, GmodNode>> qualifyingNodes;
@@ -119,7 +123,10 @@ namespace dnv::vista::sdk
 		{
 			auto convertedNode = convertNode( sourceVersion, pathNode.second, targetVersion );
 			if ( !convertedNode.has_value() )
+			{
+				// SPDLOG_ERROR( "Failed to convert path node: {}", pathNode.second.code() );
 				return std::nullopt;
+			}
 
 			qualifyingNodes.emplace_back( pathNode.second, *convertedNode );
 		}
@@ -141,25 +148,71 @@ namespace dnv::vista::sdk
 		}
 
 		if ( GmodPath::isValid( potentialParents, *targetEndNode ) )
+		{
+			SPDLOG_INFO( "Found valid direct path" );
 			return GmodPath( potentialParents, *targetEndNode, true );
+		}
 
-		auto addToPath = []( std::vector<GmodNode>& path, const GmodNode& node ) {
-			// TODO rework this
+		auto addToPath = []( const Gmod& targetGmod, std::vector<GmodNode>& path, const GmodNode& node ) -> bool {
 			if ( !path.empty() )
 			{
 				const GmodNode& prev = path.back();
 				if ( !prev.isChild( node ) )
 				{
-					for ( const auto* parent : node.parents() )
+					for ( int j = static_cast<int>( path.size() ) - 1; j >= 0; --j )
 					{
-						if ( parent->code() == prev.code() )
+						const GmodNode& parent = path[static_cast<size_t>( j )];
+						std::vector<GmodNode> currentParents( path.begin(), path.begin() + ( j + 1 ) );
+
+						std::vector<GmodNode> remaining;
+						if ( !targetGmod.pathExistsBetween( currentParents, node, remaining ) )
 						{
-							return true;
+							bool hasOtherAssetFunction = false;
+							for ( const auto& n : currentParents )
+							{
+								if ( n.isAssetFunctionNode() && n.code() != parent.code() )
+								{
+									hasOtherAssetFunction = true;
+									break;
+								}
+							}
+
+							if ( !hasOtherAssetFunction )
+							{
+								throw std::runtime_error( "Tried to remove last asset function node" );
+							}
+
+							path.erase( path.begin() + j );
+						}
+						else
+						{
+							std::vector<GmodNode> nodes;
+							if ( node.location().has_value() )
+							{
+								for ( const auto& n : remaining )
+								{
+									if ( !n.isIndividualizable( false, true ) )
+									{
+										nodes.push_back( n );
+									}
+									else
+									{
+										nodes.push_back( n.withLocation( node.location().value() ) );
+									}
+								}
+							}
+							else
+							{
+								nodes.insert( nodes.end(), remaining.begin(), remaining.end() );
+							}
+
+							path.insert( path.end(), nodes.begin(), nodes.end() );
+							break;
 						}
 					}
-					return false;
 				}
 			}
+
 			path.push_back( node );
 			return true;
 		};
@@ -210,14 +263,14 @@ namespace dnv::vista::sdk
 			if ( codeChanged )
 			{
 				SPDLOG_INFO( "Code changed from {} to {}", sourceNode.code(), targetNode.code() );
-				if ( !addToPath( path, targetNode ) )
+				if ( !addToPath( targetGmod, path, targetNode ) )
 				{
 					SPDLOG_ERROR( "Failed to add node to path: parent-child relationship broken" );
 					throw std::runtime_error( "Failed to add node to path: parent-child relationship broken" );
 				}
 			}
 			else if ( normalAssignmentChanged )
-			{ // AC || AN || AD
+			{
 				SPDLOG_INFO( "Normal assignment changed for node {}", targetNode.code() );
 
 				if ( !codeChanged && !path.empty() && path.back().code() == targetNode.code() )
@@ -225,7 +278,7 @@ namespace dnv::vista::sdk
 					continue;
 				}
 
-				if ( wasDeleted ) // TODO: Work in progress
+				if ( wasDeleted )
 				{
 					if ( targetNode.code() == targetEndNode->code() )
 					{
@@ -240,7 +293,7 @@ namespace dnv::vista::sdk
 						}
 						if ( !skipNode )
 						{
-							if ( !addToPath( path, targetNode ) )
+							if ( !addToPath( targetGmod, path, targetNode ) )
 							{
 								SPDLOG_ERROR( "Failed to add node to path: parent-child relationship broken" );
 								throw std::runtime_error( "Failed to add node to path: parent-child relationship broken" );
@@ -250,7 +303,7 @@ namespace dnv::vista::sdk
 				}
 				else if ( targetNode.code() != targetEndNode->code() )
 				{
-					if ( !addToPath( path, targetNode ) )
+					if ( !addToPath( targetGmod, path, targetNode ) )
 					{
 						SPDLOG_ERROR( "Failed to add node to path: parent-child relationship broken" );
 						throw std::runtime_error( "Failed to add node to path: parent-child relationship broken" );
@@ -258,7 +311,7 @@ namespace dnv::vista::sdk
 				}
 			}
 			else if ( selectionChanged )
-			{ // TODO SC || SN || SD // Work in progress
+			{
 				SPDLOG_INFO( "Selection changed for node {}", targetNode.code() );
 
 				if ( !codeChanged && !path.empty() && path.back().code() == targetNode.code() )
@@ -268,7 +321,7 @@ namespace dnv::vista::sdk
 
 				if ( targetNode.code() == targetEndNode->code() )
 				{
-					if ( !addToPath( path, targetNode ) )
+					if ( !addToPath( targetGmod, path, targetNode ) )
 					{
 						SPDLOG_ERROR( "Failed to add node to path: parent-child relationship broken" );
 						throw std::runtime_error( "Failed to add node to path: parent-child relationship broken" );
@@ -276,7 +329,7 @@ namespace dnv::vista::sdk
 				}
 				else if ( !path.empty() && path.back().isChild( targetNode ) )
 				{
-					if ( !addToPath( path, targetNode ) )
+					if ( !addToPath( targetGmod, path, targetNode ) )
 					{
 						SPDLOG_ERROR( "Failed to add node to path: parent-child relationship broken" );
 						throw std::runtime_error( "Failed to add node to path: parent-child relationship broken" );
@@ -286,7 +339,7 @@ namespace dnv::vista::sdk
 			else if ( !codeChanged && !normalAssignmentChanged )
 			{
 				SPDLOG_INFO( "No changes for node {}, adding to path", targetNode.code() );
-				if ( !addToPath( path, targetNode ) )
+				if ( !addToPath( targetGmod, path, targetNode ) )
 				{
 					SPDLOG_ERROR( "Failed to add node to path: parent-child relationship broken" );
 					throw std::runtime_error( "Failed to add node to path: parent-child relationship broken" );

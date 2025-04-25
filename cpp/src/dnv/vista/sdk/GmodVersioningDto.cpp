@@ -146,6 +146,12 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Parsing GMOD versioning data from JSON" );
 		GmodVersioningDto dto;
 
+		if ( !json.IsObject() )
+		{
+			SPDLOG_ERROR( "JSON value is not an object" );
+			throw std::runtime_error( "Invalid JSON: expected an object" );
+		}
+
 		if ( json.HasMember( "visRelease" ) && json["visRelease"].IsString() )
 		{
 			dto.visVersion = json["visRelease"].GetString();

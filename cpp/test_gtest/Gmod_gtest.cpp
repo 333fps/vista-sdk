@@ -63,18 +63,18 @@ namespace dnv::vista::sdk::tests
 		auto visVersion = GetParam();
 		auto [vis, gmod] = GetVisAndGmod( visVersion );
 
-		auto it = ExpectedMaxes.find( visVersion );
-		ASSERT_NE( it, ExpectedMaxes.end() );
-		std::string expectedMaxCode = it->second.MaxCode;
+		auto expectedIt = ExpectedMaxes.find( visVersion );
+		ASSERT_NE( expectedIt, ExpectedMaxes.end() );
+		std::string expectedMaxCode = expectedIt->second.MaxCode;
 
 		const GmodNode* minLength = nullptr;
 		const GmodNode* maxLength = nullptr;
 		const GmodNode* expectedMax = nullptr;
 
 		int nodeCount = 0;
-		for ( auto it = gmod.begin(); it != gmod.end(); ++it )
+		for ( auto nodeIt = gmod.begin(); nodeIt != gmod.end(); ++nodeIt )
 		{
-			const auto& node = *it;
+			const auto& node = *nodeIt;
 			nodeCount++;
 
 			if ( !node.code().empty() )
@@ -112,7 +112,7 @@ namespace dnv::vista::sdk::tests
 		EXPECT_EQ( maxLength->code().length(), 10 );
 		EXPECT_EQ( maxLength->code(), expectedMaxCode );
 
-		EXPECT_EQ( nodeCount, it->second.NodeCount );
+		EXPECT_EQ( nodeCount, expectedIt->second.NodeCount );
 	}
 
 	TEST_P( GmodTests, Test_Gmod_Lookup )
@@ -373,7 +373,7 @@ namespace dnv::vista::sdk::tests
 		TraversalState state( 5 );
 
 		bool completed = gmod.traverse(
-			[&state]( const std::vector<GmodNode>& parents, const GmodNode& node ) {
+			[&state]( const std::vector<GmodNode>& parents, [[maybe_unused]] const GmodNode& node ) {
 				EXPECT_TRUE( parents.empty() || parents[0].isRoot() );
 				if ( ++state.NodeCount == state.StopAfter )
 					return Gmod::TraversalHandlerResult::Stop;

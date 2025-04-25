@@ -133,12 +133,11 @@ namespace dnv::vista::sdk
 	}
 
 	GmodPath::GmodPath( std::vector<GmodNode> parents, GmodNode node, bool skipVerify )
-		: m_parents( std::move( parents ) ),
-		  m_node( std::move( node ) ),
-		  m_visVersion( node.visVersion() )
+		: m_visVersion{ node.visVersion() },
+		  m_node{ std::move( node ) },
+		  m_parents{ std::move( parents ) }
 	{
-		SPDLOG_INFO( "Creating GmodPath with {} parent nodes, target node '{}' (skipVerify={})",
-			m_parents.size(), m_node.code(), skipVerify );
+		SPDLOG_INFO( "Creating GmodPath with {} parent nodes, target node '{}' (skipVerify={})", m_parents.size(), m_node.code(), skipVerify );
 
 		if ( !skipVerify )
 		{
@@ -605,7 +604,7 @@ namespace dnv::vista::sdk
 
 	GmodPath::Enumerator::Enumerator( const GmodPath& path, std::optional<size_t> fromDepth )
 		: m_path( path ),
-		  m_current( 0 ),
+		  m_current{ std::numeric_limits<size_t>::max() },
 		  m_depth( fromDepth.value_or( 0 ) - 1 ),
 		  m_fromDepth( fromDepth )
 	{
@@ -615,7 +614,7 @@ namespace dnv::vista::sdk
 
 	bool GmodPath::Enumerator::next()
 	{
-		if ( m_current == -1 )
+		if ( m_current == std::numeric_limits<size_t>::max() )
 		{
 			m_current = 0;
 			m_depth = m_fromDepth.value_or( 0 );
@@ -655,7 +654,7 @@ namespace dnv::vista::sdk
 	void GmodPath::Enumerator::reset()
 	{
 		SPDLOG_INFO( "Resetting enumerator" );
-		m_current = 0;
+		m_current = std::numeric_limits<size_t>::max();
 		m_depth = m_fromDepth.value_or( 0 ) - 1;
 	}
 

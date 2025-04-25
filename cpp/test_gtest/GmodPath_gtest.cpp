@@ -38,11 +38,10 @@ TEST_F( GmodPathTest, LambdaStateCapture )
 {
 	const auto& gmod = vis->gmod( VisVersion::v3_4a );
 	auto locations = vis->locations( VisVersion::v3_4a );
-	const GmodNode& rootNode = gmod.rootNode();
 
 	struct TraversalTest
 	{
-		static bool test( const Gmod& gmod, const GmodNode& startNode )
+		static bool test( const Gmod& gmod )
 		{
 			struct TraversalState
 			{
@@ -53,9 +52,7 @@ TEST_F( GmodPathTest, LambdaStateCapture )
 
 			TraversalState initialState;
 
-			auto handler = [state = initialState]( TraversalState& stateRef,
-							   const std::vector<GmodNode>& parents,
-							   const GmodNode& node ) mutable -> Gmod::TraversalHandlerResult {
+			auto handler = [state = initialState]( TraversalState& stateRef, [[maybe_unused]] const std::vector<GmodNode>& parents, const GmodNode& node ) mutable -> Gmod::TraversalHandlerResult {
 				state.visitCount++;
 				state.visitedNodes.push_back( node.code() );
 
@@ -74,7 +71,7 @@ TEST_F( GmodPathTest, LambdaStateCapture )
 		}
 	};
 
-	EXPECT_TRUE( TraversalTest::test( gmod, rootNode ) );
+	EXPECT_TRUE( TraversalTest::test( gmod ) );
 }
 
 TEST_F( GmodPathTest, SystemComponentRelationship )
@@ -204,9 +201,7 @@ TEST_F( GmodPathTest, TraverseMethodDebug )
 
 	TraversalDebugState state;
 
-	auto handler = []( TraversalDebugState& state,
-					   const std::vector<GmodNode>& parents,
-					   const GmodNode& node ) -> Gmod::TraversalHandlerResult {
+	auto handler = []( TraversalDebugState& state, [[maybe_unused]] const std::vector<GmodNode>& parents, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
 		state.visitedCount++;
 		state.path.push_back( node.code() );
 

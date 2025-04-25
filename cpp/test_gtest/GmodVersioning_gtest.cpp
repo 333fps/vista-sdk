@@ -20,6 +20,7 @@ namespace dnv::vista::sdk::tests
 
 				try
 				{
+					SPDLOG_INFO( "Loading versioning data" );
 					auto versioningData = m_vis->gmodVersioningDto();
 					m_gmodVersioning = std::make_unique<GmodVersioning>( versioningData );
 					SPDLOG_INFO( "Successfully loaded versioning data with {} entries", versioningData.size() );
@@ -68,8 +69,7 @@ namespace dnv::vista::sdk::tests
 		{
 			GmodNode rootNode;
 
-			ASSERT_TRUE( m_gmod_v3_4a->tryGetNode( std::string( "411.1" ), rootNode ) )
-				<< "Test node '411.1' not found in GMOD 3-4a";
+			ASSERT_TRUE( m_gmod_v3_4a->tryGetNode( std::string( "411.1" ), rootNode ) ) << "Test node '411.1' not found in GMOD 3-4a";
 
 			GmodPath sourcePath( {}, rootNode, true );
 
@@ -78,14 +78,11 @@ namespace dnv::vista::sdk::tests
 			auto result = m_gmodVersioning->convertPath(
 				VisVersion::v3_4a, sourcePath, VisVersion::v3_5a );
 
-			ASSERT_TRUE( result.has_value() )
-				<< "Path conversion failed unexpectedly";
-			SPDLOG_INFO( "Path converted successfully to node: {}",
-				result->node().code() );
+			ASSERT_TRUE( result.has_value() ) << "Path conversion failed unexpectedly";
+			SPDLOG_INFO( "Path converted successfully to node: {}", result->node().code() );
 
 			GmodNode verifyNode;
-			EXPECT_TRUE( m_gmod_v3_5a->tryGetNode( result->node().code(), verifyNode ) )
-				<< "Converted node not found in target GMOD";
+			EXPECT_TRUE( m_gmod_v3_5a->tryGetNode( result->node().code(), verifyNode ) ) << "Converted node not found in target GMOD";
 		}
 		catch ( const std::exception& ex )
 		{

@@ -61,13 +61,13 @@ if(MSVC)
 	#add_compile_options(/analyze)
 
 	#add_compile_options(/wd4061) # switch not handled
-	add_compile_options(/wd4100) # unreferenced formal parameter
-	add_compile_options(/wd4189) # local variable is initialized but not referenced
+	#add_compile_options(/wd4100) # unreferenced formal parameter
+	#add_compile_options(/wd4189) # local variable is initialized but not referenced
 	add_compile_options(/wd4244) # 'conversion' conversion from 'type1' to 'type2', possible loss of data
 	#add_compile_options(/wd4267) # conversion from 'size_t' to 'type', possible loss of data
 	#add_compile_options(/wd4365) # conversion signed/unsigned mismatch
-	add_compile_options(/wd4388) # signed/unsigned mismatch
-	add_compile_options(/wd4456) # declaration hides previous local declaration
+	#add_compile_options(/wd4388) # signed/unsigned mismatch
+	#add_compile_options(/wd4456) # declaration hides previous local declaration
 	add_compile_options(/wd4514) # 'function' : unreferenced inline function has been removed
 	add_compile_options(/wd4625) # copy constructor was implicitly defined as deleted
 	add_compile_options(/wd4626) # assignement operator was implicitly defined as deleted
@@ -77,11 +77,11 @@ if(MSVC)
 	add_compile_options(/wd4868) # compiler may not enforce left-to-right evaluation order in braced initializer list
 	add_compile_options(/wd5026) # move constructor was implicitly defined as deleted
 	add_compile_options(/wd5027) # move assignement operator was implicitly defined as deleted
-	add_compile_options(/wd5038) # will be initialized after
+	#add_compile_options(/wd5038) # will be initialized after
 	add_compile_options(/wd5045) # Qspectre
 	add_compile_options(/wd5267) # definition of implicit copy constructor/assignment operator is deprecated because it has a user-provided assignment operator/copy constructor
-	add_compile_options(/wd6246) # local declaration of 'variable' hides declaration of same name in outer scope
-	add_compile_options(/wd6326) # potential comparison of a constant with another constant
+	#add_compile_options(/wd6246) # local declaration of 'variable' hides declaration of same name in outer scope
+	#add_compile_options(/wd6326) # potential comparison of a constant with another constant
 	add_compile_options(/wd6387) # 'argument' may be 'value': this does not adhere to the specification for the function
 endif()
 
