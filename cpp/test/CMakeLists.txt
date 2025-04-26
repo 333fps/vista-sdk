@@ -5,8 +5,8 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 
 set(TESTS
-	Codebook_test
-	Codebooks_test
+	CodebookTests
+	CodebooksTests
 	GmodPath_test
 	GmodVersioning_test
 	Gmod_test

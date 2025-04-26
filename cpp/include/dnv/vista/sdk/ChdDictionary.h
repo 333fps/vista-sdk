@@ -26,6 +26,9 @@ namespace dnv::vista::sdk
 		/** @brief FNV prime constant for hash calculations */
 		constexpr uint32_t FNV_PRIME{ 0x01000193 };
 
+		/** @brief Number of entries in the thread-local hash lookup cache */
+		static inline constexpr size_t HASH_CACHE_SIZE = 128;
+
 		//-------------------------------------------------------------------
 		// CPU Feature Detection
 		//-------------------------------------------------------------------
@@ -339,13 +342,11 @@ namespace dnv::vista::sdk
 			uint32_t hash;
 		};
 
-		// constexpr uint64_t HASH_HASH{ 128 };
-
 		/** @brief Thread-local cache for faster hash lookups */
-		alignas( 64 ) static thread_local std::array<HashCacheEntry, 128> s_hashCache;
+		alignas( 64 ) static thread_local std::array<HashCacheEntry, internal::HASH_CACHE_SIZE> s_hashCache;
 
 		/** @brief Storage for string keys to ensure string_views remain valid */
-		alignas( 64 ) static thread_local std::array<std::string, 128> s_hashCacheStorage;
+		alignas( 64 ) static thread_local std::array<std::string, internal::HASH_CACHE_SIZE> s_hashCacheStorage;
 
 		/** @brief Counter for cache hits (for performance monitoring) */
 		static thread_local size_t s_cacheHits;

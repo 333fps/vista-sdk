@@ -7,62 +7,18 @@
 
 namespace dnv::vista::sdk
 {
-	class CodebookTest : public ::testing::Test
+	namespace TestData
 	{
-	protected:
-		VIS& vis = VIS::instance();
-		Codebooks codebooks;
-
-		virtual void SetUp() override
+		static std::vector<std::pair<std::string, std::string>> getPositionValidationTestData()
 		{
-			codebooks = vis.codebooks( VisVersion::v3_4a );
+			return { { "upper", "Valid" }, { "lower", "Valid" } };
 		}
-	};
 
-	TEST_F( CodebookTest, Test_Position_Validation )
-	{
-		std::vector<std::pair<std::string, std::string>> testCases = {
-			{ "upper", "Valid" },
-			{ "lower", "Valid" } };
-
-		auto codebookType = codebooks[CodebookName::Position];
-
-		for ( const auto& [input, expectedOutput] : testCases )
+		static std::vector<std::pair<std::string, std::string>> getPositionStandardValuesTestData()
 		{
-			auto validPosition = codebookType.validatePosition( input );
-			auto parsedExpectedOutput = PositionValidationResults::fromString( expectedOutput );
-
-			EXPECT_EQ( parsedExpectedOutput, validPosition ) << "Failed for position: " << input;
+			return { { "invalidValue", "upper" } };
 		}
-	}
 
-	TEST_F( CodebookTest, Test_Positions )
-	{
-		std::vector<std::pair<std::string, std::string>> testCases = {
-			{ "invalidValue", "upper" } };
-
-		for ( const auto& [invalidStandardValue, validStandardValue] : testCases )
-		{
-			auto positions = codebooks[CodebookName::Position];
-
-			EXPECT_FALSE( positions.hasStandardValue( invalidStandardValue ) );
-			EXPECT_TRUE( positions.hasStandardValue( validStandardValue ) );
-		}
-	}
-
-	TEST_F( CodebookTest, Test_Standard_Values )
-	{
-		auto positions = codebooks[CodebookName::Position];
-
-		EXPECT_TRUE( positions.hasStandardValue( "upper" ) );
-		const auto& rawData = positions.rawData();
-		EXPECT_TRUE( rawData.find( "Vertical" ) != rawData.end() );
-		EXPECT_NE( std::find( rawData.at( "Vertical" ).begin(), rawData.at( "Vertical" ).end(), "upper" ),
-			rawData.at( "Vertical" ).end() );
-	}
-
-	TEST_F( CodebookTest, Test_States )
-	{
 		struct StatesTestData
 		{
 			std::string invalidGroup;
@@ -71,22 +27,11 @@ namespace dnv::vista::sdk
 			std::string secondValidValue;
 		};
 
-		std::vector<StatesTestData> testCases = {
-			{ "NonExistentGroup", "on", "On / off", "off" } };
-
-		for ( const auto& data : testCases )
+		static std::vector<StatesTestData> getStatesTestData()
 		{
-			const auto& states = codebooks[CodebookName::State];
-
-			EXPECT_FALSE( states.hasGroup( data.invalidGroup ) );
-			EXPECT_TRUE( states.hasStandardValue( data.validValue ) );
-			EXPECT_TRUE( states.hasGroup( data.validGroup ) );
-			EXPECT_TRUE( states.hasStandardValue( data.secondValidValue ) );
+			return { { "NonExistentGroup", "on", "On / off", "off" } };
 		}
-	}
 
-	TEST_F( CodebookTest, Test_Create_Tag )
-	{
 		struct TagTestData
 		{
 			std::string firstTag;
@@ -99,12 +44,96 @@ namespace dnv::vista::sdk
 			std::string secondInvalidTag;
 		};
 
-		std::vector<TagTestData> testCases = {
-			{ "upper", "lower", "port", '-', "~customTag", '~', "##invalid1", "##invalid2" } };
+		static std::vector<TagTestData> getTagTestData()
+		{
+			return { { "upper", "lower", "port", '-', "~customTag", '~', "##invalid1", "##invalid2" } };
+		}
+
+		struct DetailTagTestData
+		{
+			std::string validCustomTag;
+			std::string firstInvalidCustomTag;
+			std::string secondInvalidCustomTag;
+		};
+
+		static std::vector<DetailTagTestData> getDetailTagTestData()
+		{
+			return { { "validCustomTag", "#invalidTag1", "@invalidTag2" } };
+		}
+	}
+
+	class CodebookTest : public ::testing::Test
+	{
+	protected:
+		VIS& Vis = VIS::instance();
+		Codebooks Codebooks;
+
+		virtual void SetUp() override
+		{
+			Codebooks = Vis.codebooks( VisVersion::v3_4a );
+		}
+	};
+
+	TEST_F( CodebookTest, Test_Position_Validation )
+	{
+		auto testCases = TestData::getPositionValidationTestData();
+		auto codebookType = Codebooks[CodebookName::Position];
+
+		for ( const auto& [input, expectedOutput] : testCases )
+		{
+			auto validPosition = codebookType.validatePosition( input );
+			auto parsedExpectedOutput = PositionValidationResults::fromString( expectedOutput );
+
+			EXPECT_EQ( parsedExpectedOutput, validPosition ) << "Failed for position: " << input;
+		}
+	}
+
+	TEST_F( CodebookTest, Test_Positions )
+	{
+		auto testCases = TestData::getPositionStandardValuesTestData();
+
+		for ( const auto& [invalidStandardValue, validStandardValue] : testCases )
+		{
+			auto positions = Codebooks[CodebookName::Position];
+
+			EXPECT_FALSE( positions.hasStandardValue( invalidStandardValue ) );
+			EXPECT_TRUE( positions.hasStandardValue( validStandardValue ) );
+		}
+	}
+
+	TEST_F( CodebookTest, Test_Standard_Values )
+	{
+		auto positions = Codebooks[CodebookName::Position];
+
+		EXPECT_TRUE( positions.hasStandardValue( "upper" ) );
+
+		const auto& rawData = positions.rawData();
+		EXPECT_TRUE( rawData.find( "Vertical" ) != rawData.end() );
+		EXPECT_NE( std::find( rawData.at( "Vertical" ).begin(), rawData.at( "Vertical" ).end(), "upper" ), rawData.at( "Vertical" ).end() );
+	}
+
+	TEST_F( CodebookTest, Test_States )
+	{
+		auto testCases = TestData::getStatesTestData();
 
 		for ( const auto& data : testCases )
 		{
-			const auto& codebookType = codebooks[CodebookName::Position];
+			const auto& states = Codebooks[CodebookName::State];
+
+			EXPECT_FALSE( states.hasGroup( data.invalidGroup ) );
+			EXPECT_TRUE( states.hasStandardValue( data.validValue ) );
+			EXPECT_TRUE( states.hasGroup( data.validGroup ) );
+			EXPECT_TRUE( states.hasStandardValue( data.secondValidValue ) );
+		}
+	}
+
+	TEST_F( CodebookTest, Test_Create_Tag )
+	{
+		auto testCases = TestData::getTagTestData();
+
+		for ( const auto& data : testCases )
+		{
+			const auto& codebookType = Codebooks[CodebookName::Position];
 
 			auto metadataTag1 = codebookType.createTag( data.firstTag );
 			EXPECT_EQ( metadataTag1.value(), data.firstTag );
@@ -134,11 +163,12 @@ namespace dnv::vista::sdk
 
 	TEST_F( CodebookTest, Test_Get_Groups )
 	{
-		const auto& groups = codebooks[CodebookName::Position].groups();
+		const auto& groups = Codebooks[CodebookName::Position].groups();
 		EXPECT_GT( groups.count(), 1 );
 
 		EXPECT_TRUE( groups.contains( "Vertical" ) );
-		const auto& rawData = codebooks[CodebookName::Position].rawData();
+
+		const auto& rawData = Codebooks[CodebookName::Position].rawData();
 
 		EXPECT_EQ( groups.count(), rawData.size() - 1 );
 		EXPECT_TRUE( rawData.find( "Vertical" ) != rawData.end() );
@@ -146,8 +176,9 @@ namespace dnv::vista::sdk
 
 	TEST_F( CodebookTest, Test_Iterate_Groups )
 	{
-		const auto& groups = codebooks[CodebookName::Position].groups();
+		const auto& groups = Codebooks[CodebookName::Position].groups();
 		int count = 0;
+
 		for ( const auto& group : groups )
 		{
 			(void)group;
@@ -159,8 +190,9 @@ namespace dnv::vista::sdk
 
 	TEST_F( CodebookTest, Test_Iterate_Values )
 	{
-		const auto& values = codebooks[CodebookName::Position].standardValues();
+		const auto& values = Codebooks[CodebookName::Position].standardValues();
 		int count = 0;
+
 		for ( const auto& value : values )
 		{
 			(void)value;
@@ -172,19 +204,11 @@ namespace dnv::vista::sdk
 
 	TEST_F( CodebookTest, Test_Detail_Tag )
 	{
-		struct DetailTagTestData
-		{
-			std::string validCustomTag;
-			std::string firstInvalidCustomTag;
-			std::string secondInvalidCustomTag;
-		};
-
-		std::vector<DetailTagTestData> testCases = {
-			{ "validCustomTag", "#invalidTag1", "@invalidTag2" } };
+		auto testCases = TestData::getDetailTagTestData();
 
 		for ( const auto& data : testCases )
 		{
-			const auto& codebook = codebooks[CodebookName::Detail];
+			const auto& codebook = Codebooks[CodebookName::Detail];
 
 			EXPECT_TRUE( codebook.tryCreateTag( data.validCustomTag ).has_value() );
 			EXPECT_EQ( codebook.tryCreateTag( data.firstInvalidCustomTag ), std::nullopt );
@@ -194,4 +218,27 @@ namespace dnv::vista::sdk
 			EXPECT_THROW( codebook.createTag( data.secondInvalidCustomTag ), std::invalid_argument );
 		}
 	}
+
+	class PositionValidationTest : public ::testing::TestWithParam<std::pair<std::string, std::string>>
+	{
+	};
+
+	TEST_P( PositionValidationTest, ValidatesPositionsCorrectly )
+	{
+		auto [input, expectedOutput] = GetParam();
+
+		VIS& vis = VIS::instance();
+		auto codebooks = vis.codebooks( VisVersion::v3_4a );
+		auto codebookType = codebooks[CodebookName::Position];
+
+		auto validPosition = codebookType.validatePosition( input );
+		auto parsedExpectedOutput = PositionValidationResults::fromString( expectedOutput );
+
+		EXPECT_EQ( parsedExpectedOutput, validPosition ) << "Failed for position: " << input;
+	}
+
+	INSTANTIATE_TEST_SUITE_P(
+		PositionValidation,
+		PositionValidationTest,
+		::testing::ValuesIn( TestData::getPositionValidationTestData() ) );
 }

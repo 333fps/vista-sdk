@@ -15,31 +15,31 @@ namespace dnv::vista::sdk
 
 	namespace
 	{
-		static constexpr const char* POSITION_PREFIX = "pos";
 		static constexpr const char* QUANTITY_PREFIX = "qty";
+		static constexpr const char* CONTENT_PREFIX = "cnt";
 		static constexpr const char* CALCULATION_PREFIX = "calc";
 		static constexpr const char* STATE_PREFIX = "state";
-		static constexpr const char* CONTENT_PREFIX = "cnt";
 		static constexpr const char* COMMAND_PREFIX = "cmd";
 		static constexpr const char* TYPE_PREFIX = "type";
 		static constexpr const char* FUNCTIONAL_SERVICES_PREFIX = "funct.svc";
 		static constexpr const char* MAINTENANCE_CATEGORY_PREFIX = "maint.cat";
 		static constexpr const char* ACTIVITY_TYPE_PREFIX = "act.type";
+		static constexpr const char* POSITION_PREFIX = "pos";
 		static constexpr const char* DETAIL_PREFIX = "detail";
 
-		static const std::string VALID_PREFIXES = "pos, qty, calc, state, cnt, cmd, type, funct.svc, maint.cat, act.type, detail";
+		static const std::string VALID_PREFIXES = "qty, cnt, calc, state, cmd, type, funct.svc, maint.cat, act.type, pos, detail";
 
 		static const std::unordered_map<std::string_view, CodebookName> g_prefixMap = {
-			{ POSITION_PREFIX, CodebookName::Position },
 			{ QUANTITY_PREFIX, CodebookName::Quantity },
+			{ CONTENT_PREFIX, CodebookName::Content },
 			{ CALCULATION_PREFIX, CodebookName::Calculation },
 			{ STATE_PREFIX, CodebookName::State },
-			{ CONTENT_PREFIX, CodebookName::Content },
 			{ COMMAND_PREFIX, CodebookName::Command },
 			{ TYPE_PREFIX, CodebookName::Type },
 			{ FUNCTIONAL_SERVICES_PREFIX, CodebookName::FunctionalServices },
 			{ MAINTENANCE_CATEGORY_PREFIX, CodebookName::MaintenanceCategory },
 			{ ACTIVITY_TYPE_PREFIX, CodebookName::ActivityType },
+			{ POSITION_PREFIX, CodebookName::Position },
 			{ DETAIL_PREFIX, CodebookName::Detail } };
 	}
 
@@ -71,7 +71,7 @@ namespace dnv::vista::sdk
 
 	std::string CodebookNames::toPrefix( CodebookName name )
 	{
-		SPDLOG_TRACE( "Converting CodebookName enum {} to prefix string", static_cast<int>( name ) );
+		SPDLOG_WARN( "Converting CodebookName enum {} to prefix string", static_cast<int>( name ) );
 
 		switch ( name )
 		{

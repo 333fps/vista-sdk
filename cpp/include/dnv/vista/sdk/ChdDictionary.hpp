@@ -572,10 +572,10 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	template <typename TValue>
-	thread_local std::array<std::string, 128> ChdDictionary<TValue>::s_hashCacheStorage{};
+	thread_local std::array<std::string, internal::HASH_CACHE_SIZE> ChdDictionary<TValue>::s_hashCacheStorage{};
 
 	template <typename TValue>
-	thread_local std::array<typename ChdDictionary<TValue>::HashCacheEntry, 128> ChdDictionary<TValue>::s_hashCache{};
+	thread_local std::array<typename ChdDictionary<TValue>::HashCacheEntry, internal::HASH_CACHE_SIZE> ChdDictionary<TValue>::s_hashCache{};
 
 	template <typename TValue>
 	thread_local size_t ChdDictionary<TValue>::s_cacheHits = 0;
