@@ -23,7 +23,7 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_DEBUG( "Initializing codebooks for VIS version: {}", VisVersionExtensions::toVersionString( version ) );
 
-		for ( const auto& typeDto : dto.m_items )
+		for ( const auto& typeDto : dto.items() )
 		{
 			try
 			{
@@ -38,12 +38,12 @@ namespace dnv::vista::sdk
 				}
 				else
 				{
-					SPDLOG_WARN( "Invalid codebook index: {} for name: {}", index, typeDto.m_name );
+					SPDLOG_WARN( "Invalid codebook index: {} for name: {}", index, typeDto.name() );
 				}
 			}
 			catch ( const std::exception& ex )
 			{
-				SPDLOG_ERROR( "Error processing codebook '{}': {}", typeDto.m_name, ex.what() );
+				SPDLOG_ERROR( "Error processing codebook '{}': {}", typeDto.name(), ex.what() );
 			}
 		}
 

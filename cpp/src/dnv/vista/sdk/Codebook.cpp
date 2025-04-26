@@ -166,21 +166,21 @@ namespace dnv::vista::sdk
 			{ "activity_type", CodebookName::ActivityType },
 			{ "detail", CodebookName::Detail } };
 
-		auto it{ nameMap.find( dto.m_name ) };
+		auto it{ nameMap.find( dto.name() ) };
 		if ( it == nameMap.end() )
 		{
-			SPDLOG_ERROR( "Unknown metadata tag: {}", dto.m_name );
-			throw std::invalid_argument( "Unknown metadata tag: " + dto.m_name );
+			SPDLOG_ERROR( "Unknown metadata tag: {}", dto.name() );
+			throw std::invalid_argument( "Unknown metadata tag: " + dto.name() );
 		}
 		m_name = it->second;
 
-		m_rawData = dto.m_values;
+		m_rawData = dto.values();
 
 		std::vector<std::pair<std::string, std::string>> data{};
 		std::unordered_set<std::string> valueSet{};
 		std::unordered_set<std::string> groupSet{};
 
-		for ( const auto& [group, values] : dto.m_values )
+		for ( const auto& [group, values] : dto.values() )
 		{
 			std::string trimmedGroup{ group };
 			trimmedGroup.erase( 0, trimmedGroup.find_first_not_of( " \t\n\r\f\v" ) );

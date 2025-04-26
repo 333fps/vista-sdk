@@ -10,7 +10,7 @@ namespace dnv::vista::sdk
 {
 	struct GmodDto;
 	struct GmodVersioningDto;
-	struct CodebooksDto;
+	class CodebooksDto;
 	struct DataChannelTypeNamesDto;
 	struct LocationsDto;
 	struct FormatDataTypesDto;

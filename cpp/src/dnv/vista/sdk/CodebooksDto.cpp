@@ -31,8 +31,18 @@ namespace dnv::vista::sdk
 	{
 	}
 
-	CodebookDto::~CodebookDto()
+	//-------------------------------------------------------------------
+	// Accessor Methods
+	//-------------------------------------------------------------------
+
+	const std::string& CodebookDto::name() const
 	{
+		return m_name;
+	}
+
+	const std::unordered_map<std::string, std::vector<std::string>>& CodebookDto::values() const
+	{
+		return m_values;
 	}
 
 	//-------------------------------------------------------------------
@@ -121,6 +131,8 @@ namespace dnv::vista::sdk
 
 	rapidjson::Value CodebookDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
 	{
+		auto startTime = std::chrono::steady_clock::now();
+
 		rapidjson::Value obj( rapidjson::kObjectType );
 
 		obj.AddMember( rapidjson::StringRef( NAME_KEY ), rapidjson::Value( rapidjson::StringRef( m_name.c_str() ), allocator ), allocator );
@@ -142,14 +154,17 @@ namespace dnv::vista::sdk
 
 			for ( const auto& value : group.second )
 			{
-				groupValues.PushBack( rapidjson::Value( value.c_str(), allocator ).Move(), allocator );
+				groupValues.PushBack( rapidjson::Value( rapidjson::StringRef( value.c_str() ), allocator ), allocator );
 			}
 
-			valuesObj.AddMember( rapidjson::Value( group.first.c_str(), allocator ).Move(), groupValues, allocator );
+			valuesObj.AddMember( rapidjson::Value( rapidjson::StringRef( group.first.c_str() ), allocator ), groupValues, allocator );
 		}
 
 		obj.AddMember( rapidjson::StringRef( VALUES_KEY ), valuesObj, allocator );
 		SPDLOG_DEBUG( "Serialized CodebookDto '{}' with {} groups", m_name, m_values.size() );
+
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+		SPDLOG_INFO( "Serialized CodebookDto '{}' with {} groups in {} ms", m_name, m_values.size(), duration.count() );
 
 		return obj;
 	}
@@ -167,8 +182,18 @@ namespace dnv::vista::sdk
 	{
 	}
 
-	CodebooksDto::~CodebooksDto()
+	//-------------------------------------------------------------------
+	// Accessor Methods
+	//-------------------------------------------------------------------
+
+	const std::string& CodebooksDto::visVersion() const
 	{
+		return m_visVersion;
+	}
+
+	const std::vector<CodebookDto>& CodebooksDto::items() const
+	{
+		return m_items;
 	}
 
 	//-------------------------------------------------------------------
@@ -244,9 +269,11 @@ namespace dnv::vista::sdk
 
 	rapidjson::Value CodebooksDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
 	{
+		auto startTime = std::chrono::steady_clock::now();
+
 		rapidjson::Value obj( rapidjson::kObjectType );
 
-		obj.AddMember( rapidjson::StringRef( VIS_RELEASE_KEY ), rapidjson::Value( m_visVersion.c_str(), allocator ).Move(), allocator );
+		obj.AddMember( rapidjson::StringRef( VIS_RELEASE_KEY ), rapidjson::Value( rapidjson::StringRef( m_visVersion.c_str() ), allocator ), allocator );
 
 		rapidjson::Value itemsArray( rapidjson::kArrayType );
 		{
@@ -266,6 +293,9 @@ namespace dnv::vista::sdk
 		obj.AddMember( rapidjson::StringRef( ITEMS_KEY ), itemsArray, allocator );
 
 		SPDLOG_DEBUG( "Serialized CodebooksDto with {} items for VIS version {}", m_items.size(), m_visVersion );
+
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+		SPDLOG_INFO( "Serialized CodebooksDto with {} items for VIS version {} in {} ms", m_items.size(), m_visVersion, duration.count() );
 
 		return obj;
 	}

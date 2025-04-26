@@ -19,7 +19,7 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	class MetadataTag;
-	struct CodebooksDto;
+	class CodebooksDto;
 	enum class VisVersion;
 
 	//-------------------------------------------------------------------

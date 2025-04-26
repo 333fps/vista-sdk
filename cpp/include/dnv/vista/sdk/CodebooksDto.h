@@ -21,8 +21,9 @@ namespace dnv::vista::sdk
 	 * Represents serialized information about a codebook from the ISO 19848 standard.
 	 * Each codebook contains a name identifier and a collection of values organized by groups.
 	 */
-	struct CodebookDto final
+	class CodebookDto final
 	{
+	public:
 		//-------------------------------------------------------------------
 		// Construction / Destruction
 		//-------------------------------------------------------------------
@@ -43,7 +44,23 @@ namespace dnv::vista::sdk
 		CodebookDto( CodebookDto&& ) noexcept = default;
 		CodebookDto& operator=( const CodebookDto& ) = default;
 		CodebookDto& operator=( CodebookDto&& ) noexcept = default;
-		~CodebookDto();
+		~CodebookDto() = default;
+
+		//-------------------------------------------------------------------
+		// Accessor Methods
+		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Get the name of this codebook
+		 * @return The codebook name
+		 */
+		const std::string& name() const;
+
+		/**
+		 * @brief Get the values map of this codebook
+		 * @return The map of group names to their corresponding values
+		 */
+		const std::unordered_map<std::string, std::vector<std::string>>& values() const;
 
 		//-------------------------------------------------------------------
 		// Serialization Methods
@@ -72,8 +89,9 @@ namespace dnv::vista::sdk
 		 */
 		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
 
+	private:
 		//-------------------------------------------------------------------
-		// Member Variables
+		// Private Member Variables
 		//-------------------------------------------------------------------
 
 		/** @brief Name identifier of the codebook (e.g., "positions", "quantities") */
@@ -89,8 +107,9 @@ namespace dnv::vista::sdk
 	 * Represents a complete set of codebooks for a specific VIS version,
 	 * used for serialization to and from JSON format.
 	 */
-	struct CodebooksDto final
+	class CodebooksDto final
 	{
+	public:
 		//-------------------------------------------------------------------
 		// Construction / Destruction
 		//-------------------------------------------------------------------
@@ -111,7 +130,23 @@ namespace dnv::vista::sdk
 		CodebooksDto( CodebooksDto&& ) noexcept = default;
 		CodebooksDto& operator=( const CodebooksDto& ) = default;
 		CodebooksDto& operator=( CodebooksDto&& ) noexcept = default;
-		~CodebooksDto();
+		~CodebooksDto() = default;
+
+		//-------------------------------------------------------------------
+		// Accessor Methods
+		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Get the VIS version string
+		 * @return The VIS version string
+		 */
+		const std::string& visVersion() const;
+
+		/**
+		 * @brief Get the collection of codebooks
+		 * @return The vector of codebook DTOs
+		 */
+		const std::vector<CodebookDto>& items() const;
 
 		//-------------------------------------------------------------------
 		// Serialization Methods
@@ -140,8 +175,9 @@ namespace dnv::vista::sdk
 		 */
 		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
 
+	private:
 		//-------------------------------------------------------------------
-		// Member Variables
+		// Private Member Variables
 		//-------------------------------------------------------------------
 
 		/** @brief VIS version string (e.g., "3.8a") */
