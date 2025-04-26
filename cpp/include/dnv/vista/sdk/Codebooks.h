@@ -46,8 +46,8 @@ namespace dnv::vista::sdk
 
 		/**
 		 * @brief Forward iterator for codebooks collection
-		 * @details Provides standard iterator interface plus additional functionality
-		 *          for .NET-style enumeration patterns
+		 * @details Provides standard iterator interface plus additional enumeration functionality
+		 *          through next()/current()/reset() methods
 		 */
 		class Iterator final
 		{
@@ -107,7 +107,7 @@ namespace dnv::vista::sdk
 			bool operator!=( const Iterator& other ) const;
 
 			/**
-			 * @brief Move to next codebook (.NET-style enumeration)
+			 * @brief Move to next codebook in the sequence
 			 * @return True if moved to a valid codebook, false if at end
 			 */
 			bool next();
@@ -119,7 +119,7 @@ namespace dnv::vista::sdk
 			bool current();
 
 			/**
-			 * @brief Reset iterator position (.NET-style enumeration)
+			 * @brief Reset iterator position to before first element
 			 */
 			void reset();
 
@@ -134,7 +134,7 @@ namespace dnv::vista::sdk
 			mutable std::optional<value_type> m_current;
 		};
 
-		/** @brief Alias for .NET-style enumerator */
+		/** @brief Alias for alternative enumeration pattern */
 		using Enumerator = Iterator;
 
 		//-------------------------------------------------------------------
@@ -230,8 +230,11 @@ namespace dnv::vista::sdk
 		Iterator end() const;
 
 		/**
-		 * @brief Get enumerator for .NET-style iteration
-		 * @return Iterator for enumerating codebooks
+		 * @brief Get an alternative enumerator
+		 * @details Returns an iterator configured for enumeration using next()/current() methods,
+		 *          initially positioned before the first element. This enables a different
+		 *          iteration pattern than standard C++ iterators.
+		 * @return Iterator for alternative enumeration pattern
 		 */
 		Enumerator enumerator() const;
 

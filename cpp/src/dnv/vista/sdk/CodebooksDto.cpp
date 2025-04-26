@@ -1,29 +1,64 @@
+/**
+ * @file CodebooksDto.cpp
+ * @brief Implementation of data transfer objects for ISO 19848 codebook serialization
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/CodebooksDto.h"
 
 namespace dnv::vista::sdk
 {
+	//-------------------------------------------------------------------
+	// Constants
+	//-------------------------------------------------------------------
+
+	static constexpr const char* NAME_KEY = "name";
+	static constexpr const char* VALUES_KEY = "values";
+	static constexpr const char* ITEMS_KEY = "items";
+	static constexpr const char* VIS_RELEASE_KEY = "visRelease";
+
+	//-------------------------------------------------------------------
+	// CodebookDto Implementation
+	//-------------------------------------------------------------------
+
+	//-------------------------------------------------------------------
+	// Construction / Destruction
+	//-------------------------------------------------------------------
+
 	CodebookDto::CodebookDto( std::string name, std::unordered_map<std::string, std::vector<std::string>> values )
-		: name( std::move( name ) ), values( std::move( values ) ) {}
+		: m_name( std::move( name ) ), m_values( std::move( values ) )
+	{
+	}
+
+	CodebookDto::~CodebookDto()
+	{
+	}
+
+	//-------------------------------------------------------------------
+	// Serialization Methods
+	//-------------------------------------------------------------------
 
 	CodebookDto CodebookDto::fromJson( const rapidjson::Value& json )
 	{
+		auto startTime = std::chrono::steady_clock::now();
+
 		CodebookDto dto;
 
-		if ( !json.HasMember( "name" ) || !json["name"].IsString() )
+		if ( !json.HasMember( NAME_KEY ) || !json[NAME_KEY].IsString() )
 		{
-			SPDLOG_ERROR( "Codebook JSON missing required 'name' field or field is not a string" );
-			throw std::invalid_argument( "Codebook JSON missing required 'name' field or field is not a string" );
+			std::string errorMsg = fmt::format( "Codebook JSON missing required '{}' field or field is not a string", NAME_KEY );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
 		}
 
-		dto.name = json["name"].GetString();
-		SPDLOG_INFO( "Parsing CodebookDto with name: {}", dto.name );
+		dto.m_name = json[NAME_KEY].GetString();
+		SPDLOG_DEBUG( "Parsing CodebookDto with name: {}", dto.m_name );
 
-		if ( json.HasMember( "values" ) && json["values"].IsObject() )
+		if ( json.HasMember( VALUES_KEY ) && json[VALUES_KEY].IsObject() )
 		{
 			size_t totalValues = 0;
-			for ( auto it = json["values"].MemberBegin(); it != json["values"].MemberEnd(); ++it )
+			for ( auto it = json[VALUES_KEY].MemberBegin(); it != json[VALUES_KEY].MemberEnd(); ++it )
 			{
 				const char* groupName = it->name.GetString();
 
@@ -40,7 +75,7 @@ namespace dnv::vista::sdk
 				{
 					if ( value.IsString() )
 					{
-						groupValues.push_back( value.GetString() );
+						groupValues.emplace_back( value.GetString() );
 					}
 					else
 					{
@@ -51,17 +86,20 @@ namespace dnv::vista::sdk
 				if ( !groupValues.empty() )
 				{
 					totalValues += groupValues.size();
-					dto.values[groupName] = std::move( groupValues );
+					dto.m_values[groupName] = std::move( groupValues );
 				}
 			}
 
-			SPDLOG_INFO( "Parsed {} groups with {} total values for codebook '{}'",
-				dto.values.size(), totalValues, dto.name );
+			SPDLOG_DEBUG( "Parsed {} groups with {} total values for codebook '{}'", dto.m_values.size(), totalValues, dto.m_name );
 		}
 		else
 		{
-			SPDLOG_WARN( "No values found for codebook '{}'", dto.name );
+			SPDLOG_WARN( "No values found for codebook '{}'", dto.m_name );
 		}
+
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+
+		SPDLOG_DEBUG( "Parsed CodebookDto '{}' in {} ms", dto.m_name, duration.count() );
 
 		return dto;
 	}
@@ -71,8 +109,7 @@ namespace dnv::vista::sdk
 		try
 		{
 			dto = fromJson( json );
-			SPDLOG_INFO( "Successfully parsed CodebookDto '{}' with {} value groups",
-				dto.name, dto.values.size() );
+			SPDLOG_DEBUG( "Successfully parsed CodebookDto '{}' with {} value groups", dto.m_name, dto.m_values.size() );
 			return true;
 		}
 		catch ( const std::exception& e )
@@ -86,58 +123,87 @@ namespace dnv::vista::sdk
 	{
 		rapidjson::Value obj( rapidjson::kObjectType );
 
-		obj.AddMember( "name", rapidjson::Value( name.c_str(), allocator ).Move(), allocator );
+		obj.AddMember( rapidjson::StringRef( NAME_KEY ), rapidjson::Value( rapidjson::StringRef( m_name.c_str() ), allocator ), allocator );
 
 		rapidjson::Value valuesObj( rapidjson::kObjectType );
 
-		for ( const auto& group : values )
+		for ( const auto& group : m_values )
 		{
 			rapidjson::Value groupValues( rapidjson::kArrayType );
+
+			{
+				const auto size = group.second.size();
+				if ( size > std::numeric_limits<rapidjson::SizeType>::max() )
+				{
+					SPDLOG_WARN( "Vector size {} exceeds maximum RapidJSON capacity, truncating", size );
+				}
+				groupValues.Reserve( static_cast<rapidjson::SizeType>( std::min( size, static_cast<size_t>( std::numeric_limits<rapidjson::SizeType>::max() ) ) ), allocator );
+			}
 
 			for ( const auto& value : group.second )
 			{
 				groupValues.PushBack( rapidjson::Value( value.c_str(), allocator ).Move(), allocator );
 			}
 
-			valuesObj.AddMember( rapidjson::Value( group.first.c_str(), allocator ).Move(),
-				groupValues, allocator );
+			valuesObj.AddMember( rapidjson::Value( group.first.c_str(), allocator ).Move(), groupValues, allocator );
 		}
 
-		obj.AddMember( "values", valuesObj, allocator );
-		SPDLOG_INFO( "Serialized CodebookDto '{}' with {} groups", name, values.size() );
+		obj.AddMember( rapidjson::StringRef( VALUES_KEY ), valuesObj, allocator );
+		SPDLOG_DEBUG( "Serialized CodebookDto '{}' with {} groups", m_name, m_values.size() );
 
 		return obj;
 	}
 
+	//-------------------------------------------------------------------
+	// CodebooksDto Implementation
+	//-------------------------------------------------------------------
+
+	//-------------------------------------------------------------------
+	// Construction / Destruction
+	//-------------------------------------------------------------------
+
 	CodebooksDto::CodebooksDto( std::string visVersion, std::vector<CodebookDto> items )
-		: visVersion( std::move( visVersion ) ), items( std::move( items ) ) {}
+		: m_visVersion( std::move( visVersion ) ), m_items( std::move( items ) )
+	{
+	}
+
+	CodebooksDto::~CodebooksDto()
+	{
+	}
+
+	//-------------------------------------------------------------------
+	// Serialization Methods
+	//-------------------------------------------------------------------
 
 	CodebooksDto CodebooksDto::fromJson( const rapidjson::Value& json )
 	{
+		auto startTime = std::chrono::steady_clock::now();
+
 		CodebooksDto dto;
 
-		if ( !json.HasMember( "visRelease" ) || !json["visRelease"].IsString() )
+		if ( !json.HasMember( VIS_RELEASE_KEY ) || !json[VIS_RELEASE_KEY].IsString() )
 		{
-			SPDLOG_ERROR( "Codebooks JSON missing required 'visRelease' field or field is not a string" );
-			throw std::invalid_argument( "Codebooks JSON missing required 'visRelease' field or field is not a string" );
+			std::string errorMsg = fmt::format( "Codebooks JSON missing required '{}' field or field is not a string", VIS_RELEASE_KEY );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
 		}
 
-		dto.visVersion = json["visRelease"].GetString();
-		SPDLOG_INFO( "Parsing CodebooksDto for VIS version: {}", dto.visVersion );
+		dto.m_visVersion = json[VIS_RELEASE_KEY].GetString();
+		SPDLOG_DEBUG( "Parsing CodebooksDto for VIS version: {}", dto.m_visVersion );
 
-		if ( json.HasMember( "items" ) && json["items"].IsArray() )
+		if ( json.HasMember( ITEMS_KEY ) && json[ITEMS_KEY].IsArray() )
 		{
-			size_t totalItems = json["items"].Size();
-			dto.items.reserve( totalItems );
+			size_t totalItems = json[ITEMS_KEY].Size();
+			dto.m_items.reserve( totalItems );
 
-			SPDLOG_INFO( "Found {} codebook items to parse", totalItems );
+			SPDLOG_DEBUG( "Found {} codebook items to parse", totalItems );
 
 			size_t successCount = 0;
-			for ( const auto& item : json["items"].GetArray() )
+			for ( const auto& item : json[ITEMS_KEY].GetArray() )
 			{
 				try
 				{
-					dto.items.push_back( CodebookDto::fromJson( item ) );
+					dto.m_items.emplace_back( CodebookDto::fromJson( item ) );
 					successCount++;
 				}
 				catch ( const std::exception& e )
@@ -146,13 +212,18 @@ namespace dnv::vista::sdk
 				}
 			}
 
-			SPDLOG_INFO( "Successfully parsed {}/{} codebooks for VIS version {}",
-				successCount, totalItems, dto.visVersion );
+			SPDLOG_DEBUG( "Successfully parsed {}/{} codebooks for VIS version {}", successCount, totalItems, dto.m_visVersion );
+
+			dto.m_items.shrink_to_fit();
 		}
 		else
 		{
 			SPDLOG_WARN( "No 'items' array found in CodebooksDto or not an array" );
 		}
+
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+
+		SPDLOG_DEBUG( "Parsed CodebooksDto with {} items in {} ms", dto.m_items.size(), duration.count() );
 
 		return dto;
 	}
@@ -175,18 +246,26 @@ namespace dnv::vista::sdk
 	{
 		rapidjson::Value obj( rapidjson::kObjectType );
 
-		obj.AddMember( "visRelease", rapidjson::Value( visVersion.c_str(), allocator ).Move(), allocator );
+		obj.AddMember( rapidjson::StringRef( VIS_RELEASE_KEY ), rapidjson::Value( m_visVersion.c_str(), allocator ).Move(), allocator );
 
 		rapidjson::Value itemsArray( rapidjson::kArrayType );
+		{
+			const auto size = m_items.size();
+			if ( size > std::numeric_limits<rapidjson::SizeType>::max() )
+			{
+				SPDLOG_WARN( "Array size {} exceeds maximum RapidJSON capacity, truncating", size );
+			}
+			itemsArray.Reserve( static_cast<rapidjson::SizeType>( std::min( size, static_cast<size_t>( std::numeric_limits<rapidjson::SizeType>::max() ) ) ), allocator );
+		}
 
-		for ( const auto& item : items )
+		for ( const auto& item : m_items )
 		{
 			itemsArray.PushBack( item.toJson( allocator ), allocator );
 		}
 
-		obj.AddMember( "items", itemsArray, allocator );
-		SPDLOG_INFO( "Serialized CodebooksDto with {} items for VIS version {}",
-			items.size(), visVersion );
+		obj.AddMember( rapidjson::StringRef( ITEMS_KEY ), itemsArray, allocator );
+
+		SPDLOG_DEBUG( "Serialized CodebooksDto with {} items for VIS version {}", m_items.size(), m_visVersion );
 
 		return obj;
 	}
