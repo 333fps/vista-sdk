@@ -18,27 +18,42 @@ namespace dnv::vista::sdk
 	{
 		if ( key.empty() )
 		{
-			return 0;
+			return internal::FNV_OFFSET_BASIS;
 		}
 
-		auto cacheIndex{ ( key[0] * 31 + key.size() ) % s_hashCache.size() };
-		if ( s_hashCache[cacheIndex].first == key )
+		auto cacheIndex = ( ( static_cast<size_t>( key[0] ) * 23 ) ^ ( key.length() * 37 ) ^ ( key.back() * 41 ) ) % s_hashCache.size();
+		if ( s_hashCache[cacheIndex].key == key )
 		{
-			SPDLOG_TRACE( "Hash cache hit for '{}'", key );
-			return s_hashCache[cacheIndex].second;
+			++s_cacheHits;
+			SPDLOG_DEBUG( "Hash cache hit for '{}' (hits: {}, rate: {:.1f}%)", key, s_cacheHits, 100.0f * static_cast<float>( s_cacheHits ) / static_cast<float>( s_cacheHits + s_cacheMisses ) );
+
+			return s_hashCache[cacheIndex].hash;
+		}
+		++s_cacheMisses;
+
+		if ( s_cacheMisses % 1000 == 0 )
+		{
+			SPDLOG_DEBUG( "Hash cache performance: {} hits, {} misses, {:.1f}% hit rate", s_cacheHits, s_cacheMisses, 100.0f * static_cast<float>( s_cacheHits ) / static_cast<float>( s_cacheHits + s_cacheMisses ) );
 		}
 
+		auto length{ key.length() * sizeof( char ) };
 		auto hashValue{ internal::FNV_OFFSET_BASIS };
 		auto data{ key.data() };
 
-		for ( size_t i{ 0 }; i < key.size(); i++ )
+		for ( size_t i = 0; i < length; i += 2 )
 		{
 			hashValue = processHashByte( hashValue, static_cast<uint8_t>( data[i] ) );
+			if ( i + 1 < length )
+			{
+				hashValue = processHashByte( hashValue, static_cast<uint8_t>( data[i + 1] ) );
+			}
 		}
 
-		s_hashCache[cacheIndex] = std::make_pair( std::string{ key }, hashValue );
+		s_hashCacheStorage[cacheIndex].assign( key.data(), key.size() );
+		s_hashCache[cacheIndex] = HashCacheEntry{ .key = s_hashCacheStorage[cacheIndex], .hash = hashValue };
 
 		SPDLOG_TRACE( "Calculated hash for key '{}': {}", key, hashValue );
+		SPDLOG_TRACE( "Hash cache updated at index {}: key='{}', hash={}", cacheIndex, s_hashCache[cacheIndex].first, s_hashCache[cacheIndex].second );
 
 		return hashValue;
 	}
@@ -48,7 +63,7 @@ namespace dnv::vista::sdk
 	{
 		static const auto hasSSE42Support{ internal::hasSSE42Support() };
 
-		return hasSSE42Support ? internal::Hashing::CRC32( hash, byte ) : internal::Hashing::FNV1a( hash, byte );
+		return hasSSE42Support ? internal::Hashing::crc32( hash, byte ) : internal::Hashing::fnv1a( hash, byte );
 	}
 
 	//-------------------------------------------------------------------
@@ -56,9 +71,15 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	template <typename TValue>
-	ChdDictionary<TValue>::ChdDictionary( const std::vector<std::pair<std::string, TValue>>& items )
-		: m_empty{ true }
+	ChdDictionary<TValue>::ChdDictionary()
 	{
+	}
+
+	template <typename TValue>
+	ChdDictionary<TValue>::ChdDictionary( const std::vector<std::pair<std::string, TValue>>& items )
+	{
+		auto start = std::chrono::high_resolution_clock::now();
+
 		if ( items.empty() )
 		{
 			SPDLOG_DEBUG( "Created empty CHD Dictionary" );
@@ -74,8 +95,16 @@ namespace dnv::vista::sdk
 
 		SPDLOG_INFO( "Building CHD dictionary with {} items, table size {}", items.size(), size );
 
+		m_table.reserve( size );
+		m_seeds.reserve( size );
+
 		auto hashBuckets{ std::vector<std::vector<std::pair<unsigned, uint32_t>>>( size ) };
-		for ( size_t i{ 0 }; i < items.size(); i++ )
+		for ( auto& bucket : hashBuckets )
+		{
+			bucket.reserve( 8 );
+		}
+
+		for ( size_t i{ 0 }; i < items.size(); ++i )
 		{
 			const auto& key{ items[i].first };
 			auto hashValue{ hash( key ) };
@@ -87,6 +116,24 @@ namespace dnv::vista::sdk
 			return a.size() > b.size();
 		} );
 
+		{
+			size_t collisionCount{ 0 };
+			size_t maxCollisions{ 0 };
+			size_t bucketsWithCollisions{ 0 };
+
+			for ( const auto& bucket : hashBuckets )
+			{
+				if ( bucket.size() > 1 )
+				{
+					++bucketsWithCollisions;
+					collisionCount += bucket.size() - 1;
+					maxCollisions = std::max( maxCollisions, bucket.size() );
+				}
+			}
+
+			SPDLOG_INFO( "CHD dictionary collision stats: {} items, {} total collisions, {} buckets with collisions, max collision chain: {}", items.size(), collisionCount, bucketsWithCollisions, maxCollisions );
+		}
+
 		auto indices{ std::vector<unsigned int>( size, 0 ) };
 		auto seeds{ std::vector<int>( size, 0 ) };
 
@@ -95,6 +142,7 @@ namespace dnv::vista::sdk
 		{
 			const auto& subKeys{ hashBuckets[index] };
 			auto entries{ std::unordered_map<uint32_t, unsigned>() };
+			entries.reserve( subKeys.size() );
 			uint32_t seed{ 0 };
 
 			while ( true )
@@ -127,10 +175,11 @@ namespace dnv::vista::sdk
 				}
 			}
 
-			for ( const auto& entry : entries )
+			for ( const auto& [hash, idx] : entries )
 			{
-				indices[entry.first] = entry.second;
+				indices[hash] = idx;
 			}
+
 			seeds[subKeys[0].second & ( size - 1 )] = static_cast<int>( seed );
 		}
 
@@ -151,7 +200,7 @@ namespace dnv::vista::sdk
 		}
 
 		size_t freeIndex{ 0 };
-		for ( size_t i{ 0 }; index < hashBuckets.size() && hashBuckets[index].size() > 0; i++, index++ )
+		for ( size_t i{ 0 }; index < hashBuckets.size() && hashBuckets[index].size() > 0; ++i, ++index )
 		{
 			const auto& k{ hashBuckets[index][0] };
 			if ( freeIndex < free.size() )
@@ -163,16 +212,14 @@ namespace dnv::vista::sdk
 		}
 
 		m_seeds = std::move( seeds );
-		m_empty = m_table.empty() || m_seeds.empty();
 
-		SPDLOG_INFO( "CHD Dictionary construction complete: {} entries, {} seeds", m_table.size(), m_seeds.size() );
-	}
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration<double, std::milli>( end - start ).count();
 
-	template <typename TValue>
-	inline ChdDictionary<TValue>::ChdDictionary( std::initializer_list<std::pair<std::string, TValue>> items )
-		: ChdDictionary{ std::vector<std::pair<std::string, TValue>>{ items } }
-	{
-		SPDLOG_INFO( "ChdDictionary initialized with {} items", items.size() );
+		SPDLOG_INFO( "CHD Dictionary construction complete: {} entries, {} seeds in {:.2f}ms", m_table.size(), m_seeds.size(), duration );
+
+		auto memoryUsage = sizeof( decltype( m_table )::value_type ) * m_table.capacity() + sizeof( int ) * m_seeds.capacity();
+		SPDLOG_INFO( "CHD Dictionary memory usage: {:.2f}KB ({:.2f}MB) ({} table entries, {} seeds)", static_cast<float>( memoryUsage ) / 1024.0f, static_cast<float>( memoryUsage ) / ( 1024.0f * 1024.0f ), m_table.size(), m_seeds.size() );
 	}
 
 	//-------------------------------------------------------------------
@@ -182,8 +229,7 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	ChdDictionary<TValue>::ChdDictionary( const ChdDictionary<TValue>& other )
 		: m_table{ other.m_table },
-		  m_seeds{ other.m_seeds },
-		  m_empty{ other.m_empty }
+		  m_seeds{ other.m_seeds }
 	{
 		SPDLOG_DEBUG( "ChdDictionary copied with {} entries ({} seeds)", m_table.size(), m_seeds.size() );
 	}
@@ -191,8 +237,7 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	ChdDictionary<TValue>::ChdDictionary( ChdDictionary<TValue>&& other ) noexcept
 		: m_table{ std::move( other.m_table ) },
-		  m_seeds{ std::move( other.m_seeds ) },
-		  m_empty{ other.m_empty }
+		  m_seeds{ std::move( other.m_seeds ) }
 	{
 		SPDLOG_DEBUG( "ChdDictionary moved with {} entries ({} seeds)", m_table.size(), m_seeds.size() );
 	}
@@ -204,7 +249,6 @@ namespace dnv::vista::sdk
 		{
 			m_table = other.m_table;
 			m_seeds = other.m_seeds;
-			m_empty = m_table.empty() || m_seeds.empty();
 		}
 
 		SPDLOG_DEBUG( "ChdDictionary copy-assigned with {} entries ({} seeds)", m_table.size(), m_seeds.size() );
@@ -219,7 +263,6 @@ namespace dnv::vista::sdk
 		{
 			m_table = std::move( other.m_table );
 			m_seeds = std::move( other.m_seeds );
-			m_empty = m_table.empty() || m_seeds.empty();
 		}
 
 		SPDLOG_DEBUG( "ChdDictionary move-assigned with {} entries ({} seeds)", m_table.size(), m_seeds.size() );
@@ -272,10 +315,18 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	bool ChdDictionary<TValue>::tryGetValue( std::string_view key, TValue* value ) const
 	{
-		if ( key.empty() || m_empty || m_table.empty() || m_seeds.empty() )
+		auto start = std::chrono::high_resolution_clock::now();
+
+		if ( key.empty() || m_table.empty() || m_seeds.empty() )
 		{
 			SPDLOG_TRACE( "Skipped lookup: empty key or dictionary" );
 			return false;
+		}
+
+		++s_lookupCount;
+		if ( s_lookupCount % 10000 == 0 )
+		{
+			SPDLOG_INFO( "Dictionary performance: {} lookups, hit rate: {:.1f}%", s_lookupCount, 100.0f * static_cast<float>( s_lookupHits ) / static_cast<float>( s_lookupCount ) );
 		}
 
 		auto hashValue{ hash( key ) };
@@ -306,13 +357,24 @@ namespace dnv::vista::sdk
 			*value = kvp->second;
 		}
 
+		++s_lookupHits;
+
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration<double, std::milli>( end - start ).count();
+
+		if ( s_lookupCount % 100000 == 0 )
+		{
+			auto avgTime = static_cast<float>( duration ) / static_cast<float>( s_lookupCount );
+			SPDLOG_INFO( "Dictionary lookup stats: avg time {:.3f}μs, hit rate {:.1f}%", avgTime, 100.0f * static_cast<float>( s_lookupHits ) / static_cast<float>( duration ) );
+		}
+
 		return true;
 	}
 
 	template <typename TValue>
 	bool ChdDictionary<TValue>::isEmpty() const
 	{
-		return m_empty;
+		return m_table.empty() || m_seeds.empty();
 	}
 
 	//-------------------------------------------------------------------
@@ -471,7 +533,59 @@ namespace dnv::vista::sdk
 		}
 		else
 		{
-			return ::memcmp( a.data(), b.data(), aLen ) == 0;
+			return std::memcmp( a.data(), b.data(), aLen ) == 0;
 		}
 	}
+
+	template <typename TValue>
+	bool ChdDictionary<TValue>::stringsEqual( std::span<const char> a, std::span<const char> b ) noexcept
+	{
+		const auto aLen{ a.size() };
+
+		if ( aLen != b.size() )
+		{
+			return false;
+		}
+
+		if ( aLen == 0 )
+		{
+			return true;
+		}
+
+		if ( aLen < 16 )
+		{
+			for ( size_t i{ 0 }; i < aLen; ++i )
+			{
+				if ( a[i] != b[i] )
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		return std::memcmp( a.data(), b.data(), aLen ) == 0;
+	}
+
+	//-------------------------------------------------------------------
+	// Caching and Performance Monitoring
+	//-------------------------------------------------------------------
+
+	template <typename TValue>
+	thread_local std::array<std::string, 128> ChdDictionary<TValue>::s_hashCacheStorage{};
+
+	template <typename TValue>
+	thread_local std::array<typename ChdDictionary<TValue>::HashCacheEntry, 128> ChdDictionary<TValue>::s_hashCache{};
+
+	template <typename TValue>
+	thread_local size_t ChdDictionary<TValue>::s_cacheHits = 0;
+
+	template <typename TValue>
+	thread_local size_t ChdDictionary<TValue>::s_cacheMisses = 0;
+
+	template <typename TValue>
+	thread_local size_t ChdDictionary<TValue>::s_lookupCount = 0;
+
+	template <typename TValue>
+	thread_local size_t ChdDictionary<TValue>::s_lookupHits = 0;
 }

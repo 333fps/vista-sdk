@@ -77,7 +77,7 @@ namespace dnv::vista::sdk
 			 * @return The updated hash value
 			 * @see https://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function
 			 */
-			static uint32_t FNV1a( uint32_t hash, uint8_t ch );
+			static uint32_t fnv1a( uint32_t hash, uint8_t ch );
 
 			/**
 			 * @brief CRC32 hash function using SSE4.2 instructions
@@ -86,17 +86,7 @@ namespace dnv::vista::sdk
 			 * @return The updated hash value
 			 * @see https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 			 */
-			static uint32_t CRC32( uint32_t hash, uint8_t ch );
-
-			/**
-			 * @brief Larsson hash function (37 * hash + ch)
-			 * @param hash The current hash value
-			 * @param ch The character to hash
-			 * @return The updated hash value
-			 * @note A variant of the multiplicative hash function using 37 as multiplier
-			 * @see https://en.wikipedia.org/wiki/Hash_function#Multiplicative_hashing
-			 */
-			static uint32_t Larsson( uint32_t hash, uint8_t ch );
+			static uint32_t crc32( uint32_t hash, uint8_t ch );
 
 			/**
 			 * @brief Seed mixing function for CHD algorithm
@@ -201,8 +191,10 @@ namespace dnv::vista::sdk
 		// Constructors & Assignment Operators
 		//-------------------------------------------------------------------
 
-		/** @brief Default constructor creates an empty dictionary */
-		ChdDictionary() = default;
+		/**
+		 * @brief Default constructor creates an empty dictionary
+		 */
+		ChdDictionary();
 
 		/**
 		 * @brief Construct from vector of key-value pairs
@@ -211,15 +203,15 @@ namespace dnv::vista::sdk
 		explicit ChdDictionary( const std::vector<std::pair<std::string, TValue>>& items );
 
 		/**
-		 * @brief Construct from initializer list
-		 * @param items Initializer list of key-value pairs
+		 * @brief Copy constructor
+		 * @param other Source dictionary to copy
 		 */
-		explicit ChdDictionary( std::initializer_list<std::pair<std::string, TValue>> items );
-
-		/** @brief Copy constructor */
 		ChdDictionary( const ChdDictionary& other );
 
-		/** @brief Move constructor */
+		/**
+		 * @brief Move constructor for efficient transfer of dictionary contents
+		 * @param other Dictionary to move from (will be left in valid but empty state)
+		 */
 		ChdDictionary( ChdDictionary&& other ) noexcept;
 
 		/**
@@ -316,6 +308,16 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] static bool stringsEqual( std::string_view a, const std::string& b ) noexcept;
 
+		/**
+		 * @brief Compare two character spans for equality
+		 * @param a First character span
+		 * @param b Second character span
+		 * @return true if spans contain identical characters, false otherwise
+		 * @note This overload is useful for comparing raw character arrays
+		 *       or memory buffers without constructing string objects
+		 */
+		[[nodiscard]] static bool stringsEqual( std::span<const char> a, std::span<const char> b ) noexcept;
+
 		//-------------------------------------------------------------------
 		// Private Member Variables
 		//-------------------------------------------------------------------
@@ -326,11 +328,36 @@ namespace dnv::vista::sdk
 		/** @brief Seeds for the perfect hash function */
 		std::vector<int> m_seeds;
 
-		/** @brief Flag indicating if dictionary is empty */
-		bool m_empty;
+		//-------------------------------------------------------------------
+		// Caching and Performance Monitoring
+		//-------------------------------------------------------------------
 
-		/** @brief Thread-local hash cache to improve performance on repeated lookups */
-		static thread_local inline std::array<std::pair<std::string, uint32_t>, 128> s_hashCache;
+		/**  @brief Cache structure for faster hash lookups */
+		struct HashCacheEntry
+		{
+			std::string_view key;
+			uint32_t hash;
+		};
+
+		// constexpr uint64_t HASH_HASH{ 128 };
+
+		/** @brief Thread-local cache for faster hash lookups */
+		alignas( 64 ) static thread_local std::array<HashCacheEntry, 128> s_hashCache;
+
+		/** @brief Storage for string keys to ensure string_views remain valid */
+		alignas( 64 ) static thread_local std::array<std::string, 128> s_hashCacheStorage;
+
+		/** @brief Counter for cache hits (for performance monitoring) */
+		static thread_local size_t s_cacheHits;
+
+		/** @brief Counter for cache misses (for performance monitoring) */
+		static thread_local size_t s_cacheMisses;
+
+		/** @brief Counter for total lookups (for performance monitoring) */
+		static thread_local size_t s_lookupCount;
+
+		/** @brief Counter for successful lookups (for performance monitoring) */
+		static thread_local size_t s_lookupHits;
 	};
 }
 

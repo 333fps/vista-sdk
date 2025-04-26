@@ -88,9 +88,10 @@ namespace dnv::vista::sdk
 		: m_visVersion( version )
 	{
 		std::unordered_map<std::string, GmodNode> nodeMap;
+
 		for ( const auto& nodeDto : dto.items )
 		{
-			GmodNode node( m_visVersion, nodeDto );
+			GmodNode node( version, nodeDto );
 			nodeMap.emplace( nodeDto.code, std::move( node ) );
 		}
 
@@ -133,7 +134,7 @@ namespace dnv::vista::sdk
 		m_nodeMap = ChdDictionary<GmodNode>( std::move( nodePairs ) );
 
 		SPDLOG_INFO( "Creating Gmod with {} items - dictionary has {} entries",
-			dto.items.size(), nodeMap.size() );
+			dto.items.size(), m_nodeMap.isEmpty() ? 0 : dto.items.size() );
 
 		if ( m_nodeMap.isEmpty() )
 		{
@@ -142,7 +143,17 @@ namespace dnv::vista::sdk
 	}
 
 	Gmod::Gmod( VisVersion version, const std::unordered_map<std::string, GmodNode>& nodeMap )
-		: m_visVersion( version )
+		: m_visVersion( version ),
+		  m_rootNode( [&nodeMap]() { return nodeMap.at( "VE" ); }() ),
+		  m_nodeMap( [&nodeMap]() {
+			  std::vector<std::pair<std::string, GmodNode>> pairs;
+			  pairs.reserve( nodeMap.size() );
+			  for ( const auto& [code, node] : nodeMap )
+			  {
+				  pairs.emplace_back( code, node );
+			  }
+			  return ChdDictionary<GmodNode>( std::move( pairs ) );
+		  }() )
 	{
 		for ( const auto& [code, node] : nodeMap )
 		{

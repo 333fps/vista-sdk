@@ -22,6 +22,7 @@
 #include <queue>
 #include <regex>
 #include <set>
+#include <span>
 #include <sstream>
 #include <stack>
 #include <stdexcept>

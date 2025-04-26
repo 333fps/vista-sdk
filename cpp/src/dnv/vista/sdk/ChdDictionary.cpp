@@ -61,7 +61,7 @@ namespace dnv::vista::sdk
 		// Hashing
 		//-------------------------------------------------------------------
 
-		uint32_t Hashing::FNV1a( uint32_t hash, uint8_t ch )
+		uint32_t Hashing::fnv1a( uint32_t hash, uint8_t ch )
 		{
 			auto result{ ( ch ^ hash ) * FNV_PRIME };
 
@@ -70,20 +70,11 @@ namespace dnv::vista::sdk
 			return result;
 		}
 
-		uint32_t Hashing::CRC32( uint32_t hash, uint8_t ch )
+		uint32_t Hashing::crc32( uint32_t hash, uint8_t ch )
 		{
 			auto result{ _mm_crc32_u8( hash, ch ) };
 
 			SPDLOG_DEBUG( "Hashing::CRC32: hash={}, ch={}, result={}", hash, ch, result );
-
-			return result;
-		}
-
-		uint32_t Hashing::Larsson( uint32_t hash, uint8_t ch )
-		{
-			auto result{ 37 * hash + ch };
-
-			SPDLOG_DEBUG( "Hashing::Larsson: hash={}, ch={}, result={}", hash, ch, result );
 
 			return result;
 		}
