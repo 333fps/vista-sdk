@@ -204,6 +204,8 @@ namespace dnv::vista::sdk
 
 		m_standardValues = CodebookStandardValues{ m_name, valueSet };
 		m_groups = CodebookGroups{ groupSet };
+
+		SPDLOG_INFO( "Codebook created with {} standard values across {} groups", valueSet.size(), groupSet.size() );
 	}
 
 	//-------------------------------------------------------------------
@@ -234,9 +236,9 @@ namespace dnv::vista::sdk
 	// Queries
 	//-------------------------------------------------------------------
 
-	bool Codebook::hasGroup( const std::string& group ) const
+	bool Codebook::hasGroup( std::string_view group ) const
 	{
-		return m_groups.contains( group );
+		return m_groups.contains( std::string( group ) );
 	}
 
 	bool Codebook::hasStandardValue( const std::string& value ) const
@@ -486,8 +488,8 @@ namespace dnv::vista::sdk
 			}
 		}
 
-		SPDLOG_INFO( "Position is valid: {}", position );
-
-		return *std::max_element( validations.begin(), validations.end() );
+		auto result = *std::max_element( validations.begin(), validations.end() );
+		SPDLOG_INFO( "Position validation result for '{}': {}", position, static_cast<int>( result ) );
+		return result;
 	}
 }

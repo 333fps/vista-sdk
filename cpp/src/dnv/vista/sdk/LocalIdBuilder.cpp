@@ -589,9 +589,9 @@ namespace dnv::vista::sdk
 			case CodebookName::ActivityType:
 				SPDLOG_ERROR( "ActivityType is not supported as a direct metadata tag" );
 				throw std::invalid_argument( "ActivityType is not supported as a metadata tag" );
-			case CodebookName::Unknown:
-				SPDLOG_ERROR( "Unknown codebook for metadata tag" );
-				throw std::invalid_argument( "Unknown codebook name for metadata tag" );
+			// case CodebookName::Unknown:
+			// 	SPDLOG_ERROR( "Unknown codebook for metadata tag" );
+			// 	throw std::invalid_argument( "Unknown codebook name for metadata tag" );
 			default:
 				SPDLOG_ERROR( "Unsupported codebook for metadata tag: {}", static_cast<int>( metadataTag.name() ) );
 				throw std::invalid_argument( "Unsupported codebook for metadata tag" );
@@ -654,9 +654,6 @@ namespace dnv::vista::sdk
 				return withoutPosition();
 			case CodebookName::Detail:
 				return withoutDetail();
-			case CodebookName::Unknown:
-				SPDLOG_ERROR( "Cannot remove Unknown metadata tag" );
-				throw std::invalid_argument( "Cannot remove Unknown metadata tag" );
 			case CodebookName::FunctionalServices:
 			case CodebookName::MaintenanceCategory:
 			case CodebookName::ActivityType:

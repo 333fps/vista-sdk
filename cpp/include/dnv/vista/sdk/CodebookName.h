@@ -1,7 +1,27 @@
+/**
+ * @file CodebookName.h
+ * @brief Enumeration and utility functions for ISO 19848 codebook naming
+ *
+ * This file defines the standard codebook types as specified in the ISO 19848 standard
+ * for vessel information structure, along with utility functions to convert between
+ * enum values and their string prefix representations.
+ *
+ * @see ISO 19848:2018 - Ships and marine technology — Standard data for shipboard
+ *      machinery and equipment
+ */
+
 #pragma once
+
+#include <string>
+#include <string_view>
+#include <stdexcept>
 
 namespace dnv::vista::sdk
 {
+	//-------------------------------------------------------------------
+	// Codebook Type Definitions
+	//-------------------------------------------------------------------
+
 	/**
 	 * @brief Enumeration of codebook types used in the VIS system
 	 *
@@ -10,20 +30,43 @@ namespace dnv::vista::sdk
 	 */
 	enum class CodebookName
 	{
-		Unknown = 0,
+		/** @brief Represents physical quantities and units (prefix: qty) */
+		Quantity = 1,
 
-		Quantity = 1,		 ///< Represents physical quantities and units (prefix: qty)
-		Content,			 ///< Represents content types (prefix: cnt)
-		Calculation,		 ///< Represents calculation methods (prefix: calc)
-		State,				 ///< Represents states or conditions (prefix: state)
-		Command,			 ///< Represents commands or actions (prefix: cmd)
-		Type,				 ///< Represents type classifications (prefix: type)
-		FunctionalServices,	 ///< Represents functional services (prefix: funct.svc)
-		MaintenanceCategory, ///< Represents maintenance categories (prefix: maint.cat)
-		ActivityType,		 ///< Represents types of activities (prefix: act.type)
-		Position,			 ///< Represents positions or locations (prefix: pos)
-		Detail				 ///< Represents detailed information (prefix: detail)
+		/** @brief Represents content types (prefix: cnt) */
+		Content = 2,
+
+		/** @brief Represents calculation methods (prefix: calc) */
+		Calculation = 3,
+
+		/** @brief Represents states or conditions (prefix: state) */
+		State = 4,
+
+		/** @brief Represents commands or actions (prefix: cmd) */
+		Command = 5,
+
+		/** @brief Represents type classifications (prefix: type) */
+		Type = 6,
+
+		/** @brief Represents functional services (prefix: funct.svc) */
+		FunctionalServices = 7,
+
+		/** @brief Represents maintenance categories (prefix: maint.cat) */
+		MaintenanceCategory = 8,
+
+		/** @brief Represents types of activities (prefix: act.type) */
+		ActivityType = 9,
+
+		/** @brief Represents positions or locations (prefix: pos) */
+		Position = 10,
+
+		/** @brief Represents detailed information (prefix: detail) */
+		Detail = 11
 	};
+
+	//-------------------------------------------------------------------
+	// Utility Functions
+	//-------------------------------------------------------------------
 
 	/**
 	 * @brief Utility class for working with CodebookName values

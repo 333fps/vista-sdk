@@ -106,7 +106,6 @@ namespace dnv::vista::sdk
 			case CodebookName::Detail:
 				prefix = "detail";
 				break;
-			case CodebookName::Unknown:
 			default:
 			{
 				SPDLOG_ERROR( "Unknown metadata tag: {}", static_cast<int>( m_name ) );
