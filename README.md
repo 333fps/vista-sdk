@@ -186,7 +186,6 @@ The C++ SDK uses [vcpkg](https://github.com/microsoft/vcpkg) for dependency mana
 - [cpuid](https://github.com/anrieff/libcpuid): For CPU feature detection (intrinsic capabilities)
 - [async_mqtt_iface](https://github.com/redboltz/async_mqtt): For MQTT communication interface
 - [GoogleTest](https://github.com/google/googletest): For unit testing framework
-- [Catch2](https://github.com/catchorg/Catch2): For additional testing capabilities
 
 #### Building with CMake
 

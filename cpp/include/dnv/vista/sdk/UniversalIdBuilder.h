@@ -32,6 +32,15 @@ namespace dnv::vista::sdk
 		/** Default constructor. */
 		UniversalIdBuilder() = default;
 
+		UniversalIdBuilder( const UniversalIdBuilder& other );
+
+		/**
+		 * Copy assignment operator.
+		 * @param other The other UniversalIdBuilder to copy from.
+		 * @return Reference to this object after assignment.
+		 */
+		UniversalIdBuilder& operator=( const UniversalIdBuilder& other );
+
 		/**
 		 * Creates a new UniversalIdBuilder for the specified VIS version.
 		 * @param version The VIS version.

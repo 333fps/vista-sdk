@@ -345,6 +345,15 @@ namespace dnv::vista::sdk
 			Enumerator( const GmodPath& path, std::optional<size_t> fromDepth = std::nullopt );
 
 			/**
+			 * @brief Copy assignment operator that ensures proper path compatibility
+			 *
+			 * @param other The enumerator to copy from
+			 * @return Reference to this object
+			 * @throws std::invalid_argument If paths are different
+			 */
+			Enumerator& operator=( const Enumerator& other );
+
+			/**
 			 * @brief Current item in the enumeration
 			 * @return Pair of (depth, node_reference)
 			 */
@@ -384,10 +393,18 @@ namespace dnv::vista::sdk
 				Iterator( Enumerator& enumerator, bool end );
 
 				/**
+				 * @brief Copy constructor
+				 *
+				 * @param other The iterator to copy from
+				 */
+				Iterator( const Iterator& other );
+
+				/**
 				 * @brief Pre-increment operator
 				 * @return Reference to this iterator after advancing
 				 */
-				Iterator& operator++();
+				Iterator&
+				operator++();
 
 				/**
 				 * @brief Post-increment operator
@@ -415,6 +432,15 @@ namespace dnv::vista::sdk
 				 */
 				reference operator*() const;
 
+				/**
+				 * @brief Copy assignment operator
+				 *
+				 * @param other The iterator to copy from
+				 * @return Reference to this iterator
+				 * @throws std::invalid_argument If iterators don't reference the same enumerator
+				 */
+				Iterator& operator=( const Iterator& other );
+
 			private:
 				/** @brief Reference to the underlying enumerator */
 				Enumerator& m_enumerator;
@@ -425,6 +451,17 @@ namespace dnv::vista::sdk
 				/** @brief Cached current value */
 				mutable std::optional<value_type> m_current;
 
+				/**
+				 * @brief Cached value for deferred evaluation during iteration
+				 *
+				 * This member caches the current iterator value to optimize multiple
+				 * consecutive dereferences without redundant lookups. Being mutable allows
+				 * updating the cache even in const methods like operator*().
+				 *
+				 * The cached value consists of:
+				 * - size_t: The depth/position in the path
+				 * - reference_wrapper: Non-owning reference to the GmodNode at that depth
+				 */
 				mutable std::optional<std::pair<size_t, std::reference_wrapper<const GmodNode>>> m_cachedValue;
 			};
 
@@ -563,6 +600,18 @@ namespace dnv::vista::sdk
 		/** @brief Virtual destructor */
 		virtual ~GmodParsePathResult() = default;
 
+		/** @brief Delete copy constructor - results shouldn't be copied */
+		GmodParsePathResult( const GmodParsePathResult& ) = delete;
+
+		/** @brief Enable move constructor for return-by-value */
+		GmodParsePathResult( GmodParsePathResult&& ) = default;
+
+		/** @brief Delete copy assignment operator - results shouldn't be assigned */
+		GmodParsePathResult& operator=( const GmodParsePathResult& ) = delete;
+
+		/** @brief Enable move assignment */
+		GmodParsePathResult& operator=( GmodParsePathResult&& ) = default;
+
 		/** @brief Success result type */
 		class Ok;
 
@@ -572,8 +621,6 @@ namespace dnv::vista::sdk
 
 	/**
 	 * @brief Successful path parsing result
-	 *
-	 * Contains the successfully parsed GmodPath.
 	 */
 	class GmodParsePathResult::Ok final : public GmodParsePathResult
 	{
@@ -589,15 +636,29 @@ namespace dnv::vista::sdk
 
 		/**
 		 * @brief Construct a successful result by moving
-		 * @param p The parsed path to move
+		 * @param path The parsed path to move
 		 */
-		explicit Ok( GmodPath&& p );
+		explicit Ok( GmodPath&& path );
+
+		/**
+		 * @brief Delete copy constructor - results shouldn't be copied
+		 */
+		Ok( const Ok& ) = delete;
+
+		/**
+		 * @brief Delete copy assignment - results shouldn't be assigned
+		 */
+		Ok& operator=( const Ok& ) = delete;
+
+		/**
+		 * @brief Move constructor
+		 * @param other The object to move from
+		 */
+		Ok( Ok&& other ) noexcept;
 	};
 
 	/**
 	 * @brief Failed path parsing result
-	 *
-	 * Contains an error message describing why parsing failed.
 	 */
 	class GmodParsePathResult::Err final : public GmodParsePathResult
 	{
@@ -610,6 +671,22 @@ namespace dnv::vista::sdk
 		 * @param error The error message
 		 */
 		explicit Err( const std::string& error );
+
+		/**
+		 * @brief Delete copy constructor - results shouldn't be copied
+		 */
+		Err( const Err& ) = delete;
+
+		/**
+		 * @brief Delete copy assignment - results shouldn't be assigned
+		 */
+		Err& operator=( const Err& ) = delete;
+
+		/**
+		 * @brief Move constructor
+		 * @param other The object to move from
+		 */
+		Err( Err&& other ) noexcept;
 	};
 
 	/**

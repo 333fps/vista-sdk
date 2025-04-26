@@ -29,9 +29,24 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
+		 * @brief Default constructor
+		 */
+		ILocalIdBuilder() = default;
+
+		/**
 		 * @brief Virtual destructor
 		 */
 		virtual ~ILocalIdBuilder() = default;
+
+		/**
+		 * @brief Delete copy constructor - interfaces shouldn't be copied
+		 */
+		ILocalIdBuilder( const ILocalIdBuilder& ) = delete;
+
+		/**
+		 * @brief Delete copy assignment - interfaces shouldn't be assigned
+		 */
+		ILocalIdBuilder& operator=( const ILocalIdBuilder& ) = delete;
 
 		//-------------------------------------------------------------------------
 		// Core Build Method

@@ -132,6 +132,18 @@ namespace dnv::vista::sdk
 		VIS();
 
 		/**
+		 * @brief Copy constructor (deleted)
+		 * @details VIS is a singleton and shouldn't be copied
+		 */
+		VIS( const VIS& ) = delete;
+
+		/**
+		 * @brief Copy assignment operator (deleted)
+		 * @details VIS is a singleton and shouldn't be assigned
+		 */
+		VIS& operator=( const VIS& ) = delete;
+
+		/**
 		 * @brief Virtual destructor
 		 */
 		virtual ~VIS() = default;

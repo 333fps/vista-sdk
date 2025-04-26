@@ -19,6 +19,24 @@ namespace dnv::vista::sdk
 	// Factory Methods
 	//-------------------------------------------------------------------------
 
+	UniversalIdBuilder::UniversalIdBuilder( const UniversalIdBuilder& other )
+		: IUniversalIdBuilder(),
+		  m_localId( other.m_localId ),
+		  m_imoNumber( other.m_imoNumber )
+
+	{
+	}
+
+	UniversalIdBuilder& UniversalIdBuilder::operator=( const UniversalIdBuilder& other )
+	{
+		if ( this != &other )
+		{
+			m_localId = other.m_localId;
+			m_imoNumber = other.m_imoNumber;
+		}
+		return *this;
+	}
+
 	UniversalIdBuilder UniversalIdBuilder::create( VisVersion version )
 	{
 		SPDLOG_INFO( "Creating UniversalIdBuilder for VIS version {}", static_cast<int>( version ) );

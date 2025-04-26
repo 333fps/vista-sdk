@@ -46,6 +46,13 @@ namespace dnv::vista::sdk
 		LocalIdBuilder( const LocalIdBuilder& other );
 
 		/**
+		 * @brief Copy assignment operator
+		 * @param other The object to copy from
+		 * @return Reference to this object
+		 */
+		LocalIdBuilder& operator=( const LocalIdBuilder& other );
+
+		/**
 		 * @brief Create a new LocalIdBuilder with the specified VIS version
 		 * @param version The VIS version to use
 		 * @return A new LocalIdBuilder instance

@@ -269,7 +269,7 @@ namespace dnv::vista::sdk
 					throw std::runtime_error( "Failed to add node to path: parent-child relationship broken" );
 				}
 			}
-			else if ( normalAssignmentChanged )
+			else if ( normalAssignmentChanged ) // AC || AN || AD
 			{
 				SPDLOG_INFO( "Normal assignment changed for node {}", targetNode.code() );
 
@@ -310,7 +310,7 @@ namespace dnv::vista::sdk
 					}
 				}
 			}
-			else if ( selectionChanged )
+			else if ( selectionChanged ) // TODO SC || SN || SD
 			{
 				SPDLOG_INFO( "Selection changed for node {}", targetNode.code() );
 

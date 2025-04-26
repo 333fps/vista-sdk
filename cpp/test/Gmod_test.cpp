@@ -29,7 +29,7 @@ namespace dnv::vista::sdk::tests
 		int NodeCount;
 	};
 
-	std::size_t Occurrences( const std::vector<GmodNode>& parents, const GmodNode& node )
+	std::size_t occurrences( const std::vector<GmodNode>& parents, const GmodNode& node )
 	{
 		return static_cast<size_t>(
 			std::count_if( parents.begin(), parents.end(),
@@ -324,7 +324,7 @@ namespace dnv::vista::sdk::tests
 				if ( skipOccurrenceCheck )
 					return Gmod::TraversalHandlerResult::Continue;
 
-				size_t occ = Occurrences( parents, node );
+				size_t occ = occurrences( parents, node );
 				if ( occ > maxOccurrence )
 					maxOccurrence = occ;
 
@@ -354,7 +354,7 @@ namespace dnv::vista::sdk::tests
 				if ( skipOccurrenceCheck )
 					return Gmod::TraversalHandlerResult::Continue;
 
-				size_t occ = Occurrences( parents, node );
+				size_t occ = occurrences( parents, node );
 				if ( occ > maxOccurrence )
 					maxOccurrence = occ;
 

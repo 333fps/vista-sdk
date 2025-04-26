@@ -36,6 +36,30 @@ namespace dnv::vista::sdk
 		 */
 		explicit LocalId( const LocalIdBuilder& builder );
 
+		/**
+		 * @brief Copy constructor (deleted)
+		 * @details LocalId objects shouldn't be copied since base interface deletes this operation
+		 */
+		LocalId( const LocalId& ) = delete;
+
+		/**
+		 * @brief Copy assignment operator (deleted)
+		 * @details LocalId objects shouldn't be copied since base interface deletes this operation
+		 */
+		LocalId& operator=( const LocalId& ) = delete;
+
+		/**
+		 * @brief Move constructor
+		 * @details Allows LocalId objects to be moved efficiently
+		 */
+		LocalId( LocalId&& other ) noexcept;
+
+		/**
+		 * @brief Move assignment operator
+		 * @details Allows LocalId objects to be move-assigned efficiently
+		 */
+		LocalId& operator=( LocalId&& other ) noexcept;
+
 		//-------------------------------------------------------------------------
 		// ILocalId Interface Implementation
 		//-------------------------------------------------------------------------
@@ -284,7 +308,11 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 		std::vector<std::pair<LocalIdParsingState, std::string>> m_errors;
 
-		const std::unordered_map<LocalIdParsingState, std::string> m_predefinedErrorMessages = {
+		/**
+		 * @brief Predefined error messages for common parsing states
+		 * Made static since these messages are shared across all instances
+		 */
+		static const inline std::unordered_map<LocalIdParsingState, std::string> m_predefinedErrorMessages = {
 			{ LocalIdParsingState::NamingRule, "Missing or invalid naming rule" },
 			{ LocalIdParsingState::VisVersion, "Missing or invalid vis version" },
 			{ LocalIdParsingState::PrimaryItem, "Invalid or missing Primary item. Local IDs require at least a primary item and 1 metadata tag." },

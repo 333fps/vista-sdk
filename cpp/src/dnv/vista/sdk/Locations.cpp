@@ -13,34 +13,11 @@ namespace dnv::vista::sdk
 		bool HasError = false;
 		std::vector<std::pair<LocationValidationResult, std::string>> m_errors;
 
-		static LocationParsingErrorBuilder Create()
-		{
-			LocationParsingErrorBuilder builder;
-			builder.HasError = true;
-			return builder;
-		}
+		static LocationParsingErrorBuilder create();
 
-		void AddError( LocationValidationResult result, const std::string& message )
-		{
-			SPDLOG_INFO( "Adding location parsing error: {} - {}",
-				static_cast<int>( result ), message );
-			m_errors.emplace_back( result, message );
-			HasError = true;
-		}
+		void addError( LocationValidationResult result, const std::string& message );
 
-		ParsingErrors Build() const
-		{
-			std::vector<ParsingErrors::ErrorEntry> convertedErrors;
-			convertedErrors.reserve( m_errors.size() );
-
-			for ( const auto& [result, message] : m_errors )
-			{
-				convertedErrors.emplace_back( std::to_string( static_cast<int>( result ) ), message );
-			}
-
-			SPDLOG_INFO( "Built parsing errors with {} entries", convertedErrors.size() );
-			return ParsingErrors( convertedErrors );
-		}
+		ParsingErrors build() const;
 	};
 
 	LocationParsingErrorBuilder LocationParsingErrorBuilder::Empty;
@@ -311,7 +288,7 @@ namespace dnv::vista::sdk
 		bool result = tryParseInternal( value.value(), value, location, errorBuilder );
 		if ( !result )
 		{
-			errors = errorBuilder.Build();
+			errors = errorBuilder.build();
 		}
 		return result;
 	}
@@ -328,7 +305,7 @@ namespace dnv::vista::sdk
 		bool result = tryParseInternal( value, std::nullopt, location, errorBuilder );
 		if ( !result )
 		{
-			errors = errorBuilder.Build();
+			errors = errorBuilder.build();
 		}
 		return result;
 	}
@@ -339,7 +316,7 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_INFO( "Adding location parsing error: {} - {}",
 			static_cast<int>( name ), message );
-		errorBuilder.AddError( name, message );
+		errorBuilder.addError( name, message );
 	}
 
 	/*
@@ -650,5 +627,34 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "Failed to parse integer: {}", e.what() );
 			return false;
 		}
+	}
+
+	LocationParsingErrorBuilder LocationParsingErrorBuilder::create()
+	{
+		LocationParsingErrorBuilder builder;
+		builder.HasError = true;
+		return builder;
+	}
+
+	void LocationParsingErrorBuilder::addError( LocationValidationResult result, const std::string& message )
+	{
+		SPDLOG_INFO( "Adding location parsing error: {} - {}",
+			static_cast<int>( result ), message );
+		m_errors.emplace_back( result, message );
+		HasError = true;
+	}
+
+	ParsingErrors LocationParsingErrorBuilder::build() const
+	{
+		std::vector<ParsingErrors::ErrorEntry> convertedErrors;
+		convertedErrors.reserve( m_errors.size() );
+
+		for ( const auto& [result, message] : m_errors )
+		{
+			convertedErrors.emplace_back( std::to_string( static_cast<int>( result ) ), message );
+		}
+
+		SPDLOG_INFO( "Built parsing errors with {} entries", convertedErrors.size() );
+		return ParsingErrors( convertedErrors );
 	}
 }

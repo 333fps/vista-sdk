@@ -119,13 +119,13 @@ namespace dnv::vista::sdk
 			size_t maxNodes = 100000;
 
 			/** @brief Default constructor */
-			TraversalOptions() : maxTraversalOccurrence( DEFAULT_MAX_TRAVERSAL_OCCURRENCE ) {}
+			TraversalOptions();
 
 			/**
 			 * @brief Constructor with custom occurrence limit
 			 * @param maxTraversalOccurrence Maximum times a node can be visited
 			 */
-			explicit TraversalOptions( int maxTraversalOccurrence ) : maxTraversalOccurrence( maxTraversalOccurrence ) {}
+			explicit TraversalOptions( int maxTraversalOccurrence );
 		};
 
 		/** @brief Handler function type for traversal without state */
@@ -217,6 +217,13 @@ namespace dnv::vista::sdk
 		 */
 		Gmod& operator=( Gmod&& other ) noexcept;
 
+		/**
+		 * @brief Copy assignment operator for Gmod
+		 * @param other The source Gmod object to copy from
+		 * @return Reference to this object
+		 */
+		Gmod& operator=( const Gmod& other );
+
 		//-------------------------------------------------------------------
 		// Basic Access Methods
 		//-------------------------------------------------------------------
@@ -260,10 +267,7 @@ namespace dnv::vista::sdk
 		 * @brief Check if the GMOD node dictionary is empty
 		 * @return true if the node map is empty, false otherwise
 		 */
-		bool isEmpty() const
-		{
-			return m_nodeMap.isEmpty();
-		}
+		bool isEmpty() const;
 
 		/**
 		 * @brief Checks if the given type is a potential parent type.
@@ -488,8 +492,10 @@ namespace dnv::vista::sdk
 			 * @param maxOcc Maximum occurrences
 			 * @param maxN Maximum nodes to visit
 			 */
-			TraversalContext( const TraverseHandler& h, int maxOcc, size_t maxN )
-				: handler( h ), maxTraversalOccurrence( maxOcc ), maxNodes( maxN ) {}
+			TraversalContext( const TraverseHandler& h, int maxOcc, size_t maxN );
+
+			/** @brief Assignment operator deleted*/
+			TraversalContext& operator=( const TraversalContext& ) = delete;
 		};
 
 		/**
@@ -521,6 +527,9 @@ namespace dnv::vista::sdk
 				int maxOcc,
 				size_t maxN )
 				: state( s ), handler( h ), maxTraversalOccurrence( maxOcc ), maxNodes( maxN ) {}
+
+			/** @brief Assignment operator deleted */
+			StatefulTraversalContext& operator=( const StatefulTraversalContext& ) = delete;
 		};
 
 		//-------------------------------------------------------------------

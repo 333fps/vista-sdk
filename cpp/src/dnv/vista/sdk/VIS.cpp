@@ -23,7 +23,7 @@ namespace dnv::vista::sdk
 		return instance;
 	}
 
-	VIS::VIS()
+	VIS::VIS() : IVIS{}
 	{
 	}
 

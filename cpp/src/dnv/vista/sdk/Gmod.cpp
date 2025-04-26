@@ -204,6 +204,17 @@ namespace dnv::vista::sdk
 		return *this;
 	}
 
+	Gmod& Gmod::operator=( const Gmod& other )
+	{
+		if ( this != &other )
+		{
+			m_visVersion = other.m_visVersion;
+			m_rootNode = other.m_rootNode;
+			m_nodeMap = other.m_nodeMap;
+		}
+		return *this;
+	}
+
 	//-------------------------------------------------------------------
 	// Basic Access Methods
 	//-------------------------------------------------------------------
@@ -302,6 +313,11 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "Exception in TryGetNode for '{}': {}", code, ex.what() );
 			return false;
 		}
+	}
+
+	bool Gmod::isEmpty() const
+	{
+		return m_nodeMap.isEmpty();
 	}
 
 	bool Gmod::isPotentialParent( const std::string& type )
@@ -739,5 +755,18 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "Unknown exception in isProductSelectionAssignment" );
 			return false;
 		}
+	}
+
+	Gmod::TraversalContext::TraversalContext( const TraverseHandler& h, int maxOcc, size_t maxN )
+		: handler( h ), maxTraversalOccurrence( maxOcc ), maxNodes( maxN ) {}
+
+	Gmod::TraversalOptions::TraversalOptions()
+		: maxTraversalOccurrence( DEFAULT_MAX_TRAVERSAL_OCCURRENCE )
+	{
+	}
+
+	Gmod::TraversalOptions::TraversalOptions( int maxTraversalOccurrence )
+		: maxTraversalOccurrence( maxTraversalOccurrence )
+	{
 	}
 }

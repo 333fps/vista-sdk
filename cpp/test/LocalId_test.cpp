@@ -45,14 +45,15 @@ namespace dnv::vista::sdk::tests
 		}
 	};
 
-	inline std::pair<VIS, Gmod> GetVisAndGmod( VisVersion visVersion )
+	inline std::pair<VIS&, const Gmod&> getVisAndGmod( VisVersion visVersion )
 	{
-		VIS vis = VIS::instance();
-		Gmod gmod = vis.gmod( visVersion );
+		auto& vis = VIS::instance();
+		const auto& gmod = vis.gmod( visVersion );
+
 		return { vis, gmod };
 	}
 
-	std::vector<std::pair<Input, std::string>> GetValidTestData()
+	std::vector<std::pair<Input, std::string>> getValidTestData()
 	{
 		return {
 			{ Input( "411.1/C101.31-2" ), "/dnv-v2/vis-3-4a/411.1/C101.31-2/meta" },
@@ -66,7 +67,7 @@ namespace dnv::vista::sdk::tests
 				"/dnv-v2/vis-3-6a/511.11/C101.67/S208/~main.generator.engine/~starting.system.pneumatic/meta/qty-pressure/cnt-starting.air/pos-inlet" } };
 	}
 
-	std::vector<std::pair<Input, std::string>> GetValidMqttTestData()
+	std::vector<std::pair<Input, std::string>> getValidMqttTestData()
 	{
 		return {
 			{ Input( "411.1/C101.31-2", std::nullopt, "temperature", "exhaust.gas", "inlet" ),
@@ -123,7 +124,7 @@ namespace dnv::vista::sdk::tests
 
 		SPDLOG_INFO( "Testing: {}", input.PrimaryItem );
 
-		auto [vis, gmod] = GetVisAndGmod( input.visVersion );
+		auto [vis, gmod] = getVisAndGmod( input.visVersion );
 		auto codebooks = vis.GetCodebooks( input.visVersion );
 
 		std::optional<GmodPath> primaryPath;
@@ -167,7 +168,7 @@ namespace dnv::vista::sdk::tests
 
 	TEST( LocalIdTests, BuildAllWithout )
 	{
-		auto [vis, gmod] = GetVisAndGmod( VisVersion::v3_4a );
+		auto [vis, gmod] = getVisAndGmod( VisVersion::v3_4a );
 		auto codebooks = vis.GetCodebooks( VisVersion::v3_4a );
 
 		std::optional<GmodPath> primaryPath;
@@ -225,13 +226,13 @@ namespace dnv::vista::sdk::tests
 	/*
 		TEST( LocalIdTests, Equality )
 		{
-			auto testCases = GetValidTestData();
+			auto testCases = getValidTestData();
 
 			for ( const auto& testCase : testCases )
 			{
 				Input input = testCase.first;
 
-				auto [vis, gmod] = GetVisAndGmod( VisVersion::v3_4a );
+				auto [vis, gmod] = getVisAndGmod( VisVersion::v3_4a );
 				auto codebooks = vis.GetCodebooks( VisVersion::v3_4a );
 
 				std::optional<GmodPath> primaryPath;
@@ -407,6 +408,6 @@ namespace dnv::vista::sdk::tests
 	INSTANTIATE_TEST_SUITE_P(
 			ValidTests,
 			LocalIdValidTest,
-			::testing::ValuesIn( GetValidTestData() ) );
+			::testing::ValuesIn( getValidTestData() ) );
 			*/
 }

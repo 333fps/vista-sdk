@@ -4,7 +4,7 @@
 
 namespace dnv::vista::sdk
 {
-	std::vector<std::string> ReadLinesFromFile( const std::string& filePath )
+	std::vector<std::string> readLinesFromFile( const std::string& filePath )
 	{
 		std::vector<std::string> lines;
 		std::ifstream file( filePath );
@@ -57,7 +57,7 @@ namespace dnv::vista::sdk
 	TEST( ISOStringTests, SmokeTest )
 	{
 		const std::string filePath = "testdata/LocalIds.txt";
-		std::vector<std::string> lines = ReadLinesFromFile( filePath );
+		std::vector<std::string> lines = readLinesFromFile( filePath );
 
 		int count = 0;
 		int succeeded = 0;

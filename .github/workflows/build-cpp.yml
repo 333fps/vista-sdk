@@ -100,7 +100,7 @@ jobs:
 
     - name: Install core dependencies with vcpkg
       run: |
-        ${{ github.workspace }}/vcpkg/vcpkg install spdlog:x64-windows gtest:x64-windows catch2:x64-windows cpuid:x64-windows rapidjson:x64-windows zlib:x64-windows async-mqtt[tls]:x64-windows
+        ${{ github.workspace }}/vcpkg/vcpkg install spdlog:x64-windows gtest:x64-windows cpuid:x64-windows rapidjson:x64-windows zlib:x64-windows async-mqtt[tls]:x64-windows
         ${{ github.workspace }}/vcpkg/vcpkg integrate install
       shell: cmd
 

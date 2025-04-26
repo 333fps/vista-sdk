@@ -20,7 +20,25 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 		// Lifecycle
 		//-------------------------------------------------------------------------
+		/**
+		 * @brief Default constructor
+		 */
+		ILocalId() = default;
+
+		/**
+		 * @brief Virtual destructor
+		 */
 		virtual ~ILocalId() = default;
+
+		/**
+		 * @brief Delete copy constructor - interfaces shouldn't be copied
+		 */
+		ILocalId( const ILocalId& ) = delete;
+
+		/**
+		 * @brief Delete copy assignment - interfaces shouldn't be assigned
+		 */
+		ILocalId& operator=( const ILocalId& ) = delete;
 
 		//-------------------------------------------------------------------------
 		// Core Properties

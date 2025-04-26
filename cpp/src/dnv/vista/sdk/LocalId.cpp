@@ -31,6 +31,21 @@ namespace dnv::vista::sdk
 		return m_builder;
 	}
 
+	LocalId::LocalId( LocalId&& other ) noexcept
+		: ILocalId<LocalId>(),
+		  m_builder( std::move( other.m_builder ) )
+	{
+	}
+
+	LocalId& LocalId::operator=( LocalId&& other ) noexcept
+	{
+		if ( this != &other )
+		{
+			m_builder = std::move( other.m_builder );
+		}
+		return *this;
+	}
+
 	VisVersion LocalId::visVersion() const
 	{
 		return *m_builder.visVersion();

@@ -92,6 +92,25 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Created LocalIdBuilder via copy constructor" );
 	}
 
+	LocalIdBuilder& LocalIdBuilder::operator=( const LocalIdBuilder& other )
+	{
+		if ( this != &other )
+		{
+			m_visVersion = other.m_visVersion;
+			m_verboseMode = other.m_verboseMode;
+			m_items = other.m_items;
+			m_quantity = other.m_quantity;
+			m_content = other.m_content;
+			m_calculation = other.m_calculation;
+			m_state = other.m_state;
+			m_command = other.m_command;
+			m_type = other.m_type;
+			m_position = other.m_position;
+			m_detail = other.m_detail;
+		}
+		return *this;
+	}
+
 	LocalIdBuilder LocalIdBuilder::create( VisVersion version )
 	{
 		SPDLOG_INFO( "Creating LocalIdBuilder with VisVersion: {}", static_cast<int>( version ) );
@@ -870,7 +889,7 @@ namespace dnv::vista::sdk
 		size_t secondaryItemStart{ static_cast<size_t>( -1 ) };
 
 		LocalIdParsingState state{ LocalIdParsingState::NamingRule };
-		size_t i{ 1 }; // Skip initial '/'
+		size_t i{ 1 }; // TODO Skip initial '/'
 
 		while ( state <= LocalIdParsingState::MetaDetail )
 		{
@@ -924,7 +943,7 @@ namespace dnv::vista::sdk
 
 					try
 					{
-						std::string_view versionPart{ segment.substr( 4 ) }; // Extract version part after "vis-"
+						std::string_view versionPart{ segment.substr( 4 ) }; // TODO Extract version part after "vis-"
 						visVersion = VisVersionExtensions::parse( std::string( versionPart ) );
 					}
 					catch ( const std::exception& e )

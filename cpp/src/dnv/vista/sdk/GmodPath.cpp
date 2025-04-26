@@ -590,15 +590,27 @@ namespace dnv::vista::sdk
 		return true;
 	}
 
-	GmodParsePathResult::Ok::Ok( const GmodPath& p ) : path( p )
+	GmodParsePathResult::Ok::Ok( const GmodPath& path )
+		: path{ path }
 	{
 	}
 
-	GmodParsePathResult::Ok::Ok( GmodPath&& p ) : path( std::move( p ) )
+	GmodParsePathResult::Ok::Ok( GmodPath&& path )
+		: path{ std::move( path ) }
+	{
+	}
+
+	GmodParsePathResult::Ok::Ok( Ok&& other ) noexcept
+		: GmodParsePathResult( std::move( other ) ), path( std::move( other.path ) )
 	{
 	}
 
 	GmodParsePathResult::Err::Err( const std::string& errorMessage ) : error( errorMessage )
+	{
+	}
+
+	GmodParsePathResult::Err::Err( Err&& other ) noexcept
+		: GmodParsePathResult( std::move( other ) ), error( std::move( other.error ) )
 	{
 	}
 
@@ -638,6 +650,23 @@ namespace dnv::vista::sdk
 
 		SPDLOG_INFO( "Enumerator advanced to position {} at depth {}", m_current, m_depth );
 		return true;
+	}
+
+	GmodPath::Enumerator& GmodPath::Enumerator::operator=( const Enumerator& other )
+	{
+		if ( this != &other )
+		{
+			if ( &m_path != &other.m_path )
+			{
+				SPDLOG_ERROR( "Cannot assign enumerators with different path references" );
+				throw std::invalid_argument( "Cannot assign enumerators with different path references" );
+			}
+
+			m_current = other.m_current;
+			m_depth = other.m_depth;
+			m_fromDepth = other.m_fromDepth;
+		}
+		return *this;
 	}
 
 	std::pair<size_t, std::reference_wrapper<const GmodNode>> GmodPath::Enumerator::current() const
@@ -680,6 +709,14 @@ namespace dnv::vista::sdk
 				m_end = true;
 			}
 		}
+	}
+
+	GmodPath::Enumerator::Iterator::Iterator( const Iterator& other )
+		: m_enumerator( other.m_enumerator ),
+		  m_end( other.m_end ),
+		  m_current( other.m_current ),
+		  m_cachedValue( other.m_cachedValue )
+	{
 	}
 
 	GmodPath::Enumerator::Iterator& GmodPath::Enumerator::Iterator::operator++()
@@ -727,6 +764,21 @@ namespace dnv::vista::sdk
 		return *m_cachedValue;
 	}
 
+	GmodPath::Enumerator::Iterator& GmodPath::Enumerator::Iterator::operator=( const Iterator& other )
+	{
+		if ( this != &other )
+		{
+			if ( &m_enumerator != &other.m_enumerator )
+			{
+				throw std::invalid_argument( "Cannot assign iterators with different enumerator references" );
+			}
+
+			m_end = other.m_end;
+			m_current = other.m_current;
+			m_cachedValue = other.m_cachedValue;
+		}
+		return *this;
+	}
 	GmodIndividualizableSet::GmodIndividualizableSet( const std::vector<size_t>& nodes, GmodPath& path )
 		: m_nodes( nodes ), m_path( &path )
 	{

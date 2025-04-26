@@ -9,7 +9,7 @@
 
 namespace dnv::vista::sdk::tests
 {
-	inline std::pair<VIS&, Gmod> GetVisAndGmod( VisVersion visVersion )
+	inline std::pair<VIS&, Gmod> getVisAndGmod( VisVersion visVersion )
 	{
 		VIS& vis = VIS::instance();
 		Gmod gmod = vis.gmod( visVersion );
@@ -18,23 +18,23 @@ namespace dnv::vista::sdk::tests
 
 	TEST( CodebooksTests, Test_Codebooks_Loads )
 	{
-		auto [vis, gmod] = GetVisAndGmod( VisVersion::v3_4a );
+		auto [vis, gmod] = getVisAndGmod( VisVersion::v3_4a );
 
 		const auto& codebooks = vis.codebooks( VisVersion::v3_4a );
 		const auto& positionCodebook = codebooks.codebook( CodebookName::Position );
 
 		SPDLOG_INFO( "Position codebook standard values count: {}", positionCodebook.standardValues().count() );
-		for ( auto& val : positionCodebook.standardValues() )
-		{
-			SPDLOG_INFO( "Standard value: {}", val );
-		}
+		// for ( auto& val : positionCodebook.standardValues() )
+		//{
+		//  SPDLOG_INFO( "Standard value: {}", val );
+		//}
 
 		ASSERT_GT( positionCodebook.standardValues().count(), 0 );
 	}
 
 	TEST( CodebooksTests, Test_Codebooks_AccessMethods )
 	{
-		auto [vis, gmod] = GetVisAndGmod( VisVersion::v3_4a );
+		auto [vis, gmod] = getVisAndGmod( VisVersion::v3_4a );
 
 		const auto& codebooks = vis.codebooks( VisVersion::v3_4a );
 
@@ -47,7 +47,7 @@ namespace dnv::vista::sdk::tests
 
 	TEST( CodebooksTests, Test_Codebooks_Equality )
 	{
-		auto [vis, gmod] = GetVisAndGmod( VisVersion::v3_4a );
+		auto [vis, gmod] = getVisAndGmod( VisVersion::v3_4a );
 
 		const auto& codebooks = vis.codebooks( VisVersion::v3_4a );
 

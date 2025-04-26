@@ -11,9 +11,24 @@ namespace dnv::vista::sdk
 	{
 	public:
 		/**
+		 * Default constructor
+		 */
+		IUniversalIdBuilder() = default;
+
+		/**
 		 * Virtual destructor for proper cleanup of derived classes.
 		 */
 		virtual ~IUniversalIdBuilder() = default;
+
+		/**
+		 * Delete copy constructor - interfaces shouldn't be copied
+		 */
+		IUniversalIdBuilder( const IUniversalIdBuilder& ) = delete;
+
+		/**
+		 * Delete copy assignment operator - interfaces shouldn't be assigned
+		 */
+		IUniversalIdBuilder& operator=( const IUniversalIdBuilder& ) = delete;
 
 		//-------------------------------------------------------------------------
 		// State Validation

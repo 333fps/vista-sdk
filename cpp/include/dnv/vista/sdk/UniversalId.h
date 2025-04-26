@@ -26,6 +26,18 @@ namespace dnv::vista::sdk
 		explicit UniversalId( const std::shared_ptr<IUniversalIdBuilder>& builder );
 
 		/**
+		 * Copy constructor (deleted)
+		 * @details UniversalId objects shouldn't be copied since they contain non-copyable members
+		 */
+		UniversalId( const UniversalId& ) = delete;
+
+		/**
+		 * Copy assignment operator (deleted)
+		 * @details UniversalId objects shouldn't be assigned since they contain non-copyable members
+		 */
+		UniversalId& operator=( const UniversalId& ) = delete;
+
+		/**
 		 * Default virtual destructor.
 		 */
 		virtual ~UniversalId() = default;

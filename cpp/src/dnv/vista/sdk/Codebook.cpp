@@ -474,7 +474,9 @@ namespace dnv::vista::sdk
 				}
 			}
 
-			std::unordered_set<std::string> groupsSet{ groups.begin(), groups.end() };
+			auto begin = groups.begin();
+			auto end = groups.end();
+			std::unordered_set<std::string> groupsSet( begin, end );
 
 			auto defaultGroupIt{ std::find( groups.begin(), groups.end(), "DEFAULT_GROUP" ) };
 			if ( defaultGroupIt == groups.end() && groupsSet.size() != groups.size() )
