@@ -100,18 +100,18 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::invalid_argument& )
 		{
-			SPDLOG_INFO( "Failed to convert '{}' to integer", processed );
+			SPDLOG_ERROR( "Failed to convert '{}' to integer", processed );
 			return std::nullopt;
 		}
 		catch ( const std::out_of_range& )
 		{
-			SPDLOG_INFO( "IMO number out of valid integer range: '{}'", processed );
+			SPDLOG_ERROR( "IMO number out of valid integer range: '{}'", processed );
 			return std::nullopt;
 		}
 
 		if ( num == 0 || !isValid( num ) )
 		{
-			SPDLOG_INFO( "Invalid IMO number format or checksum: {}", num );
+			SPDLOG_ERROR( "Invalid IMO number format or checksum: {}", num );
 			return std::nullopt;
 		}
 
@@ -133,7 +133,7 @@ namespace dnv::vista::sdk
 	{
 		if ( imoNumber < 1000000 || imoNumber > 9999999 )
 		{
-			SPDLOG_INFO( "IMO number outside valid range: {}", imoNumber );
+			SPDLOG_ERROR( "IMO number outside valid range: {}", imoNumber );
 			return false;
 		}
 
@@ -156,8 +156,7 @@ namespace dnv::vista::sdk
 
 		bool isValid = ( providedCheckDigit == calculatedCheckDigit );
 
-		SPDLOG_INFO( "Validating IMO {}: checksum={}, calculated={}, provided={}, valid={}",
-			imoNumber, checkSum, calculatedCheckDigit, providedCheckDigit, isValid );
+		SPDLOG_INFO( "Validating IMO {}: checksum={}, calculated={}, provided={}, valid={}", imoNumber, checkSum, calculatedCheckDigit, providedCheckDigit, isValid );
 
 		return isValid;
 	}
