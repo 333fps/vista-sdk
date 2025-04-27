@@ -15,7 +15,7 @@
 namespace dnv::vista::sdk
 {
 	enum class VisVersion;
-	struct GmodDto;
+	class GmodDto;
 	class GmodPath;
 
 	/**

@@ -13,9 +13,9 @@ namespace dnv::vista::sdk
 	class LocalIdBuilder;
 	class Locations;
 	enum class VisVersion;
-	struct GmodDto;
-	struct GmodVersioningDto;
-	struct LocationsDto;
+	class GmodDto;
+	class GmodVersioningDto;
+	class LocationsDto;
 
 	/**
 	 * @brief Interface for VIS (Vessel Information Structure) operations

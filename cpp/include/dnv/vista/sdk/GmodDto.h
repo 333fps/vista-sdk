@@ -9,8 +9,9 @@ namespace dnv::vista::sdk
 	 * Contains all metadata associated with a node including its category, type, code, name,
 	 * and optional attributes.
 	 */
-	struct GmodNodeDto final
+	class GmodNodeDto final
 	{
+	public: // TODO
 		/**
 		 * @brief Default constructor
 		 */
@@ -96,8 +97,9 @@ namespace dnv::vista::sdk
 	 * Represents the entire Generic Product Model for a specific VIS version,
 	 * containing all nodes and their relationships as defined in ISO 19848.
 	 */
-	struct GmodDto final
+	class GmodDto final
 	{
+	public: // TODO
 		/**
 		 * @brief Default constructor
 		 */

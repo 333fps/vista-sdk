@@ -7,8 +7,9 @@ namespace dnv::vista::sdk
 	 *
 	 * Represents a relative location with a code, name, and optional definition.
 	 */
-	struct RelativeLocationsDto final
+	class RelativeLocationsDto final
 	{
+	public: // TODO
 		//-------------------------------------------------------------------------
 		// Constructors
 		//-------------------------------------------------------------------------
@@ -72,8 +73,9 @@ namespace dnv::vista::sdk
 	 *
 	 * Represents a collection of relative locations and the VIS version they belong to.
 	 */
-	struct LocationsDto final
+	class LocationsDto final
 	{
+	public: // TODO
 		//-------------------------------------------------------------------------
 		// Constructors
 		//-------------------------------------------------------------------------

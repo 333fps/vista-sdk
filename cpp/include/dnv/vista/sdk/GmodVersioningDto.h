@@ -7,8 +7,9 @@ namespace dnv::vista::sdk
 	 *
 	 * Represents a change in assignment between VIS versions.
 	 */
-	struct GmodVersioningAssignmentChangeDto final
+	class GmodVersioningAssignmentChangeDto final
 	{
+	public: // TODO
 		/**
 		 * @brief Default constructor
 		 */
@@ -55,8 +56,9 @@ namespace dnv::vista::sdk
 	 *
 	 * Contains instructions for converting a node between VIS versions.
 	 */
-	struct GmodNodeConversionDto final
+	class GmodNodeConversionDto final
 	{
+	public: // TODO
 		/**
 		 * @brief Default constructor
 		 */
@@ -125,8 +127,9 @@ namespace dnv::vista::sdk
 	 *
 	 * Contains all node conversion information for a specific VIS version.
 	 */
-	struct GmodVersioningDto final
+	class GmodVersioningDto final
 	{
+	public: // TODO
 		/**
 		 * @brief Default constructor
 		 */
