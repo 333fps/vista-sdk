@@ -124,7 +124,7 @@ namespace dnv::vista::sdk
 			auto convertedNode = convertNode( sourceVersion, pathNode.second, targetVersion );
 			if ( !convertedNode.has_value() )
 			{
-				// SPDLOG_ERROR( "Failed to convert path node: {}", pathNode.second.code() );
+				SPDLOG_ERROR( "Failed to convert path node: {}", pathNode.second.get().code() );
 				return std::nullopt;
 			}
 
@@ -385,12 +385,12 @@ namespace dnv::vista::sdk
 		}
 
 		std::optional<GmodPath> primaryItem;
-		if ( sourceLocalId.primaryItem().has_value() )
+		if ( sourceLocalId.primaryItem().length() > 0 )
 		{
 			SPDLOG_INFO( "Converting primary item" );
 			auto convertedPath = convertPath(
 				*sourceLocalId.visVersion(),
-				sourceLocalId.primaryItem().value(),
+				sourceLocalId.primaryItem(),
 				targetVersion );
 
 			if ( convertedPath )

@@ -11,12 +11,12 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------------
 
 	LocalIdItems::LocalIdItems(
-		const std::optional<GmodPath>& primaryItem,
-		const std::optional<GmodPath>& secondaryItem )
+		const GmodPath& primaryItem,
+		std::optional<GmodPath> secondaryItem )
 	{
-		if ( primaryItem.has_value() )
+		if ( primaryItem.length() > 0 )
 		{
-			SPDLOG_INFO( "LocalIdItems: primaryItem: {}", primaryItem->toString() );
+			SPDLOG_INFO( "LocalIdItems: primaryItem: {}", primaryItem.toString() ); // Use . not ->
 			m_primaryItem = primaryItem;
 		}
 		else
@@ -57,12 +57,12 @@ namespace dnv::vista::sdk
 	// Core Properties
 	//-------------------------------------------------------------------------
 
-	const std::optional<GmodPath>& LocalIdItems::primaryItem() const
+	const GmodPath& LocalIdItems::primaryItem() const
 	{
 		return m_primaryItem;
 	}
 
-	const std::optional<GmodPath>& LocalIdItems::secondaryItem() const
+	std::optional<GmodPath> LocalIdItems::secondaryItem() const
 	{
 		return m_secondaryItem;
 	}
@@ -73,14 +73,14 @@ namespace dnv::vista::sdk
 
 	void LocalIdItems::append( std::stringstream& builder, bool verboseMode ) const
 	{
-		if ( !m_primaryItem.has_value() && !m_secondaryItem.has_value() )
+		if ( m_primaryItem.length() == 0 && !m_secondaryItem.has_value() )
 		{
 			return;
 		}
 
-		if ( m_primaryItem.has_value() )
+		if ( m_primaryItem.length() > 0 )
 		{
-			m_primaryItem->toString( builder );
+			m_primaryItem.toString( builder );
 			builder << '/';
 		}
 
@@ -95,15 +95,15 @@ namespace dnv::vista::sdk
 		{
 			SPDLOG_INFO( "Appending verbose information for LocalIdItems" );
 
-			if ( m_primaryItem.has_value() )
+			if ( m_primaryItem.length() > 0 )
 			{
-				for ( const auto& [depth, name] : m_primaryItem->commonNames() )
+				for ( const auto& [depth, name] : m_primaryItem.commonNames() )
 				{
 					builder << '~';
 					std::optional<std::string> location;
 
-					if ( ( *m_primaryItem )[depth].location().has_value() )
-						location = ( *m_primaryItem )[depth].location()->toString();
+					if ( m_primaryItem[depth].location().has_value() )
+						location = m_primaryItem[depth].location()->toString();
 
 					appendCommonName( builder, name, location );
 					builder << '/';
@@ -134,7 +134,7 @@ namespace dnv::vista::sdk
 	void LocalIdItems::appendCommonName(
 		std::stringstream& builder,
 		const std::string& commonName,
-		const std::optional<std::string>& location )
+		std::optional<std::string> location )
 	{
 		char prev = '\0';
 
@@ -179,19 +179,20 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------------
 	// Comparison Operators
 	//-------------------------------------------------------------------------
+
 	bool LocalIdItems::operator==( const LocalIdItems& other ) const
 	{
-		if ( !m_primaryItem.has_value() && !other.m_primaryItem.has_value() &&
-			 !m_secondaryItem.has_value() && !other.m_secondaryItem.has_value() )
+		if ( m_primaryItem.length() == 0 && !m_secondaryItem.has_value() &&
+			 other.m_primaryItem.length() == 0 && !other.m_secondaryItem.has_value() )
 		{
 			return true;
 		}
 
-		if ( m_primaryItem.has_value() != other.m_primaryItem.has_value() )
+		if ( ( m_primaryItem.length() > 0 ) != ( other.m_primaryItem.length() > 0 ) )
 			return false;
 
-		if ( m_primaryItem.has_value() && other.m_primaryItem.has_value() &&
-			 !( *m_primaryItem == *other.m_primaryItem ) )
+		if ( m_primaryItem.length() > 0 && other.m_primaryItem.length() > 0 &&
+			 !( m_primaryItem == other.m_primaryItem ) )
 		{
 			return false;
 		}

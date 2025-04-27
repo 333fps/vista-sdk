@@ -18,6 +18,7 @@ set(VISTA_SDK_INCLUDES
 	../include/dnv/vista/sdk/GmodVersioning.h
 	../include/dnv/vista/sdk/GmodVersioningDto.h
 	../include/dnv/vista/sdk/ILocalId.h
+	../include/dnv/vista/sdk/ILocalId.hpp
 	../include/dnv/vista/sdk/ILocalIdBuilder.h
 	../include/dnv/vista/sdk/ILocalIdBuilder.hpp
 	../include/dnv/vista/sdk/IUniversalIdBuilder.h

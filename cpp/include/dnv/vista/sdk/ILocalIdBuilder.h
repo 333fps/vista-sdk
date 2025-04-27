@@ -78,13 +78,13 @@ namespace dnv::vista::sdk
 		 * @brief Gets the primary item path
 		 * @return The primary item path, if specified
 		 */
-		virtual const std::optional<GmodPath>& primaryItem() const = 0;
+		virtual const GmodPath& primaryItem() const = 0;
 
 		/**
 		 * @brief Gets the secondary item path
 		 * @return The secondary item path, if specified
 		 */
-		virtual const std::optional<GmodPath>& secondaryItem() const = 0;
+		virtual std::optional<GmodPath> secondaryItem() const = 0;
 
 		/**
 		 * @brief Checks if the builder has a custom tag

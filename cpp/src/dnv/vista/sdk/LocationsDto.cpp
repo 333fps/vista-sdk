@@ -102,7 +102,7 @@ namespace dnv::vista::sdk
 		return m_name;
 	}
 
-	const std::optional<std::string>& RelativeLocationsDto::definition() const
+	std::optional<std::string> RelativeLocationsDto::definition() const
 	{
 		return m_definition;
 	}

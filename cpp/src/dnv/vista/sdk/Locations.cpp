@@ -55,7 +55,7 @@ namespace dnv::vista::sdk
 
 	RelativeLocation::RelativeLocation( char code, const std::string& name,
 		const Location& location,
-		const std::optional<std::string>& definition )
+		const std::optional<std::string> definition )
 		: m_code( code ), m_name( name ), m_location( location ), m_definition( definition )
 	{
 		SPDLOG_INFO( "Created RelativeLocation: code={}, name={}", code, name );
@@ -71,7 +71,7 @@ namespace dnv::vista::sdk
 		return m_name;
 	}
 
-	const std::optional<std::string>& RelativeLocation::definition() const
+	std::optional<std::string> RelativeLocation::definition() const
 	{
 		return m_definition;
 	}
@@ -318,139 +318,6 @@ namespace dnv::vista::sdk
 			static_cast<int>( name ), message );
 		errorBuilder.addError( name, message );
 	}
-
-	/*
-	bool Locations::tryParseInternal( std::string_view span,
-		const std::optional<std::string>& originalStr,
-		Location& location,
-		LocationParsingErrorBuilder& errorBuilder ) const
-	{
-		SPDLOG_INFO( "Parsing location: '{}'", span );
-
-		if ( span.empty() )
-		{
-			addError( errorBuilder, LocationValidationResult::NullOrWhiteSpace,
-				"Invalid location: contains only whitespace" );
-			return false;
-		}
-
-		bool isOnlyWhitespace = true;
-		for ( char c : span )
-		{
-			if ( !std::isspace( c ) )
-			{
-				isOnlyWhitespace = false;
-				break;
-			}
-		}
-
-		if ( isOnlyWhitespace )
-		{
-			addError( errorBuilder, LocationValidationResult::NullOrWhiteSpace,
-				"Invalid location: contains only whitespace" );
-			return false;
-		}
-
-		std::string result;
-		LocationCharDict charDict{};
-
-		int digitStartIndex = -1;
-		int prevDigitIndex = -1;
-		int charsStartIndex = -1;
-
-		for ( size_t i = 0; i < span.length(); i++ )
-		{
-			char ch = span[i];
-
-			if ( std::isdigit( ch ) )
-			{
-				if ( charsStartIndex != -1 )
-				{
-					SPDLOG_INFO( "Digit found after location codes at position {}", i );
-					addError( errorBuilder, LocationValidationResult::InvalidOrder,
-						"Invalid location: numeric part must come before location codes" );
-					return false;
-				}
-
-				if ( prevDigitIndex != -1 && prevDigitIndex != static_cast<int>( i ) - 1 )
-				{
-					SPDLOG_INFO( "Discontinuous digit sequence at position {}", i );
-					addError( errorBuilder, LocationValidationResult::Invalid,
-						"Invalid location: cannot have multiple separated digits" );
-					return false;
-				}
-
-				if ( digitStartIndex == -1 )
-				{
-					digitStartIndex = static_cast<int>( i );
-				}
-				prevDigitIndex = static_cast<int>( i );
-
-				SPDLOG_INFO( "Found digit at position {}: '{}'", i, ch );
-				result.push_back( ch );
-				continue;
-			}
-
-			if ( charsStartIndex == -1 )
-			{
-				charsStartIndex = static_cast<int>( i );
-			}
-
-			bool valid = false;
-			for ( char code : m_locationCodes )
-			{
-				if ( code == ch )
-				{
-					valid = true;
-					break;
-				}
-			}
-
-			if ( !valid )
-			{
-				SPDLOG_INFO( "Invalid location code: '{}' at position {}", ch, i );
-				addError( errorBuilder, LocationValidationResult::InvalidCode,
-					"Invalid location code: " + std::string( 1, ch ) );
-				return false;
-			}
-
-			if ( i > 0 && charsStartIndex != static_cast<int>( i ) )
-			{
-				char prevCh = span[i - 1];
-				if ( !std::isdigit( prevCh ) && ch < prevCh )
-				{
-					SPDLOG_INFO( "Location codes not in alphabetical order: '{}' after '{}'", ch, prevCh );
-					addError( errorBuilder, LocationValidationResult::InvalidOrder,
-						"Invalid location: codes must be alphabetically sorted" );
-					return false;
-				}
-			}
-
-			SPDLOG_INFO( "Found location code at position {}: '{}'", i, ch );
-			result.push_back( ch );
-
-			if ( m_reversedGroups.find( ch ) != m_reversedGroups.end() )
-			{
-				LocationGroup group = m_reversedGroups.at( ch );
-				std::optional<char> existingValue;
-
-				if ( !charDict.tryAdd( group, ch, existingValue ) )
-				{
-					SPDLOG_INFO( "Duplicate location code from group {}: '{}' and '{}'",
-						static_cast<int>( group ), existingValue.value(), ch );
-					addError( errorBuilder, LocationValidationResult::InvalidOrder,
-						"Duplicate location code from the same group: " +
-							std::string( 1, existingValue.value() ) + " and " + std::string( 1, ch ) );
-					return false;
-				}
-			}
-		}
-
-		location = Location( result );
-		SPDLOG_INFO( "Successfully parsed location: '{}'", result );
-		return true;
-	}
-	*/
 
 	bool Locations::tryParseInternal( std::string_view span,
 		const std::optional<std::string>& originalStr,

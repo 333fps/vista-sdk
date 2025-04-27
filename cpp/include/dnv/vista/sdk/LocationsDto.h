@@ -78,7 +78,7 @@ namespace dnv::vista::sdk
 		 * @brief Get the location definition
 		 * @return The optional definition of the location
 		 */
-		const std::optional<std::string>& definition() const;
+		std::optional<std::string> definition() const;
 
 		//-------------------------------------------------------------------------
 		// Serialization Methods

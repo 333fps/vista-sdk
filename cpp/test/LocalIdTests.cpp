@@ -60,10 +60,10 @@ namespace dnv::vista::sdk::tests
 		bool Verbose = false;
 
 		Input( const std::string& primaryItem,
-			const std::optional<std::string>& secondaryItem = std::nullopt,
-			const std::optional<std::string>& quantity = std::nullopt,
-			const std::optional<std::string>& content = std::nullopt,
-			const std::optional<std::string>& position = std::nullopt,
+			std::optional<std::string> secondaryItem = std::nullopt,
+			std::optional<std::string> quantity = std::nullopt,
+			std::optional<std::string> content = std::nullopt,
+			std::optional<std::string> position = std::nullopt,
 			VisVersion visVersion = VisVersion::v3_4a,
 			bool verbose = false )
 			: PrimaryItem( primaryItem ),
@@ -323,9 +323,9 @@ namespace dnv::vista::sdk::tests
 			EXPECT_EQ( localId, otherLocalId );
 
 			LocalIdBuilder freshCopy = LocalIdBuilder::create( VisVersion::v3_4a );
-			if ( localId.primaryItem().has_value() )
+			if ( localId.primaryItem().length() > 0 )
 			{
-				freshCopy = freshCopy.withPrimaryItem( *localId.primaryItem() );
+				freshCopy = freshCopy.withPrimaryItem( localId.primaryItem() );
 			}
 			if ( localId.secondaryItem().has_value() )
 			{

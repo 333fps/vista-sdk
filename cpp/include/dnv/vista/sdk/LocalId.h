@@ -1,3 +1,12 @@
+/**
+ * @file LocalId.h
+ * @brief LocalId class implementation for the VIS system
+ *
+ * Defines the concrete LocalId class which implements the ILocalId interface,
+ * providing a complete implementation for Local IDs in the Vessel Information
+ * Structure (VIS) system according to ISO 19848 standards.
+ */
+
 #pragma once
 
 #include "ILocalId.h"
@@ -5,28 +14,33 @@
 
 namespace dnv::vista::sdk
 {
+	//-------------------------------------------------------------------------
+	// Forward declarations
+	//-------------------------------------------------------------------------
+
 	enum class VisVersion;
 	class GmodPath;
 	class MetadataTag;
 	class ParsingErrors;
 
 	/**
-	 * @brief Local ID class for identifying items in VIS
+	 * @brief Local ID class for identifying items in the VIS system
+	 *
+	 * Concrete implementation of ILocalId that uses a LocalIdBuilder to
+	 * store and manipulate Local ID data according to ISO 19848.
 	 */
-	class LocalId : public ILocalId<LocalId>
+	class LocalId final : public ILocalId<LocalId>
 	{
 	public:
 		//-------------------------------------------------------------------------
 		// Constants
 		//-------------------------------------------------------------------------
 
-		/**
-		 * @brief Naming rule constant
-		 */
-		static const std::string NamingRule;
+		/** @brief Standard naming rule prefix for Local IDs */
+		static const std::string namingRule;
 
 		//-------------------------------------------------------------------------
-		// Constructors
+		// Constructors and Destructor
 		//-------------------------------------------------------------------------
 
 		/**
@@ -36,28 +50,19 @@ namespace dnv::vista::sdk
 		 */
 		explicit LocalId( const LocalIdBuilder& builder );
 
-		/**
-		 * @brief Copy constructor (deleted)
-		 * @details LocalId objects shouldn't be copied since base interface deletes this operation
-		 */
+		/** @brief Destructor */
+		~LocalId() = default;
+
+		/** @brief Copy constructor (deleted) */
 		LocalId( const LocalId& ) = delete;
 
-		/**
-		 * @brief Copy assignment operator (deleted)
-		 * @details LocalId objects shouldn't be copied since base interface deletes this operation
-		 */
+		/** @brief Copy assignment operator (deleted) */
 		LocalId& operator=( const LocalId& ) = delete;
 
-		/**
-		 * @brief Move constructor
-		 * @details Allows LocalId objects to be moved efficiently
-		 */
+		/** @brief Move constructor */
 		LocalId( LocalId&& other ) noexcept;
 
-		/**
-		 * @brief Move assignment operator
-		 * @details Allows LocalId objects to be move-assigned efficiently
-		 */
+		/** @brief Move assignment operator */
 		LocalId& operator=( LocalId&& other ) noexcept;
 
 		//-------------------------------------------------------------------------
@@ -68,50 +73,51 @@ namespace dnv::vista::sdk
 		 * @brief Get the VIS version
 		 * @return The VIS version
 		 */
-		virtual VisVersion visVersion() const override;
+		VisVersion visVersion() const override;
 
 		/**
 		 * @brief Check if verbose mode is enabled
 		 * @return true if verbose mode is enabled
 		 */
-		virtual bool isVerboseMode() const override;
+		bool isVerboseMode() const override;
 
 		/**
 		 * @brief Get the primary item
-		 * @return The primary item (GmodPath)
+		 * @return Reference to the primary item (GmodPath)
+		 * @throws std::runtime_error if primary item is not set
 		 */
-		virtual const GmodPath& primaryItem() const override;
+		const GmodPath& primaryItem() const override;
 
 		/**
 		 * @brief Get the secondary item
 		 * @return The secondary item, if present
 		 */
-		virtual std::optional<GmodPath> secondaryItem() const override;
+		std::optional<GmodPath> secondaryItem() const override;
 
 		/**
 		 * @brief Check if the LocalId has any custom tags
 		 * @return true if has custom tag
 		 */
-		virtual bool hasCustomTag() const override;
+		bool hasCustomTag() const override;
 
 		/**
 		 * @brief Get metadata tags
 		 * @return Vector of metadata tags
 		 */
-		virtual const std::vector<MetadataTag> metadataTags() const override;
+		const std::vector<MetadataTag>& metadataTags() const override;
 
 		/**
 		 * @brief Convert to string
 		 * @return String representation
 		 */
-		virtual std::string toString() const override;
+		std::string toString() const override;
 
 		/**
 		 * @brief Check if this LocalId equals another
 		 * @param other The LocalId to compare with
 		 * @return true if equal
 		 */
-		virtual bool equals( const LocalId& other ) const override;
+		bool equals( const LocalId& other ) const override;
 
 		//-------------------------------------------------------------------------
 		// Metadata Tag Accessors
@@ -205,64 +211,90 @@ namespace dnv::vista::sdk
 		 * @param other The LocalId to compare with
 		 * @return true if equal
 		 */
-		bool operator==( const LocalId& other ) const;
+		bool operator==( const LocalId& other ) const noexcept;
 
 		/**
 		 * @brief Inequality operator
 		 * @param other The LocalId to compare with
 		 * @return true if not equal
 		 */
-		bool operator!=( const LocalId& other ) const;
+		bool operator!=( const LocalId& other ) const noexcept;
 
 		/**
-		 * @brief Get hash code
+		 * @brief Get hash code for use in containers
 		 * @return Hash code of the LocalId
 		 */
 		size_t hashCode() const;
 
 	private:
 		//-------------------------------------------------------------------------
-		// Member Variables
+		// Private Member Variables
 		//-------------------------------------------------------------------------
+
+		/** @brief The underlying builder that stores the Local ID data */
 		LocalIdBuilder m_builder;
 	};
 
 	/**
-	 * @brief Represents the parsing state for LocalId.
+	 * @brief Represents the parsing state for LocalId
+	 *
+	 * Used to track state during parsing and for error reporting.
 	 */
 	enum class LocalIdParsingState
 	{
+		/** Parsing the naming rule prefix */
 		NamingRule = 0,
+		/** Parsing the VIS version */
 		VisVersion,
+		/** Parsing the primary item path */
 		PrimaryItem,
+		/** Parsing the secondary item path */
 		SecondaryItem,
+		/** Parsing item description */
 		ItemDescription,
+		/** Parsing quantity metadata */
 		MetaQuantity,
+		/** Parsing content metadata */
 		MetaContent,
+		/** Parsing calculation metadata */
 		MetaCalculation,
+		/** Parsing state metadata */
 		MetaState,
+		/** Parsing command metadata */
 		MetaCommand,
+		/** Parsing type metadata */
 		MetaType,
+		/** Parsing position metadata */
 		MetaPosition,
+		/** Parsing detail metadata */
 		MetaDetail,
 
+		/** Empty state error */
 		EmptyState = 100,
+		/** Formatting error */
 		Formatting = 101,
+		/** Completeness error */
 		Completeness = 102,
 
+		/** Naming entity error */
 		NamingEntity = 200,
+		/** IMO number error */
 		IMONumber = 201
 	};
 
 	/**
-	 * @brief Builder for parsing errors related to LocalId.
+	 * @brief Builder for parsing errors related to LocalId
+	 *
+	 * Collects and formats error messages that occur during LocalId parsing.
 	 */
 	class LocalIdParsingErrorBuilder
 	{
 	public:
 		//-------------------------------------------------------------------------
-		// Constructors
+		// Constructors and Destructor
 		//-------------------------------------------------------------------------
+
+		/** @brief Default constructor */
 		LocalIdParsingErrorBuilder() = default;
 
 		//-------------------------------------------------------------------------
@@ -306,26 +338,11 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 		// Member Variables
 		//-------------------------------------------------------------------------
+
+		/** @brief Collection of errors with their associated parsing states */
 		std::vector<std::pair<LocalIdParsingState, std::string>> m_errors;
 
-		/**
-		 * @brief Predefined error messages for common parsing states
-		 * Made static since these messages are shared across all instances
-		 */
-		static const inline std::unordered_map<LocalIdParsingState, std::string> m_predefinedErrorMessages = {
-			{ LocalIdParsingState::NamingRule, "Missing or invalid naming rule" },
-			{ LocalIdParsingState::VisVersion, "Missing or invalid vis version" },
-			{ LocalIdParsingState::PrimaryItem, "Invalid or missing Primary item. Local IDs require at least a primary item and 1 metadata tag." },
-			{ LocalIdParsingState::SecondaryItem, "Invalid secondary item" },
-			{ LocalIdParsingState::ItemDescription, "Missing or invalid /meta prefix" },
-			{ LocalIdParsingState::MetaQuantity, "Invalid metadata tag: Quantity" },
-			{ LocalIdParsingState::MetaContent, "Invalid metadata tag: Content" },
-			{ LocalIdParsingState::MetaCommand, "Invalid metadata tag: Command" },
-			{ LocalIdParsingState::MetaPosition, "Invalid metadata tag: Position" },
-			{ LocalIdParsingState::MetaCalculation, "Invalid metadata tag: Calculation" },
-			{ LocalIdParsingState::MetaState, "Invalid metadata tag: State" },
-			{ LocalIdParsingState::MetaType, "Invalid metadata tag: Type" },
-			{ LocalIdParsingState::MetaDetail, "Invalid metadata tag: Detail" },
-			{ LocalIdParsingState::EmptyState, "Missing primary path or metadata" } };
+		/** @brief Predefined error messages for common parsing states */
+		static const std::unordered_map<LocalIdParsingState, std::string> m_predefinedErrorMessages;
 	};
 }

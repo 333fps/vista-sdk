@@ -85,19 +85,19 @@ namespace dnv::vista::sdk
 		const std::string& name() const;
 
 		/** @brief Get the optional common name/alias */
-		const std::optional<std::string>& commonName() const;
+		std::optional<std::string> commonName() const;
 
 		/** @brief Get the optional detailed definition */
-		const std::optional<std::string>& definition() const;
+		std::optional<std::string> definition() const;
 
 		/** @brief Get the optional common definition */
-		const std::optional<std::string>& commonDefinition() const;
+		std::optional<std::string> commonDefinition() const;
 
 		/** @brief Get the optional installation flag */
-		const std::optional<bool>& installSubstructure() const;
+		std::optional<bool> installSubstructure() const;
 
 		/** @brief Get the optional assignment name mapping */
-		const std::optional<std::unordered_map<std::string, std::string>>& normalAssignmentNames() const;
+		std::optional<std::unordered_map<std::string, std::string>> normalAssignmentNames() const;
 
 		//-------------------------------------------------------------------
 		// Serialization Methods

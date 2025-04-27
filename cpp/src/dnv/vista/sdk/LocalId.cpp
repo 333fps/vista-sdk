@@ -9,7 +9,15 @@
 
 namespace dnv::vista::sdk
 {
-	const std::string LocalId::NamingRule = "dnv-v2";
+	//-------------------------------------------------------------------------
+	// Constants
+	//-------------------------------------------------------------------------
+
+	const std::string LocalId::namingRule = "dnv-v2";
+
+	//-------------------------------------------------------------------------
+	// Construction / Destruction
+	//-------------------------------------------------------------------------
 
 	LocalId::LocalId( const LocalIdBuilder& builder )
 		: m_builder( builder )
@@ -26,14 +34,8 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	const LocalIdBuilder& LocalId::builder() const
-	{
-		return m_builder;
-	}
-
 	LocalId::LocalId( LocalId&& other ) noexcept
-		: ILocalId<LocalId>(),
-		  m_builder( std::move( other.m_builder ) )
+		: m_builder( std::move( other.m_builder ) )
 	{
 	}
 
@@ -45,6 +47,10 @@ namespace dnv::vista::sdk
 		}
 		return *this;
 	}
+
+	//-------------------------------------------------------------------------
+	// ILocalId Interface Implementation
+	//-------------------------------------------------------------------------
 
 	VisVersion LocalId::visVersion() const
 	{
@@ -58,7 +64,12 @@ namespace dnv::vista::sdk
 
 	const GmodPath& LocalId::primaryItem() const
 	{
-		return *m_builder.primaryItem();
+		if ( m_builder.primaryItem().length() == 0 )
+		{
+			SPDLOG_ERROR( "Attempted to access unset primary item" );
+			throw std::runtime_error( "Primary item is not set" );
+		}
+		return m_builder.primaryItem();
 	}
 
 	std::optional<GmodPath> LocalId::secondaryItem() const
@@ -66,10 +77,33 @@ namespace dnv::vista::sdk
 		return m_builder.secondaryItem();
 	}
 
-	const std::vector<MetadataTag> LocalId::metadataTags() const
+	bool LocalId::hasCustomTag() const
+	{
+		return m_builder.hasCustomTag();
+	}
+
+	const std::vector<MetadataTag>& LocalId::metadataTags() const
 	{
 		return m_builder.metadataTags();
 	}
+
+	std::string LocalId::toString() const
+	{
+		SPDLOG_INFO( "Converting LocalId to string: primaryItem={}, hasSecondary={}",
+			m_builder.primaryItem().toString(),
+			m_builder.secondaryItem().has_value() );
+
+		return m_builder.toString();
+	}
+
+	bool LocalId::equals( const LocalId& other ) const
+	{
+		return m_builder == other.m_builder;
+	}
+
+	//-------------------------------------------------------------------------
+	// Metadata Tag Accessors
+	//-------------------------------------------------------------------------
 
 	std::optional<MetadataTag> LocalId::quantity() const
 	{
@@ -111,16 +145,18 @@ namespace dnv::vista::sdk
 		return m_builder.detail();
 	}
 
-	bool LocalId::hasCustomTag() const
+	//-------------------------------------------------------------------------
+	// Builder Access
+	//-------------------------------------------------------------------------
+
+	const LocalIdBuilder& LocalId::builder() const
 	{
-		return m_builder.hasCustomTag();
+		return m_builder;
 	}
 
-	std::string LocalId::toString() const
-	{
-		SPDLOG_INFO( "Converting LocalId to string" );
-		return m_builder.toString();
-	}
+	//-------------------------------------------------------------------------
+	// Static Factory Methods
+	//-------------------------------------------------------------------------
 
 	LocalId LocalId::parse( const std::string& localIdStr )
 	{
@@ -130,7 +166,7 @@ namespace dnv::vista::sdk
 
 	bool LocalId::tryParse( const std::string& localIdStr, ParsingErrors& errors, std::optional<LocalId>& localId )
 	{
-		SPDLOG_INFO( "Attempting to parse LocalId from: {}", localIdStr );
+		SPDLOG_TRACE( "Attempting to parse LocalId from: {}", localIdStr );
 
 		std::optional<LocalIdBuilder> localIdBuilder;
 		if ( !LocalIdBuilder::tryParse( localIdStr, errors, localIdBuilder ) )
@@ -140,10 +176,10 @@ namespace dnv::vista::sdk
 			return false;
 		}
 
-		SPDLOG_INFO( "LocalId parsing succeeded, building final LocalId" );
+		SPDLOG_DEBUG( "LocalId parsing succeeded, building final LocalId" );
 		try
 		{
-			localId.emplace( localIdBuilder->build() );
+			localId.emplace( std::move( localIdBuilder->build() ) );
 			return true;
 		}
 		catch ( const std::exception& e )
@@ -155,25 +191,48 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	bool LocalId::equals( const LocalId& other ) const
+	//-------------------------------------------------------------------------
+	// Operators and Hash Code
+	//-------------------------------------------------------------------------
+
+	bool LocalId::operator==( const LocalId& other ) const noexcept
 	{
-		return m_builder == other.m_builder;
+		return equals( other );
 	}
 
-	bool LocalId::operator==( const LocalId& other ) const
+	bool LocalId::operator!=( const LocalId& other ) const noexcept
 	{
-		return m_builder == other.m_builder;
-	}
-
-	bool LocalId::operator!=( const LocalId& other ) const
-	{
-		return !( *this == other );
+		return !equals( other );
 	}
 
 	size_t LocalId::hashCode() const
 	{
 		return m_builder.hashCode();
 	}
+
+	//-------------------------------------------------------------------------
+	// LocalIdParsingErrorBuilder Implementation
+	//-------------------------------------------------------------------------
+
+	const std::unordered_map<LocalIdParsingState, std::string> LocalIdParsingErrorBuilder::m_predefinedErrorMessages = {
+		{ LocalIdParsingState::NamingRule, "Invalid naming rule prefix" },
+		{ LocalIdParsingState::VisVersion, "Invalid VIS version" },
+		{ LocalIdParsingState::PrimaryItem, "Invalid primary item path" },
+		{ LocalIdParsingState::SecondaryItem, "Invalid secondary item path" },
+		{ LocalIdParsingState::ItemDescription, "Invalid item description" },
+		{ LocalIdParsingState::MetaQuantity, "Invalid quantity metadata tag" },
+		{ LocalIdParsingState::MetaContent, "Invalid content metadata tag" },
+		{ LocalIdParsingState::MetaCalculation, "Invalid calculation metadata tag" },
+		{ LocalIdParsingState::MetaState, "Invalid state metadata tag" },
+		{ LocalIdParsingState::MetaCommand, "Invalid command metadata tag" },
+		{ LocalIdParsingState::MetaType, "Invalid type metadata tag" },
+		{ LocalIdParsingState::MetaPosition, "Invalid position metadata tag" },
+		{ LocalIdParsingState::MetaDetail, "Invalid detail metadata tag" },
+		{ LocalIdParsingState::EmptyState, "Empty state value provided" },
+		{ LocalIdParsingState::Formatting, "Formatting error in Local ID string" },
+		{ LocalIdParsingState::Completeness, "Incomplete Local ID structure" },
+		{ LocalIdParsingState::NamingEntity, "Invalid naming entity" },
+		{ LocalIdParsingState::IMONumber, "Invalid IMO number" } };
 
 	LocalIdParsingErrorBuilder& LocalIdParsingErrorBuilder::addError( LocalIdParsingState state )
 	{

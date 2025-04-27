@@ -124,13 +124,13 @@ namespace dnv::vista::sdk
 		 * @brief Get primary item
 		 * @return Optional primary item GmodPath
 		 */
-		virtual const std::optional<GmodPath>& primaryItem() const override;
+		virtual const GmodPath& primaryItem() const override;
 
 		/**
 		 * @brief Get secondary item
 		 * @return Optional secondary item GmodPath
 		 */
-		virtual const std::optional<GmodPath>& secondaryItem() const override;
+		virtual std::optional<GmodPath> secondaryItem() const override;
 
 		//-------------------------------------------------------------------------
 		// Metadata Tag Getters
@@ -146,49 +146,49 @@ namespace dnv::vista::sdk
 		 * @brief Get quantity tag
 		 * @return Optional quantity metadata tag
 		 */
-		const std::optional<MetadataTag>& quantity() const;
+		std::optional<MetadataTag> quantity() const;
 
 		/**
 		 * @brief Get content tag
 		 * @return Optional content metadata tag
 		 */
-		const std::optional<MetadataTag>& content() const;
+		std::optional<MetadataTag> content() const;
 
 		/**
 		 * @brief Get calculation tag
 		 * @return Optional calculation metadata tag
 		 */
-		const std::optional<MetadataTag>& calculation() const;
+		std::optional<MetadataTag> calculation() const;
 
 		/**
 		 * @brief Get state tag
 		 * @return Optional state metadata tag
 		 */
-		const std::optional<MetadataTag>& state() const;
+		std::optional<MetadataTag> state() const;
 
 		/**
 		 * @brief Get command tag
 		 * @return Optional command metadata tag
 		 */
-		const std::optional<MetadataTag>& command() const;
+		std::optional<MetadataTag> command() const;
 
 		/**
 		 * @brief Get type tag
 		 * @return Optional type metadata tag
 		 */
-		const std::optional<MetadataTag>& type() const;
+		std::optional<MetadataTag> type() const;
 
 		/**
 		 * @brief Get position tag
 		 * @return Optional position metadata tag
 		 */
-		const std::optional<MetadataTag>& position() const;
+		std::optional<MetadataTag> position() const;
 
 		/**
 		 * @brief Get detail tag
 		 * @return Optional detail metadata tag
 		 */
-		const std::optional<MetadataTag>& detail() const;
+		std::optional<MetadataTag> detail() const;
 
 		//-------------------------------------------------------------------------
 		// Conversion Methods

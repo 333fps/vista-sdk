@@ -39,8 +39,8 @@ namespace dnv::vista::sdk
 		 * @param secondaryItem Optional secondary item
 		 */
 		LocalIdItems(
-			const std::optional<GmodPath>& primaryItem,
-			const std::optional<GmodPath>& secondaryItem );
+			const GmodPath& primaryItem,
+			std::optional<GmodPath> secondaryItem );
 
 		//-------------------------------------------------------------------------
 		// Core Properties
@@ -50,13 +50,13 @@ namespace dnv::vista::sdk
 		 * @brief Get primary item
 		 * @return Optional primary item
 		 */
-		const std::optional<GmodPath>& primaryItem() const;
+		const GmodPath& primaryItem() const;
 
 		/**
 		 * @brief Get secondary item
 		 * @return Optional secondary item
 		 */
-		const std::optional<GmodPath>& secondaryItem() const;
+		std::optional<GmodPath> secondaryItem() const;
 
 		//-------------------------------------------------------------------------
 		// String Generation
@@ -91,7 +91,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 		// Member Variables
 		//-------------------------------------------------------------------------
-		std::optional<GmodPath> m_primaryItem;
+		GmodPath m_primaryItem;
 		std::optional<GmodPath> m_secondaryItem;
 
 		//-------------------------------------------------------------------------
@@ -107,6 +107,6 @@ namespace dnv::vista::sdk
 		static void appendCommonName(
 			std::stringstream& builder,
 			const std::string& commonName,
-			const std::optional<std::string>& location );
+			std::optional<std::string> location );
 	};
 }

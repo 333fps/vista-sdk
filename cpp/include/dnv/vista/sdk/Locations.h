@@ -115,7 +115,7 @@ namespace dnv::vista::sdk
 		RelativeLocation( char code,
 			const std::string& name,
 			const Location& location,
-			const std::optional<std::string>& definition = std::nullopt );
+			const std::optional<std::string> definition = std::nullopt );
 
 		//-------------------------------------------------------------------------
 		// Accessor Methods
@@ -137,7 +137,7 @@ namespace dnv::vista::sdk
 		 * @brief Get the location definition
 		 * @return The optional location definition
 		 */
-		const std::optional<std::string>& definition() const;
+		std::optional<std::string> definition() const;
 
 		/**
 		 * @brief Get the location object

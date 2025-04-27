@@ -142,8 +142,10 @@ namespace dnv::vista::sdk
 		if ( !m_visVersion.has_value() )
 			return false;
 
-		if ( !m_items.primaryItem().has_value() )
+		if ( m_items.primaryItem().length() == 0 )
+		{
 			return false;
+		}
 
 		return !isEmptyMetadata();
 	}
@@ -151,7 +153,7 @@ namespace dnv::vista::sdk
 	bool LocalIdBuilder::isEmpty() const
 	{
 		return !m_visVersion.has_value() &&
-			   !m_items.primaryItem().has_value() &&
+			   m_items.primaryItem().length() == 0 && //
 			   !m_items.secondaryItem().has_value() &&
 			   isEmptyMetadata();
 	}
@@ -203,13 +205,13 @@ namespace dnv::vista::sdk
 		return m_items;
 	}
 
-	const std::optional<GmodPath>& LocalIdBuilder::primaryItem() const
+	const GmodPath& LocalIdBuilder::primaryItem() const
 	{
 		SPDLOG_INFO( "Getting primary item" );
 		return m_items.primaryItem();
 	}
 
-	const std::optional<GmodPath>& LocalIdBuilder::secondaryItem() const
+	std::optional<GmodPath> LocalIdBuilder::secondaryItem() const
 	{
 		SPDLOG_INFO( "Getting secondary item" );
 		return m_items.secondaryItem();
@@ -251,42 +253,42 @@ namespace dnv::vista::sdk
 		return tags;
 	}
 
-	const std::optional<MetadataTag>& LocalIdBuilder::quantity() const
+	std::optional<MetadataTag> LocalIdBuilder::quantity() const
 	{
 		return m_quantity;
 	}
 
-	const std::optional<MetadataTag>& LocalIdBuilder::content() const
+	std::optional<MetadataTag> LocalIdBuilder::content() const
 	{
 		return m_content;
 	}
 
-	const std::optional<MetadataTag>& LocalIdBuilder::calculation() const
+	std::optional<MetadataTag> LocalIdBuilder::calculation() const
 	{
 		return m_calculation;
 	}
 
-	const std::optional<MetadataTag>& LocalIdBuilder::state() const
+	std::optional<MetadataTag> LocalIdBuilder::state() const
 	{
 		return m_state;
 	}
 
-	const std::optional<MetadataTag>& LocalIdBuilder::command() const
+	std::optional<MetadataTag> LocalIdBuilder::command() const
 	{
 		return m_command;
 	}
 
-	const std::optional<MetadataTag>& LocalIdBuilder::type() const
+	std::optional<MetadataTag> LocalIdBuilder::type() const
 	{
 		return m_type;
 	}
 
-	const std::optional<MetadataTag>& LocalIdBuilder::position() const
+	std::optional<MetadataTag> LocalIdBuilder::position() const
 	{
 		return m_position;
 	}
 
-	const std::optional<MetadataTag>& LocalIdBuilder::detail() const
+	std::optional<MetadataTag> LocalIdBuilder::detail() const
 	{
 		return m_detail;
 	}
@@ -496,9 +498,11 @@ namespace dnv::vista::sdk
 
 	LocalIdBuilder LocalIdBuilder::withoutPrimaryItem()
 	{
-		SPDLOG_INFO( "Removing primary item" );
+		SPDLOG_INFO( "Removing primary item - primary item will be reset to default" );
 		LocalIdBuilder result( *this );
-		result.m_items = LocalIdItems( std::nullopt, m_items.secondaryItem() );
+
+		result.m_items = LocalIdItems();
+
 		return result;
 	}
 
@@ -589,9 +593,6 @@ namespace dnv::vista::sdk
 			case CodebookName::ActivityType:
 				SPDLOG_ERROR( "ActivityType is not supported as a direct metadata tag" );
 				throw std::invalid_argument( "ActivityType is not supported as a metadata tag" );
-			// case CodebookName::Unknown:
-			// 	SPDLOG_ERROR( "Unknown codebook for metadata tag" );
-			// 	throw std::invalid_argument( "Unknown codebook name for metadata tag" );
 			default:
 				SPDLOG_ERROR( "Unsupported codebook for metadata tag: {}", static_cast<int>( metadataTag.name() ) );
 				throw std::invalid_argument( "Unsupported codebook for metadata tag" );
@@ -886,7 +887,7 @@ namespace dnv::vista::sdk
 		size_t secondaryItemStart{ static_cast<size_t>( -1 ) };
 
 		LocalIdParsingState state{ LocalIdParsingState::NamingRule };
-		size_t i{ 1 }; // TODO Skip initial '/'
+		size_t i{ 1 };
 
 		while ( state <= LocalIdParsingState::MetaDetail )
 		{
@@ -1447,8 +1448,8 @@ namespace dnv::vista::sdk
 
 		size_t hash = 17;
 
-		if ( m_items.primaryItem().has_value() )
-			hash = hash * 31 + m_items.primaryItem()->hashCode();
+		if ( m_items.primaryItem().length() > 0 )
+			hash = hash * 31 + m_items.primaryItem().hashCode();
 
 		if ( m_items.secondaryItem().has_value() )
 			hash = hash * 31 + m_items.secondaryItem()->hashCode();

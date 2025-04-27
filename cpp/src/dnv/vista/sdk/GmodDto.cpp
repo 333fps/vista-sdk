@@ -6,10 +6,6 @@
 #include "pch.h"
 #include "dnv/vista/sdk/GmodDto.h"
 
-#include <chrono>
-#include <limits>
-#include <unordered_map>
-
 namespace dnv::vista::sdk
 {
 	//-------------------------------------------------------------------
@@ -105,27 +101,27 @@ namespace dnv::vista::sdk
 		return m_name;
 	}
 
-	const std::optional<std::string>& GmodNodeDto::commonName() const
+	std::optional<std::string> GmodNodeDto::commonName() const
 	{
 		return m_commonName;
 	}
 
-	const std::optional<std::string>& GmodNodeDto::definition() const
+	std::optional<std::string> GmodNodeDto::definition() const
 	{
 		return m_definition;
 	}
 
-	const std::optional<std::string>& GmodNodeDto::commonDefinition() const
+	std::optional<std::string> GmodNodeDto::commonDefinition() const
 	{
 		return m_commonDefinition;
 	}
 
-	const std::optional<bool>& GmodNodeDto::installSubstructure() const
+	std::optional<bool> GmodNodeDto::installSubstructure() const
 	{
 		return m_installSubstructure;
 	}
 
-	const std::optional<std::unordered_map<std::string, std::string>>& GmodNodeDto::normalAssignmentNames() const
+	std::optional<std::unordered_map<std::string, std::string>> GmodNodeDto::normalAssignmentNames() const
 	{
 		return m_normalAssignmentNames;
 	}
