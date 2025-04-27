@@ -145,57 +145,57 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_INFO( "Initializing Locations for VIS version {}", static_cast<int>( version ) );
 
-		m_locationCodes.reserve( dto.items.size() );
-		for ( const auto& item : dto.items )
+		m_locationCodes.reserve( dto.items().size() );
+		for ( const auto& item : dto.items() )
 		{
-			m_locationCodes.push_back( item.code );
+			m_locationCodes.push_back( item.code() );
 		}
 		SPDLOG_INFO( "Collected {} location codes", m_locationCodes.size() );
 
-		m_relativeLocations.reserve( dto.items.size() );
-		for ( const auto& relLocDto : dto.items )
+		m_relativeLocations.reserve( dto.items().size() );
+		for ( const auto& relLocDto : dto.items() )
 		{
-			Location loc( std::string( 1, relLocDto.code ) );
+			Location loc( std::string( 1, relLocDto.code() ) );
 
 			RelativeLocation relLoc(
-				relLocDto.code,
-				relLocDto.name,
+				relLocDto.code(),
+				relLocDto.name(),
 				loc,
-				relLocDto.definition );
+				relLocDto.definition() );
 
 			m_relativeLocations.push_back( relLoc );
 
-			if ( relLocDto.code == 'H' || relLocDto.code == 'V' )
+			if ( relLocDto.code() == 'H' || relLocDto.code() == 'V' )
 			{
-				SPDLOG_INFO( "Skipping special code: {}", relLocDto.code );
+				SPDLOG_INFO( "Skipping special code: {}", relLocDto.code() );
 				continue;
 			}
 
 			LocationGroup key;
-			if ( relLocDto.code == 'N' )
+			if ( relLocDto.code() == 'N' )
 			{
 				key = LocationGroup::Number;
 			}
-			else if ( relLocDto.code == 'P' || relLocDto.code == 'C' || relLocDto.code == 'S' )
+			else if ( relLocDto.code() == 'P' || relLocDto.code() == 'C' || relLocDto.code() == 'S' )
 			{
 				key = LocationGroup::Side;
 			}
-			else if ( relLocDto.code == 'U' || relLocDto.code == 'M' || relLocDto.code == 'L' )
+			else if ( relLocDto.code() == 'U' || relLocDto.code() == 'M' || relLocDto.code() == 'L' )
 			{
 				key = LocationGroup::Vertical;
 			}
-			else if ( relLocDto.code == 'I' || relLocDto.code == 'O' )
+			else if ( relLocDto.code() == 'I' || relLocDto.code() == 'O' )
 			{
 				key = LocationGroup::Transverse;
 			}
-			else if ( relLocDto.code == 'F' || relLocDto.code == 'A' )
+			else if ( relLocDto.code() == 'F' || relLocDto.code() == 'A' )
 			{
 				key = LocationGroup::Longitudinal;
 			}
 			else
 			{
-				SPDLOG_ERROR( "Unsupported code: {}", relLocDto.code );
-				throw std::runtime_error( std::string( "Unsupported code: " ) + relLocDto.code );
+				SPDLOG_ERROR( "Unsupported code: {}", relLocDto.code() );
+				throw std::runtime_error( std::string( "Unsupported code: " ) + relLocDto.code() );
 			}
 
 			if ( m_groups.find( key ) == m_groups.end() )
@@ -208,7 +208,7 @@ namespace dnv::vista::sdk
 				continue;
 			}
 
-			m_reversedGroups[relLocDto.code] = key;
+			m_reversedGroups[relLocDto.code()] = key;
 			m_groups[key].push_back( relLoc );
 		}
 

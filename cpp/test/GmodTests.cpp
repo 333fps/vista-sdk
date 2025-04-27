@@ -126,17 +126,17 @@ namespace dnv::vista::sdk::tests
 			std::unordered_set<std::string> seen;
 			int counter = 0;
 
-			ASSERT_FALSE( gmodDto.items.empty() );
+			ASSERT_FALSE( gmodDto.items().empty() );
 
-			for ( const auto& item : gmodDto.items )
+			for ( const auto& item : gmodDto.items() )
 			{
-				ASSERT_FALSE( item.code.empty() );
-				auto insertResult = seen.insert( item.code );
-				EXPECT_TRUE( insertResult.second ) << "Code: " << item.code;
+				ASSERT_FALSE( item.code().empty() );
+				auto insertResult = seen.insert( item.code() );
+				EXPECT_TRUE( insertResult.second ) << "Code: " << item.code();
 
 				GmodNode foundNode;
-				ASSERT_TRUE( gmod.tryGetNode( item.code, foundNode ) );
-				EXPECT_EQ( item.code, foundNode.code() );
+				ASSERT_TRUE( gmod.tryGetNode( item.code(), foundNode ) );
+				EXPECT_EQ( item.code(), foundNode.code() );
 				counter++;
 			}
 		}

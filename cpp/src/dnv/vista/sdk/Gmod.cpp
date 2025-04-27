@@ -89,13 +89,13 @@ namespace dnv::vista::sdk
 	{
 		std::unordered_map<std::string, GmodNode> nodeMap;
 
-		for ( const auto& nodeDto : dto.items )
+		for ( const auto& nodeDto : dto.items() )
 		{
 			GmodNode node( version, nodeDto );
-			nodeMap.emplace( nodeDto.code, std::move( node ) );
+			nodeMap.emplace( nodeDto.code(), std::move( node ) );
 		}
 
-		for ( const auto& relation : dto.relations )
+		for ( const auto& relation : dto.relations() )
 		{
 			if ( relation.size() >= 2 )
 			{
@@ -133,8 +133,7 @@ namespace dnv::vista::sdk
 
 		m_nodeMap = ChdDictionary<GmodNode>( std::move( nodePairs ) );
 
-		SPDLOG_INFO( "Creating Gmod with {} items - dictionary has {} entries",
-			dto.items.size(), m_nodeMap.isEmpty() ? 0 : dto.items.size() );
+		SPDLOG_INFO( "Creating Gmod with {} items - dictionary has {} entries", dto.items().size(), m_nodeMap.isEmpty() ? 0 : dto.items().size() );
 
 		if ( m_nodeMap.isEmpty() )
 		{

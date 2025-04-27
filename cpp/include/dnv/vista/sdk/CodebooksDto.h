@@ -40,10 +40,19 @@ namespace dnv::vista::sdk
 		 */
 		CodebookDto( std::string name, std::unordered_map<std::string, std::vector<std::string>> values );
 
+		/** @brief Copy constructor */
 		CodebookDto( const CodebookDto& ) = default;
+
+		/** @brief Move constructor */
 		CodebookDto( CodebookDto&& ) noexcept = default;
+
+		/** @brief Copy assignment operator */
 		CodebookDto& operator=( const CodebookDto& ) = default;
+
+		/** @brief Move assignment operator */
 		CodebookDto& operator=( CodebookDto&& ) noexcept = default;
+
+		/** @brief Destructor */
 		~CodebookDto() = default;
 
 		//-------------------------------------------------------------------

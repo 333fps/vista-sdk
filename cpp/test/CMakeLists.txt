@@ -13,6 +13,7 @@ set(TESTS
 	ImoNumberTests
 	ISOStringTests
 	LocalIdTests
+	LocationsTests
 )
 
 foreach(test_target ${TESTS})
@@ -25,7 +26,7 @@ foreach(test_target ${TESTS})
 			vista-sdk-cpp
 			GTest::gtest_main
 			GTest::gtest
-			spdlog::spdlog_header_only
+			spdlog::spdlog
 		)
 
 		target_include_directories(${test_target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)

@@ -1,3 +1,8 @@
+/**
+ * @file ISO19848Dtos.h
+ * @brief Data Transfer Objects for ISO 19848 standard
+ */
+
 #pragma once
 
 namespace dnv::vista::sdk
@@ -13,9 +18,9 @@ namespace dnv::vista::sdk
 	 */
 	class DataChannelTypeNameDto final
 	{
-	public: // TODO
+	public:
 		//-------------------------------------------------------------------------
-		// Constructors
+		// Constructors / Destructor
 		//-------------------------------------------------------------------------
 
 		/**
@@ -30,6 +35,47 @@ namespace dnv::vista::sdk
 		 */
 		DataChannelTypeNameDto( std::string type, std::string description );
 
+		/**
+		 * @brief Copy constructor
+		 */
+		DataChannelTypeNameDto( const DataChannelTypeNameDto& ) = default;
+
+		/**
+		 * @brief Move constructor
+		 */
+		DataChannelTypeNameDto( DataChannelTypeNameDto&& ) noexcept = default;
+
+		/**
+		 * @brief Destructor
+		 */
+		~DataChannelTypeNameDto() = default;
+
+		/**
+		 * @brief Copy assignment operator
+		 */
+		DataChannelTypeNameDto& operator=( const DataChannelTypeNameDto& ) = default;
+
+		/**
+		 * @brief Move assignment operator
+		 */
+		DataChannelTypeNameDto& operator=( DataChannelTypeNameDto&& ) noexcept = default;
+
+		//-------------------------------------------------------------------------
+		// Accessor Methods
+		//-------------------------------------------------------------------------
+
+		/**
+		 * @brief Get the type name
+		 * @return Type name
+		 */
+		const std::string& type() const;
+
+		/**
+		 * @brief Get the description
+		 * @return Description of the type
+		 */
+		const std::string& description() const;
+
 		//-------------------------------------------------------------------------
 		// Serialization Methods
 		//-------------------------------------------------------------------------
@@ -38,6 +84,7 @@ namespace dnv::vista::sdk
 		 * @brief Deserialize from JSON
 		 * @param json JSON value to deserialize from
 		 * @return Deserialized DTO
+		 * @throws std::runtime_error If JSON format is invalid
 		 */
 		static DataChannelTypeNameDto fromJson( const rapidjson::Value& json );
 
@@ -56,19 +103,16 @@ namespace dnv::vista::sdk
 		 */
 		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
 
+	private:
 		//-------------------------------------------------------------------------
-		// Data Members
+		// Private Member Variables
 		//-------------------------------------------------------------------------
 
-		/**
-		 * @brief Type name (JSON: "type")
-		 */
-		std::string type;
+		/** @brief Type name (JSON: "type") */
+		std::string m_type;
 
-		/**
-		 * @brief Description of the type (JSON: "description")
-		 */
-		std::string description;
+		/** @brief Description of the type (JSON: "description") */
+		std::string m_description;
 	};
 
 	//-------------------------------------------------------------------------
@@ -82,9 +126,9 @@ namespace dnv::vista::sdk
 	 */
 	class DataChannelTypeNamesDto final
 	{
-	public: // TODO
+	public:
 		//-------------------------------------------------------------------------
-		// Constructors
+		// Constructors / Destructor
 		//-------------------------------------------------------------------------
 
 		/**
@@ -98,6 +142,41 @@ namespace dnv::vista::sdk
 		 */
 		explicit DataChannelTypeNamesDto( std::vector<DataChannelTypeNameDto> values );
 
+		/**
+		 * @brief Copy constructor
+		 */
+		DataChannelTypeNamesDto( const DataChannelTypeNamesDto& ) = default;
+
+		/**
+		 * @brief Move constructor
+		 */
+		DataChannelTypeNamesDto( DataChannelTypeNamesDto&& ) noexcept = default;
+
+		/**
+		 * @brief Destructor
+		 */
+		~DataChannelTypeNamesDto() = default;
+
+		/**
+		 * @brief Copy assignment operator
+		 */
+		DataChannelTypeNamesDto& operator=( const DataChannelTypeNamesDto& ) = default;
+
+		/**
+		 * @brief Move assignment operator
+		 */
+		DataChannelTypeNamesDto& operator=( DataChannelTypeNamesDto&& ) noexcept = default;
+
+		//-------------------------------------------------------------------------
+		// Accessor Methods
+		//-------------------------------------------------------------------------
+
+		/**
+		 * @brief Get the collection of data channel type names
+		 * @return Collection of data channel type names
+		 */
+		const std::vector<DataChannelTypeNameDto>& values() const;
+
 		//-------------------------------------------------------------------------
 		// Serialization Methods
 		//-------------------------------------------------------------------------
@@ -106,6 +185,7 @@ namespace dnv::vista::sdk
 		 * @brief Deserialize from JSON
 		 * @param json JSON value to deserialize from
 		 * @return Deserialized DTO
+		 * @throws std::runtime_error If JSON format is invalid
 		 */
 		static DataChannelTypeNamesDto fromJson( const rapidjson::Value& json );
 
@@ -124,14 +204,13 @@ namespace dnv::vista::sdk
 		 */
 		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
 
+	private:
 		//-------------------------------------------------------------------------
-		// Data Members
+		// Private Member Variables
 		//-------------------------------------------------------------------------
 
-		/**
-		 * @brief Collection of data channel type name values (JSON: "values")
-		 */
-		std::vector<DataChannelTypeNameDto> values;
+		/** @brief Collection of data channel type name values (JSON: "values") */
+		std::vector<DataChannelTypeNameDto> m_values;
 	};
 
 	//-------------------------------------------------------------------------
@@ -145,9 +224,9 @@ namespace dnv::vista::sdk
 	 */
 	class FormatDataTypeDto final
 	{
-	public: // TODO
+	public:
 		//-------------------------------------------------------------------------
-		// Constructors
+		// Constructors / Destructor
 		//-------------------------------------------------------------------------
 
 		/**
@@ -162,6 +241,47 @@ namespace dnv::vista::sdk
 		 */
 		FormatDataTypeDto( std::string type, std::string description );
 
+		/**
+		 * @brief Copy constructor
+		 */
+		FormatDataTypeDto( const FormatDataTypeDto& ) = default;
+
+		/**
+		 * @brief Move constructor
+		 */
+		FormatDataTypeDto( FormatDataTypeDto&& ) noexcept = default;
+
+		/**
+		 * @brief Destructor
+		 */
+		~FormatDataTypeDto() = default;
+
+		/**
+		 * @brief Copy assignment operator
+		 */
+		FormatDataTypeDto& operator=( const FormatDataTypeDto& ) = default;
+
+		/**
+		 * @brief Move assignment operator
+		 */
+		FormatDataTypeDto& operator=( FormatDataTypeDto&& ) noexcept = default;
+
+		//-------------------------------------------------------------------------
+		// Accessor Methods
+		//-------------------------------------------------------------------------
+
+		/**
+		 * @brief Get the type name
+		 * @return Type name
+		 */
+		const std::string& type() const;
+
+		/**
+		 * @brief Get the description
+		 * @return Description of the type
+		 */
+		const std::string& description() const;
+
 		//-------------------------------------------------------------------------
 		// Serialization Methods
 		//-------------------------------------------------------------------------
@@ -170,6 +290,7 @@ namespace dnv::vista::sdk
 		 * @brief Deserialize from JSON
 		 * @param json JSON value to deserialize from
 		 * @return Deserialized DTO
+		 * @throws std::runtime_error If JSON format is invalid
 		 */
 		static FormatDataTypeDto fromJson( const rapidjson::Value& json );
 
@@ -188,19 +309,16 @@ namespace dnv::vista::sdk
 		 */
 		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
 
+	private:
 		//-------------------------------------------------------------------------
-		// Data Members
+		// Private Member Variables
 		//-------------------------------------------------------------------------
 
-		/**
-		 * @brief Type name (JSON: "type")
-		 */
-		std::string type;
+		/** @brief Type name (JSON: "type") */
+		std::string m_type;
 
-		/**
-		 * @brief Description of the type (JSON: "description")
-		 */
-		std::string description;
+		/** @brief Description of the type (JSON: "description") */
+		std::string m_description;
 	};
 
 	//-------------------------------------------------------------------------
@@ -214,9 +332,9 @@ namespace dnv::vista::sdk
 	 */
 	class FormatDataTypesDto final
 	{
-	public: // TODO
+	public:
 		//-------------------------------------------------------------------------
-		// Constructors
+		// Constructors / Destructor
 		//-------------------------------------------------------------------------
 
 		/**
@@ -230,6 +348,41 @@ namespace dnv::vista::sdk
 		 */
 		explicit FormatDataTypesDto( std::vector<FormatDataTypeDto> values );
 
+		/**
+		 * @brief Copy constructor
+		 */
+		FormatDataTypesDto( const FormatDataTypesDto& ) = default;
+
+		/**
+		 * @brief Move constructor
+		 */
+		FormatDataTypesDto( FormatDataTypesDto&& ) noexcept = default;
+
+		/**
+		 * @brief Destructor
+		 */
+		~FormatDataTypesDto() = default;
+
+		/**
+		 * @brief Copy assignment operator
+		 */
+		FormatDataTypesDto& operator=( const FormatDataTypesDto& ) = default;
+
+		/**
+		 * @brief Move assignment operator
+		 */
+		FormatDataTypesDto& operator=( FormatDataTypesDto&& ) noexcept = default;
+
+		//-------------------------------------------------------------------------
+		// Accessor Methods
+		//-------------------------------------------------------------------------
+
+		/**
+		 * @brief Get the collection of format data types
+		 * @return Collection of format data types
+		 */
+		const std::vector<FormatDataTypeDto>& values() const;
+
 		//-------------------------------------------------------------------------
 		// Serialization Methods
 		//-------------------------------------------------------------------------
@@ -238,6 +391,7 @@ namespace dnv::vista::sdk
 		 * @brief Deserialize from JSON
 		 * @param json JSON value to deserialize from
 		 * @return Deserialized DTO
+		 * @throws std::runtime_error If JSON format is invalid
 		 */
 		static FormatDataTypesDto fromJson( const rapidjson::Value& json );
 
@@ -256,13 +410,12 @@ namespace dnv::vista::sdk
 		 */
 		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
 
+	private:
 		//-------------------------------------------------------------------------
-		// Data Members
+		// Private Member Variables
 		//-------------------------------------------------------------------------
 
-		/**
-		 * @brief Collection of format data type values (JSON: "values")
-		 */
-		std::vector<FormatDataTypeDto> values;
+		/** @brief Collection of format data type values (JSON: "values") */
+		std::vector<FormatDataTypeDto> m_values;
 	};
 }

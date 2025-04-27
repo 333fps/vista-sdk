@@ -1,6 +1,6 @@
 /**
  * @file CodebooksDto.cpp
- * @brief Implementation of data transfer objects for ISO 19848 codebook serialization
+ * @brief Implementation of ISO 19848 codebook data transfer objects
  */
 
 #include "pch.h"
@@ -27,7 +27,8 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	CodebookDto::CodebookDto( std::string name, std::unordered_map<std::string, std::vector<std::string>> values )
-		: m_name( std::move( name ) ), m_values( std::move( values ) )
+		: m_name{ std::move( name ) },
+		  m_values{ std::move( values ) }
 	{
 	}
 
@@ -239,7 +240,10 @@ namespace dnv::vista::sdk
 
 			SPDLOG_DEBUG( "Successfully parsed {}/{} codebooks for VIS version {}", successCount, totalItems, dto.m_visVersion );
 
-			dto.m_items.shrink_to_fit();
+			if ( static_cast<double>( successCount ) < static_cast<double>( totalItems ) * 0.9 )
+			{
+				dto.m_items.shrink_to_fit();
+			}
 		}
 		else
 		{
@@ -247,7 +251,6 @@ namespace dnv::vista::sdk
 		}
 
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
-
 		SPDLOG_DEBUG( "Parsed CodebooksDto with {} items in {} ms", dto.m_items.size(), duration.count() );
 
 		return dto;

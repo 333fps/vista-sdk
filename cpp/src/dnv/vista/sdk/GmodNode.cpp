@@ -103,15 +103,15 @@ namespace dnv::vista::sdk
 	}
 
 	GmodNode::GmodNode( VisVersion version, const GmodNodeDto& dto )
-		: m_code( dto.code ), m_location( std::nullopt ), m_visVersion( version ), m_metadata(
-																					   dto.category,
-																					   dto.type,
-																					   dto.name,
-																					   dto.commonName,
-																					   dto.definition,
-																					   dto.commonDefinition,
-																					   dto.installSubstructure,
-																					   dto.normalAssignmentNames ? *dto.normalAssignmentNames : std::unordered_map<std::string, std::string>() ),
+		: m_code( dto.code() ), m_location( std::nullopt ), m_visVersion( version ), m_metadata(
+																						 dto.category(),
+																						 dto.type(),
+																						 dto.name(),
+																						 dto.commonName(),
+																						 dto.definition(),
+																						 dto.commonDefinition(),
+																						 dto.installSubstructure(),
+																						 dto.normalAssignmentNames().has_value() ? *dto.normalAssignmentNames() : std::unordered_map<std::string, std::string>() ),
 		  m_children(), m_parents(), m_childrenSet()
 	{
 		SPDLOG_DEBUG( "Created GmodNode with code: {}", m_code );

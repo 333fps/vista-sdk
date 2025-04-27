@@ -23,8 +23,8 @@ namespace dnv::vista::sdk
 		{
 			VisVersion version = VisVersionExtensions::parse( versionStr );
 
-			SPDLOG_INFO( "Adding version {} with {} items", versionStr, versioningDto.items.size() );
-			m_versioningsMap.emplace( version, GmodVersioningNode( version, versioningDto.items ) );
+			SPDLOG_INFO( "Adding version {} with {} items", versionStr, versioningDto.items().size() );
+			m_versioningsMap.emplace( version, GmodVersioningNode( version, versioningDto.items() ) );
 		}
 	}
 
@@ -310,7 +310,7 @@ namespace dnv::vista::sdk
 					}
 				}
 			}
-			else if ( selectionChanged ) // TODO SC || SN || SD
+			else if ( selectionChanged ) // SC || SN || SD
 			{
 				SPDLOG_INFO( "Selection changed for node {}", targetNode.code() );
 
@@ -466,15 +466,15 @@ namespace dnv::vista::sdk
 		for ( const auto& [code, dtoNode] : dto )
 		{
 			GmodNodeConversion conversion;
-			conversion.source = dtoNode.source;
-			conversion.target = dtoNode.target;
-			conversion.oldAssignment = dtoNode.oldAssignment;
-			conversion.newAssignment = dtoNode.newAssignment;
-			conversion.deleteAssignment = dtoNode.deleteAssignment;
+			conversion.source = dtoNode.source();
+			conversion.target = dtoNode.target();
+			conversion.oldAssignment = dtoNode.oldAssignment();
+			conversion.newAssignment = dtoNode.newAssignment();
+			conversion.deleteAssignment = dtoNode.deleteAssignment();
 
-			if ( !dtoNode.operations.empty() )
+			if ( !dtoNode.operations().empty() )
 			{
-				for ( const auto& type : dtoNode.operations )
+				for ( const auto& type : dtoNode.operations() )
 				{
 					conversion.operations.insert( parseConversionType( type ) );
 				}

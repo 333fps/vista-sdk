@@ -1,3 +1,8 @@
+/**
+ * @file LocationsDto.h
+ * @brief Data Transfer Objects for locations in the VIS standard
+ */
+
 #pragma once
 
 namespace dnv::vista::sdk
@@ -9,9 +14,9 @@ namespace dnv::vista::sdk
 	 */
 	class RelativeLocationsDto final
 	{
-	public: // TODO
+	public:
 		//-------------------------------------------------------------------------
-		// Constructors
+		// Constructors / Destructor
 		//-------------------------------------------------------------------------
 
 		/**
@@ -28,6 +33,53 @@ namespace dnv::vista::sdk
 		 */
 		RelativeLocationsDto( char code, std::string name, std::optional<std::string> definition = std::nullopt );
 
+		/**
+		 * @brief Copy constructor
+		 */
+		RelativeLocationsDto( const RelativeLocationsDto& ) = default;
+
+		/**
+		 * @brief Move constructor
+		 */
+		RelativeLocationsDto( RelativeLocationsDto&& ) noexcept = default;
+
+		/**
+		 * @brief Destructor
+		 */
+		~RelativeLocationsDto() = default;
+
+		/**
+		 * @brief Copy assignment operator
+		 */
+		RelativeLocationsDto& operator=( const RelativeLocationsDto& ) = default;
+
+		/**
+		 * @brief Move assignment operator
+		 */
+		RelativeLocationsDto& operator=( RelativeLocationsDto&& ) noexcept = default;
+
+		//-------------------------------------------------------------------------
+		// Accessor Methods
+		//-------------------------------------------------------------------------
+
+		/**
+		 * @brief Get the location code
+		 * @return The character code representing the location
+		 */
+		char code() const;
+
+		/**
+		 * @brief Get the location name
+		 * @return The name of the location
+		 */
+		const std::string& name() const;
+
+		/**
+		 * @brief Get the location definition
+		 * @return The optional definition of the location
+		 */
+		const std::optional<std::string>& definition() const;
+
 		//-------------------------------------------------------------------------
 		// Serialization Methods
 		//-------------------------------------------------------------------------
@@ -36,6 +88,7 @@ namespace dnv::vista::sdk
 		 * @brief Deserialize a RelativeLocationsDto from a RapidJSON object.
 		 * @param json The RapidJSON object to deserialize.
 		 * @return The deserialized RelativeLocationsDto.
+		 * @throws std::runtime_error If JSON format is invalid
 		 */
 		static RelativeLocationsDto fromJson( const rapidjson::Value& json );
 
@@ -54,18 +107,19 @@ namespace dnv::vista::sdk
 		 */
 		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
 
+	private:
 		//-------------------------------------------------------------------------
-		// Data Members
+		// Private Member Variables
 		//-------------------------------------------------------------------------
 
 		/** @brief The character code representing the location (JSON: "code"). */
-		char code;
+		char m_code{};
 
 		/** @brief The name of the location (JSON: "name"). */
-		std::string name;
+		std::string m_name;
 
 		/** @brief An optional definition of the location (JSON: "definition"). */
-		std::optional<std::string> definition;
+		std::optional<std::string> m_definition;
 	};
 
 	/**
@@ -75,9 +129,9 @@ namespace dnv::vista::sdk
 	 */
 	class LocationsDto final
 	{
-	public: // TODO
+	public:
 		//-------------------------------------------------------------------------
-		// Constructors
+		// Constructors / Destructor
 		//-------------------------------------------------------------------------
 
 		/**
@@ -93,6 +147,47 @@ namespace dnv::vista::sdk
 		 */
 		LocationsDto( std::string visVersion, std::vector<RelativeLocationsDto> items );
 
+		/**
+		 * @brief Copy constructor
+		 */
+		LocationsDto( const LocationsDto& ) = default;
+
+		/**
+		 * @brief Move constructor
+		 */
+		LocationsDto( LocationsDto&& ) noexcept = default;
+
+		/**
+		 * @brief Destructor
+		 */
+		~LocationsDto() = default;
+
+		/**
+		 * @brief Copy assignment operator
+		 */
+		LocationsDto& operator=( const LocationsDto& ) = default;
+
+		/**
+		 * @brief Move assignment operator
+		 */
+		LocationsDto& operator=( LocationsDto&& ) noexcept = default;
+
+		//-------------------------------------------------------------------------
+		// Accessor Methods
+		//-------------------------------------------------------------------------
+
+		/**
+		 * @brief Get the VIS version string
+		 * @return The VIS version string
+		 */
+		const std::string& visVersion() const;
+
+		/**
+		 * @brief Get the collection of relative locations
+		 * @return A vector of relative locations
+		 */
+		const std::vector<RelativeLocationsDto>& items() const;
+
 		//-------------------------------------------------------------------------
 		// Serialization Methods
 		//-------------------------------------------------------------------------
@@ -101,6 +196,7 @@ namespace dnv::vista::sdk
 		 * @brief Deserialize a LocationsDto from a RapidJSON object.
 		 * @param json The RapidJSON object to deserialize.
 		 * @return The deserialized LocationsDto.
+		 * @throws std::runtime_error If JSON format is invalid
 		 */
 		static LocationsDto fromJson( const rapidjson::Value& json );
 
@@ -119,14 +215,15 @@ namespace dnv::vista::sdk
 		 */
 		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
 
+	private:
 		//-------------------------------------------------------------------------
-		// Data Members
+		// Private Member Variables
 		//-------------------------------------------------------------------------
 
 		/** @brief The VIS version string (JSON: "visRelease"). */
-		std::string visVersion;
+		std::string m_visVersion;
 
 		/** @brief A vector of relative locations (JSON: "items"). */
-		std::vector<RelativeLocationsDto> items;
+		std::vector<RelativeLocationsDto> m_items;
 	};
 }
