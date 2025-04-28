@@ -314,8 +314,10 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "Successfully loaded Codebooks DTO for version {} in {} ms", visVersion, duration.count() );
 
 			std::lock_guard<std::mutex> lock( codebooksCacheMutex );
-			codebooksCache[visVersion] = result;
-			return result;
+
+			codebooksCache.emplace( visVersion, std::move( result ) );
+
+			return codebooksCache.at( visVersion );
 		}
 		catch ( const std::exception& e )
 		{

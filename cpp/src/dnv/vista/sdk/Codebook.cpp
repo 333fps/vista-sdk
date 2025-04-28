@@ -65,25 +65,15 @@ namespace dnv::vista::sdk
 	{
 		if ( m_name == CodebookName::Position )
 		{
-			try
+			int parsedValue;
+			auto result = std::from_chars( tagValue.data(), tagValue.data() + tagValue.size(), parsedValue );
+			if ( result.ec == std::errc() && result.ptr == tagValue.data() + tagValue.size() )
 			{
-				auto val{ std::stoi( tagValue ) };
-				(void)val;
 				return true;
 			}
-			catch ( const std::invalid_argument& )
-			{
-				// Fall through to standard lookup
-			}
-			catch ( const std::out_of_range& )
-			{
-				// Fall through to standard lookup
-			}
 		}
-
 		return m_standardValues.find( tagValue ) != m_standardValues.end();
 	}
-
 	//-------------------------------------------------------------------
 	// Iterators
 	//-------------------------------------------------------------------
@@ -236,9 +226,9 @@ namespace dnv::vista::sdk
 	// Queries
 	//-------------------------------------------------------------------
 
-	bool Codebook::hasGroup( std::string_view group ) const
+	bool Codebook::hasGroup( const std::string& group ) const
 	{
-		return m_groups.contains( std::string( group ) );
+		return m_groups.contains( group );
 	}
 
 	bool Codebook::hasStandardValue( const std::string& value ) const
@@ -252,8 +242,7 @@ namespace dnv::vista::sdk
 
 	std::optional<MetadataTag> Codebook::tryCreateTag( const std::string_view valueView ) const
 	{
-		if ( valueView.empty() || std::all_of( valueView.begin(), valueView.end(),
-									  []( unsigned char c ) { return std::isspace( c ); } ) )
+		if ( valueView.empty() || std::all_of( valueView.begin(), valueView.end(), []( unsigned char c ) { return std::isspace( c ); } ) )
 		{
 			SPDLOG_INFO( "Rejecting empty or whitespace-only value" );
 			return std::nullopt;
@@ -267,8 +256,7 @@ namespace dnv::vista::sdk
 			auto positionValidity{ validatePosition( value ) };
 			if ( static_cast<int>( positionValidity ) < 100 )
 			{
-				SPDLOG_INFO( "Position validation failed with result: {}",
-					static_cast<int>( positionValidity ) );
+				SPDLOG_INFO( "Position validation failed with result: {}", static_cast<int>( positionValidity ) );
 				return std::nullopt;
 			}
 
@@ -283,7 +271,9 @@ namespace dnv::vista::sdk
 			}
 
 			if ( m_name != CodebookName::Detail && !m_standardValues.contains( value ) )
+			{
 				isCustom = true;
+			}
 		}
 
 		SPDLOG_INFO( "Creating tag with value: {}, custom: {}", value, isCustom );
@@ -296,10 +286,8 @@ namespace dnv::vista::sdk
 		auto tag{ tryCreateTag( value ) };
 		if ( !tag.has_value() )
 		{
-			SPDLOG_ERROR( "Invalid value for metadata tag: codebook={}, value={}",
-				static_cast<int>( m_name ), value );
-			throw std::invalid_argument( "Invalid value for metadata tag: codebook=" +
-										 std::to_string( static_cast<int>( m_name ) ) + ", value=" + value );
+			SPDLOG_ERROR( "Invalid value for metadata tag: codebook={}, value={}", static_cast<int>( m_name ), value );
+			throw std::invalid_argument( "Invalid value for metadata tag: codebook=" + std::to_string( static_cast<int>( m_name ) ) + ", value=" + value );
 		}
 
 		return tag.value();
@@ -307,189 +295,156 @@ namespace dnv::vista::sdk
 
 	PositionValidationResult Codebook::validatePosition( const std::string& position ) const
 	{
-		SPDLOG_INFO( "Validating position: {}", position );
 		if ( position.empty() ||
 			 std::all_of( position.begin(), position.end(), []( unsigned char c ) { return std::isspace( c ); } ) ||
 			 !VIS::isISOString( position ) )
 		{
-			SPDLOG_WARN( "Position is empty or whitespace-only or not an ISO string: {}", position );
 			return PositionValidationResult::Invalid;
 		}
 
-		std::string trimmedPosition{ position };
-		trimmedPosition.erase( 0, trimmedPosition.find_first_not_of( " \t\n\r\f\v" ) );
-		trimmedPosition.erase( trimmedPosition.find_last_not_of( " \t\n\r\f\v" ) + 1 );
-		if ( trimmedPosition.length() != position.length() )
+		std::string_view positionView( position );
+		size_t first_char = positionView.find_first_not_of( " \t\n\r\f\v" );
+		size_t last_char = positionView.find_last_not_of( " \t\n\r\f\v" );
+		if ( first_char == std::string_view::npos )
 		{
-			SPDLOG_WARN( "Position has leading or trailing whitespace: {}", position );
+			return PositionValidationResult::Invalid;
+		}
+		std::string_view trimmedView = positionView.substr( first_char, last_char - first_char + 1 );
+
+		if ( trimmedView.length() != position.length() )
+		{
 			return PositionValidationResult::Invalid;
 		}
 
-		if ( m_standardValues.contains( position ) )
+		std::string currentPosition( trimmedView );
+
+		if ( m_standardValues.contains( currentPosition ) )
 		{
-			SPDLOG_INFO( "Position is a standard value: {}", position );
 			return PositionValidationResult::Valid;
 		}
 
-		try
+		int parsedValue;
+		auto result = std::from_chars( currentPosition.data(), currentPosition.data() + currentPosition.size(), parsedValue );
+		if ( result.ec == std::errc() && result.ptr == currentPosition.data() + currentPosition.size() )
 		{
-			auto val{ std::stoi( position ) };
-			(void)val;
-
-			SPDLOG_INFO( "Position is a number: {}", position );
 			return PositionValidationResult::Valid;
 		}
-		catch ( const std::invalid_argument& )
-		{
-			SPDLOG_DEBUG( "Position is not a number: {}", position );
-		}
-		catch ( const std::out_of_range& )
-		{
-			SPDLOG_INFO( "Position is out of range: {}", position );
-		}
 
-		if ( position.find( '-' ) == std::string::npos )
+		size_t hyphenPos = currentPosition.find( '-' );
+		if ( hyphenPos == std::string::npos )
 		{
-			SPDLOG_INFO( "Position is not compound: {}", position );
 			return PositionValidationResult::Custom;
 		}
 
-		std::vector<std::string> positions{};
-		std::string temp{};
-		for ( char c : position )
+		std::vector<std::string> parts{};
+		size_t start = 0;
+		size_t end = currentPosition.find( '-' );
+		while ( end != std::string::npos )
 		{
-			if ( c == '-' )
-			{
-				SPDLOG_DEBUG( "Position is compound: {}", position );
-				positions.push_back( temp );
-				temp.clear();
-			}
-			else
-			{
-				temp.append( { c } );
-			}
+			parts.push_back( currentPosition.substr( start, end - start ) );
+			start = end + 1;
+			end = currentPosition.find( '-', start );
 		}
-		positions.push_back( temp );
+		parts.push_back( currentPosition.substr( start ) );
 
 		std::vector<PositionValidationResult> validations{};
-		for ( const auto& positionStr : positions )
+		validations.reserve( parts.size() );
+		PositionValidationResult worstResult = PositionValidationResult::Valid;
+		for ( const auto& partStr : parts )
 		{
-			validations.push_back( validatePosition( positionStr ) );
+			PositionValidationResult partValidation = validatePosition( partStr );
+			validations.push_back( partValidation );
+			if ( static_cast<int>( partValidation ) < static_cast<int>( worstResult ) )
+			{
+				worstResult = partValidation;
+			}
 		}
 
-		if ( std::any_of( validations.begin(), validations.end(),
-				 []( PositionValidationResult v ) { return static_cast<int>( v ) < 100; } ) )
+		if ( static_cast<int>( worstResult ) < 100 )
 		{
-			return *std::max_element( validations.begin(), validations.end() );
+			return worstResult;
 		}
 
 		bool numberNotAtEnd{ false };
-		for ( size_t i{ 0 }; i < positions.size() - 1; ++i )
-		{
-			try
-			{
-				auto val{ std::stoi( positions[i] ) };
-				(void)val;
+		std::vector<std::string> nonNumericParts{};
+		nonNumericParts.reserve( parts.size() );
 
-				numberNotAtEnd = true;
-				break;
-			}
-			catch ( const std::invalid_argument& )
+		for ( size_t i = 0; i < parts.size(); ++i )
+		{
+			int checkVal;
+			auto checkResult = std::from_chars( parts[i].data(), parts[i].data() + parts[i].size(), checkVal );
+			bool isNumber = ( checkResult.ec == std::errc() && checkResult.ptr == parts[i].data() + parts[i].size() );
+
+			if ( isNumber )
 			{
-				SPDLOG_DEBUG( "Position is not a number: {}", positions[i] );
+				if ( i < parts.size() - 1 )
+				{
+					numberNotAtEnd = true;
+				}
 			}
-			catch ( const std::out_of_range& )
+			else
 			{
-				SPDLOG_INFO( "Position is out of range: {}", positions[i] );
+				nonNumericParts.push_back( parts[i] );
 			}
 		}
 
-		std::vector<std::string> positionsWithoutNumber{};
-		for ( const auto& p : positions )
+		bool notAlphabeticallySorted = false;
+		if ( nonNumericParts.size() > 1 )
 		{
-			try
+			if ( !std::is_sorted( nonNumericParts.begin(), nonNumericParts.end() ) )
 			{
-				auto val{ std::stoi( p ) };
-				(void)val;
-			}
-			catch ( const std::invalid_argument& )
-			{
-				SPDLOG_DEBUG( "Position is not a number: {}", p );
-				positionsWithoutNumber.push_back( p );
-			}
-			catch ( const std::out_of_range& )
-			{
-				SPDLOG_INFO( "Position is out of range: {}", p );
-				positionsWithoutNumber.push_back( p );
+				notAlphabeticallySorted = true;
 			}
 		}
-
-		std::vector<std::string> alphabeticallySorted{ positionsWithoutNumber };
-		std::sort( alphabeticallySorted.begin(), alphabeticallySorted.end() );
-		bool notAlphabeticallySorted{ positionsWithoutNumber != alphabeticallySorted };
 
 		if ( numberNotAtEnd || notAlphabeticallySorted )
 		{
 			return PositionValidationResult::InvalidOrder;
 		}
 
-		bool allValid{ std::all_of( validations.begin(), validations.end(),
+		bool allSubPartsValid = std::all_of( validations.begin(), validations.end(),
 			[]( PositionValidationResult v ) {
-				return static_cast<int>( v ) == static_cast<int>( PositionValidationResult::Valid );
-			} ) };
+				return v == PositionValidationResult::Valid;
+			} );
 
-		if ( allValid )
+		if ( allSubPartsValid )
 		{
 			std::vector<std::string> groups{};
-			for ( const auto& p : positions )
-			{
-				try
-				{
-					auto val{ std::stoi( p ) };
-					(void)val;
+			groups.reserve( parts.size() );
+			std::unordered_set<std::string> uniqueGroups{};
+			bool hasDefaultGroup = false;
 
-					groups.push_back( "<number>" );
-				}
-				catch ( const std::invalid_argument& )
+			for ( const auto& p : parts )
+			{
+				int checkVal;
+				auto checkResult = std::from_chars( p.data(), p.data() + p.size(), checkVal );
+				bool isNumber = ( checkResult.ec == std::errc() && checkResult.ptr == p.data() + p.size() );
+
+				std::string groupName;
+				if ( isNumber )
 				{
-					auto it{ m_groupMap.find( p ) };
-					if ( it != m_groupMap.end() )
-					{
-						groups.push_back( it->second );
-					}
-					else
-					{
-						groups.push_back( "UNKNOWN" );
-					}
+					groupName = "<number>";
 				}
-				catch ( const std::out_of_range& )
+				else
 				{
-					auto it{ m_groupMap.find( p ) };
-					if ( it != m_groupMap.end() )
-					{
-						groups.push_back( it->second );
-					}
-					else
-					{
-						groups.push_back( "UNKNOWN" );
-					}
+					auto it = m_groupMap.find( p );
+					groupName = ( it != m_groupMap.end() ) ? it->second : "UNKNOWN";
+				}
+
+				groups.push_back( groupName );
+				uniqueGroups.insert( groupName );
+				if ( groupName == "DEFAULT_GROUP" )
+				{
+					hasDefaultGroup = true;
 				}
 			}
 
-			auto begin = groups.begin();
-			auto end = groups.end();
-			std::unordered_set<std::string> groupsSet( begin, end );
-
-			auto defaultGroupIt{ std::find( groups.begin(), groups.end(), "DEFAULT_GROUP" ) };
-			if ( defaultGroupIt == groups.end() && groupsSet.size() != groups.size() )
+			if ( !hasDefaultGroup && uniqueGroups.size() != groups.size() )
 			{
-				SPDLOG_INFO( "Position has invalid grouping: {}", position );
 				return PositionValidationResult::InvalidGrouping;
 			}
 		}
 
-		auto result = *std::max_element( validations.begin(), validations.end() );
-		SPDLOG_INFO( "Position validation result for '{}': {}", position, static_cast<int>( result ) );
-		return result;
+		return worstResult;
 	}
 }

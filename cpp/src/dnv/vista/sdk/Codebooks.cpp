@@ -49,6 +49,7 @@ namespace dnv::vista::sdk
 
 		std::unordered_map<std::string, std::vector<std::string>> emptyValues;
 		CodebookDto detailDto( "detail", emptyValues );
+
 		Codebook detailCodebook( detailDto );
 
 		auto detailIndex = static_cast<size_t>( CodebookName::Detail ) - 1;
@@ -112,21 +113,18 @@ namespace dnv::vista::sdk
 
 			if ( result.has_value() )
 			{
-				SPDLOG_DEBUG( "Successfully created tag for '{}' in codebook '{}'",
-					value, CodebookNames::toPrefix( name ) );
+				SPDLOG_DEBUG( "Successfully created tag for '{}' in codebook '{}'", value, CodebookNames::toPrefix( name ) );
 			}
 			else
 			{
-				SPDLOG_DEBUG( "Failed to create tag for '{}' in codebook '{}' - invalid value",
-					value, CodebookNames::toPrefix( name ) );
+				SPDLOG_DEBUG( "Failed to create tag for '{}' in codebook '{}' - invalid value", value, CodebookNames::toPrefix( name ) );
 			}
 
 			return result;
 		}
 		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Exception in tryCreateTag for '{}' in codebook '{}': {}",
-				value, CodebookNames::toPrefix( name ), ex.what() );
+			SPDLOG_ERROR( "Exception in tryCreateTag for '{}' in codebook '{}': {}", value, CodebookNames::toPrefix( name ), ex.what() );
 			throw;
 		}
 	}
@@ -140,7 +138,7 @@ namespace dnv::vista::sdk
 	// Iterator implementation
 	//-------------------------------------------------------------------
 
-	Codebooks::Iterator::Iterator( const std::array<Codebook, static_cast<size_t>( NUM_CODEBOOKS )>* codebooks, size_t index )
+	Codebooks::Iterator::Iterator( const std::array<Codebook, NUM_CODEBOOKS>* codebooks, size_t index )
 		: m_codebooks( codebooks ), m_index( index )
 	{
 	}
@@ -202,12 +200,12 @@ namespace dnv::vista::sdk
 	bool Codebooks::Iterator::next()
 	{
 		++m_index;
-		return static_cast<size_t>( m_index ) < m_codebooks->size();
+		return m_index < m_codebooks->size();
 	}
 
 	bool Codebooks::Iterator::current()
 	{
-		if ( static_cast<size_t>( m_index ) < m_codebooks->size() )
+		if ( m_index < m_codebooks->size() )
 		{
 			const Codebook& codebook = ( *m_codebooks )[m_index];
 			m_current = std::make_tuple( codebook.name(), std::cref( codebook ) );
@@ -218,7 +216,7 @@ namespace dnv::vista::sdk
 
 	void Codebooks::Iterator::reset()
 	{
-		m_index = static_cast<size_t>( -1 );
+		m_index = std::numeric_limits<size_t>::max();
 	}
 
 	//-------------------------------------------------------------------
@@ -237,6 +235,6 @@ namespace dnv::vista::sdk
 
 	Codebooks::Enumerator Codebooks::enumerator() const
 	{
-		return Iterator( &m_codebooks, static_cast<size_t>( -1 ) );
+		return Iterator( &m_codebooks, std::numeric_limits<size_t>::max() );
 	}
 }

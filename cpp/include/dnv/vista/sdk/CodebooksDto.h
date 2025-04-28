@@ -25,13 +25,11 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Construction / Destruction
+		// Constructors / Destructor
 		//-------------------------------------------------------------------
 
-		/**
-		 * @brief Default constructor
-		 */
-		CodebookDto() = default;
+		/** @brief Default constructor - deleted for immutability */
+		CodebookDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
@@ -46,17 +44,11 @@ namespace dnv::vista::sdk
 		/** @brief Move constructor */
 		CodebookDto( CodebookDto&& ) noexcept = default;
 
-		/** @brief Copy assignment operator */
-		CodebookDto& operator=( const CodebookDto& ) = default;
-
-		/** @brief Move assignment operator */
-		CodebookDto& operator=( CodebookDto&& ) noexcept = default;
-
 		/** @brief Destructor */
 		~CodebookDto() = default;
 
 		//-------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------
 
 		/**
@@ -72,7 +64,7 @@ namespace dnv::vista::sdk
 		const std::unordered_map<std::string, std::vector<std::string>>& values() const;
 
 		//-------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
 
 		/**
@@ -86,10 +78,9 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Try to deserialize a CodebookDto from a RapidJSON object
 		 * @param json The RapidJSON object to deserialize
-		 * @param dto Output parameter to receive the deserialized object
-		 * @return True if deserialization was successful, false otherwise
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static bool tryFromJson( const rapidjson::Value& json, CodebookDto& dto );
+		static std::optional<CodebookDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Serialize this CodebookDto to a RapidJSON Value
@@ -100,14 +91,24 @@ namespace dnv::vista::sdk
 
 	private:
 		//-------------------------------------------------------------------
+		// Assignment Operators - deleted for immutability
+		//-------------------------------------------------------------------
+
+		/** @brief Copy assignment operator - deleted for immutability */
+		CodebookDto& operator=( const CodebookDto& ) = delete;
+
+		/** @brief Move assignment operator - deleted for immutability */
+		CodebookDto& operator=( CodebookDto&& ) noexcept = delete;
+
+		//-------------------------------------------------------------------
 		// Private Member Variables
 		//-------------------------------------------------------------------
 
 		/** @brief Name identifier of the codebook (e.g., "positions", "quantities") */
-		std::string m_name;
+		const std::string m_name;
 
 		/** @brief Map of group names to their corresponding values */
-		std::unordered_map<std::string, std::vector<std::string>> m_values;
+		const std::unordered_map<std::string, std::vector<std::string>> m_values;
 	};
 
 	/**
@@ -120,13 +121,11 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Construction / Destruction
+		// Constructors / Destructor
 		//-------------------------------------------------------------------
 
-		/**
-		 * @brief Default constructor
-		 */
-		CodebooksDto() = default;
+		/** @brief Default constructor - deleted for immutability */
+		CodebooksDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
@@ -135,14 +134,17 @@ namespace dnv::vista::sdk
 		 */
 		CodebooksDto( std::string visVersion, std::vector<CodebookDto> items );
 
+		/** @brief Copy constructor */
 		CodebooksDto( const CodebooksDto& ) = default;
+
+		/** @brief Move constructor */
 		CodebooksDto( CodebooksDto&& ) noexcept = default;
-		CodebooksDto& operator=( const CodebooksDto& ) = default;
-		CodebooksDto& operator=( CodebooksDto&& ) noexcept = default;
+
+		/** @brief Destructor */
 		~CodebooksDto() = default;
 
 		//-------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------
 
 		/**
@@ -158,7 +160,7 @@ namespace dnv::vista::sdk
 		const std::vector<CodebookDto>& items() const;
 
 		//-------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
 
 		/**
@@ -172,10 +174,9 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Try to deserialize a CodebooksDto from a RapidJSON object
 		 * @param json The RapidJSON object to deserialize
-		 * @param dto Output parameter to receive the deserialized object
-		 * @return True if deserialization was successful, false otherwise
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static bool tryFromJson( const rapidjson::Value& json, CodebooksDto& dto );
+		static std::optional<CodebooksDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Serialize this CodebooksDto to a RapidJSON Value
@@ -186,13 +187,23 @@ namespace dnv::vista::sdk
 
 	private:
 		//-------------------------------------------------------------------
+		// Assignment Operators - deleted for immutability
+		//-------------------------------------------------------------------
+
+		/** @brief Copy assignment operator - deleted for immutability */
+		CodebooksDto& operator=( const CodebooksDto& ) = delete;
+
+		/** @brief Move assignment operator - deleted for immutability */
+		CodebooksDto& operator=( CodebooksDto&& ) noexcept = delete;
+
+		//-------------------------------------------------------------------
 		// Private Member Variables
 		//-------------------------------------------------------------------
 
 		/** @brief VIS version string (e.g., "3.8a") */
-		std::string m_visVersion;
+		const std::string m_visVersion;
 
 		/** @brief Collection of codebook DTOs contained in this version */
-		std::vector<CodebookDto> m_items;
+		const std::vector<CodebookDto> m_items;
 	};
 }

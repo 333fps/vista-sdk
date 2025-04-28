@@ -93,7 +93,7 @@ namespace dnv::vista::sdk
 		 * @brief Get all metadata tags
 		 * @return A constant reference to the vector of metadata tags
 		 */
-		virtual const std::vector<MetadataTag>& metadataTags() const = 0;
+		virtual std::vector<MetadataTag> metadataTags() const = 0;
 
 		//-------------------------------------------------------------------------
 		// Conversion and Comparison

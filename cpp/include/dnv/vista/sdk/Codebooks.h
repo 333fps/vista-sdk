@@ -66,7 +66,7 @@ namespace dnv::vista::sdk
 			 * @param codebooks Pointer to the codebooks array
 			 * @param index Starting position index
 			 */
-			Iterator( const std::array<Codebook, static_cast<size_t>( NUM_CODEBOOKS )>* codebooks, size_t index );
+			Iterator( const std::array<Codebook, NUM_CODEBOOKS>* codebooks, size_t index );
 
 			/**
 			 * @brief Dereference operator
@@ -140,7 +140,6 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 		// Construction / Destruction
 		//-------------------------------------------------------------------
-
 		/** @brief Default constructor */
 		Codebooks() = default;
 
@@ -247,6 +246,6 @@ namespace dnv::vista::sdk
 		VisVersion m_visVersion;
 
 		/** @brief Array of codebooks */
-		std::array<Codebook, static_cast<size_t>( NUM_CODEBOOKS )> m_codebooks;
+		std::array<Codebook, NUM_CODEBOOKS> m_codebooks;
 	};
 }

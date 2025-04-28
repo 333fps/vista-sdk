@@ -44,6 +44,7 @@ if(MSVC)
 		target_compile_options(${test_target} PRIVATE
 			/wd4625 # copy constructor was implicitly defined as deleted
 			/wd4626 # assignement operator was implicitly defined as deleted
+			/wd4868 # compiler may not enforce left-to-right evaluation order in braced initializer list
 			/wd5026 # move constructor was implicitly defined as deleted
 			/wd5027 # move assignement operator was implicitly defined as deleted
 		)

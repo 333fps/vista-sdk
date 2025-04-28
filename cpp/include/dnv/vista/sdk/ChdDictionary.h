@@ -182,9 +182,6 @@ namespace dnv::vista::sdk
 
 			/** @brief Current position in table */
 			size_t m_index;
-
-			/** @brief Current key-value pair */
-			mutable std::pair<std::string, TValue> m_current;
 		};
 
 		/** @brief Alias for Iterator to support legacy code */

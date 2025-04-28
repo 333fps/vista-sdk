@@ -82,7 +82,7 @@ namespace dnv::vista::sdk
 		return m_builder.hasCustomTag();
 	}
 
-	const std::vector<MetadataTag>& LocalId::metadataTags() const
+	std::vector<MetadataTag> LocalId::metadataTags() const
 	{
 		return m_builder.metadataTags();
 	}

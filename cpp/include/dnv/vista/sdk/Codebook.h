@@ -282,7 +282,7 @@ namespace dnv::vista::sdk
 		 * @param group The group to check
 		 * @return True if the group exists
 		 */
-		bool hasGroup( std::string_view group ) const;
+		bool hasGroup( const std::string& group ) const;
 
 		/**
 		 * @brief Check if a value is a standard value

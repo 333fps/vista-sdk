@@ -104,7 +104,7 @@ namespace dnv::vista::sdk
 		 * @brief Get metadata tags
 		 * @return Vector of metadata tags
 		 */
-		const std::vector<MetadataTag>& metadataTags() const override;
+		std::vector<MetadataTag> metadataTags() const override;
 
 		/**
 		 * @brief Convert to string
