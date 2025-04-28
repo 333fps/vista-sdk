@@ -26,8 +26,17 @@ namespace dnv::vista::sdk
 	static constexpr const char* ITEMS_KEY = "items";
 	static constexpr const char* RELATIONS_KEY = "relations";
 
+	//-------------------------------------------------------------------
+	// Helper Functions
+	//-------------------------------------------------------------------
+
 	namespace
 	{
+		/**
+		 * @brief Interns short strings to reduce memory usage for commonly repeated values
+		 * @param value The string to be interned
+		 * @return A reference to the cached string instance
+		 */
 		const std::string& internString( const std::string& value )
 		{
 			static std::unordered_map<std::string, std::string> cache;
@@ -51,7 +60,7 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	//-------------------------------------------------------------------
-	// Construction / Destruction
+	// Constructors / Destructor
 	//-------------------------------------------------------------------
 
 	GmodNodeDto::GmodNodeDto(
@@ -63,7 +72,7 @@ namespace dnv::vista::sdk
 		std::optional<std::string> definition,
 		std::optional<std::string> commonDefinition,
 		std::optional<bool> installSubstructure,
-		std::optional<std::unordered_map<std::string, std::string>> normalAssignmentNames )
+		std::optional<NormalAssignmentNamesMap> normalAssignmentNames )
 		: m_category{ std::move( category ) },
 		  m_type{ std::move( type ) },
 		  m_code{ std::move( code ) },
@@ -78,7 +87,7 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------
 
 	const std::string& GmodNodeDto::category() const
@@ -101,151 +110,177 @@ namespace dnv::vista::sdk
 		return m_name;
 	}
 
-	std::optional<std::string> GmodNodeDto::commonName() const
+	const std::optional<std::string>& GmodNodeDto::commonName() const
 	{
 		return m_commonName;
 	}
 
-	std::optional<std::string> GmodNodeDto::definition() const
+	const std::optional<std::string>& GmodNodeDto::definition() const
 	{
 		return m_definition;
 	}
 
-	std::optional<std::string> GmodNodeDto::commonDefinition() const
+	const std::optional<std::string>& GmodNodeDto::commonDefinition() const
 	{
 		return m_commonDefinition;
 	}
 
-	std::optional<bool> GmodNodeDto::installSubstructure() const
+	const std::optional<bool>& GmodNodeDto::installSubstructure() const
 	{
 		return m_installSubstructure;
 	}
 
-	std::optional<std::unordered_map<std::string, std::string>> GmodNodeDto::normalAssignmentNames() const
+	const std::optional<GmodNodeDto::NormalAssignmentNamesMap>& GmodNodeDto::normalAssignmentNames() const
 	{
 		return m_normalAssignmentNames;
 	}
 
 	//-------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------
+
+	std::optional<GmodNodeDto> GmodNodeDto::tryFromJson( const rapidjson::Value& json )
+	{
+		auto startTime = std::chrono::steady_clock::now();
+		SPDLOG_DEBUG( "Attempting to parse GmodNodeDto from JSON" );
+
+		if ( !json.HasMember( CATEGORY_KEY ) || !json[CATEGORY_KEY].IsString() )
+		{
+			SPDLOG_ERROR( "GMOD Node JSON missing required '{}' field or not a string", CATEGORY_KEY );
+			return std::nullopt;
+		}
+		if ( !json.HasMember( TYPE_KEY ) || !json[TYPE_KEY].IsString() )
+		{
+			SPDLOG_ERROR( "GMOD Node JSON missing required '{}' field or not a string", TYPE_KEY );
+			return std::nullopt;
+		}
+		if ( !json.HasMember( CODE_KEY ) || !json[CODE_KEY].IsString() )
+		{
+			SPDLOG_ERROR( "GMOD Node JSON missing required '{}' field or not a string", CODE_KEY );
+			return std::nullopt;
+		}
+		if ( !json.HasMember( NAME_KEY ) || !json[NAME_KEY].IsString() )
+		{
+			SPDLOG_ERROR( "GMOD Node JSON missing required '{}' field or not a string", NAME_KEY );
+			SPDLOG_ERROR( "PROBLEMATIC CODE KEY: {}", json[CODE_KEY].GetString() );
+			return std::nullopt;
+		}
+
+		std::string category = internString( json[CATEGORY_KEY].GetString() );
+		std::string type = internString( json[TYPE_KEY].GetString() );
+		std::string code = json[CODE_KEY].GetString();
+		std::string name = json[NAME_KEY].GetString();
+
+		if ( category.empty() )
+			SPDLOG_WARN( "Empty category field found in GMOD node code='{}'", code );
+		if ( type.empty() )
+			SPDLOG_WARN( "Empty type field found in GMOD node code='{}'", code );
+		if ( code.empty() )
+			SPDLOG_WARN( "Empty code field found in GMOD node" );
+		if ( name.empty() )
+			SPDLOG_WARN( "Empty name field found in GMOD node code='{}'", code );
+
+		SPDLOG_DEBUG( "Parsed required GMOD node fields: category={}, type={}, code={}, name={}",
+			category, type, code, name );
+
+		std::optional<std::string> commonName = std::nullopt;
+		std::optional<std::string> definition = std::nullopt;
+		std::optional<std::string> commonDefinition = std::nullopt;
+		std::optional<bool> installSubstructure = std::nullopt;
+		std::optional<NormalAssignmentNamesMap> normalAssignmentNames = std::nullopt;
+
+		if ( json.HasMember( COMMON_NAME_KEY ) )
+		{
+			if ( json[COMMON_NAME_KEY].IsString() )
+				commonName = json[COMMON_NAME_KEY].GetString();
+			else
+				SPDLOG_WARN( "GMOD Node code='{}' has non-string '{}'", code, COMMON_NAME_KEY );
+		}
+		if ( json.HasMember( DEFINITION_KEY ) )
+		{
+			if ( json[DEFINITION_KEY].IsString() )
+				definition = json[DEFINITION_KEY].GetString();
+			else
+				SPDLOG_WARN( "GMOD Node code='{}' has non-string '{}'", code, DEFINITION_KEY );
+		}
+		if ( json.HasMember( COMMON_DEFINITION_KEY ) )
+		{
+			if ( json[COMMON_DEFINITION_KEY].IsString() )
+				commonDefinition = json[COMMON_DEFINITION_KEY].GetString();
+			else
+				SPDLOG_WARN( "GMOD Node code='{}' has non-string '{}'", code, COMMON_DEFINITION_KEY );
+		}
+		if ( json.HasMember( INSTALL_SUBSTRUCTURE_KEY ) )
+		{
+			if ( json[INSTALL_SUBSTRUCTURE_KEY].IsBool() )
+				installSubstructure = json[INSTALL_SUBSTRUCTURE_KEY].GetBool();
+			else
+				SPDLOG_WARN( "GMOD Node code='{}' has non-bool '{}'", code, INSTALL_SUBSTRUCTURE_KEY );
+		}
+		if ( json.HasMember( NORMAL_ASSIGNMENT_NAMES_KEY ) )
+		{
+			if ( json[NORMAL_ASSIGNMENT_NAMES_KEY].IsObject() )
+			{
+				NormalAssignmentNamesMap assignmentNames;
+				const auto& namesObj = json[NORMAL_ASSIGNMENT_NAMES_KEY];
+				assignmentNames.reserve( namesObj.MemberCount() );
+
+				for ( auto it = namesObj.MemberBegin(); it != namesObj.MemberEnd(); ++it )
+				{
+					if ( it->name.IsString() && it->value.IsString() )
+					{
+						assignmentNames.emplace( it->name.GetString(), it->value.GetString() );
+					}
+					else
+					{
+						SPDLOG_WARN( "GMOD Node code='{}' has invalid entry in '{}'", code, NORMAL_ASSIGNMENT_NAMES_KEY );
+					}
+				}
+
+				if ( !assignmentNames.empty() )
+				{
+					normalAssignmentNames = std::move( assignmentNames );
+					SPDLOG_DEBUG( "Parsed {} normal assignment name mappings for code='{}'", normalAssignmentNames->size(), code );
+				}
+			}
+			else
+			{
+				SPDLOG_WARN( "GMOD Node code='{}' has non-object '{}'", code, NORMAL_ASSIGNMENT_NAMES_KEY );
+			}
+		}
+
+		GmodNodeDto resultDto(
+			std::move( category ),
+			std::move( type ),
+			std::move( code ),
+			std::move( name ),
+			std::move( commonName ),
+			std::move( definition ),
+			std::move( commonDefinition ),
+			installSubstructure,
+			std::move( normalAssignmentNames ) );
+
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
+		SPDLOG_DEBUG( "Successfully parsed GmodNodeDto: code={} in {} µs", resultDto.code(), duration.count() );
+
+		return std::optional<GmodNodeDto>{ std::move( resultDto ) };
+	}
 
 	GmodNodeDto GmodNodeDto::fromJson( const rapidjson::Value& json )
 	{
-		auto startTime = std::chrono::steady_clock::now();
-
-		SPDLOG_DEBUG( "Parsing GmodNodeDto from JSON" );
-		GmodNodeDto node;
-
-		node.m_category = "UNKNOWN";
-		node.m_type = "UNKNOWN";
-		node.m_code = "UNKNOWN";
-		node.m_name = "UNKNOWN";
-
-		if ( json.HasMember( CATEGORY_KEY ) && json[CATEGORY_KEY].IsString() )
+		auto dtoOpt = GmodNodeDto::tryFromJson( json );
+		if ( !dtoOpt.has_value() )
 		{
-			std::string categoryStr = json[CATEGORY_KEY].GetString();
-			if ( categoryStr.empty() )
+			std::string codeHint = "[unknown code]";
+			if ( json.IsObject() && json.HasMember( CODE_KEY ) && json[CODE_KEY].IsString() )
 			{
-				SPDLOG_WARN( "Empty category field found in GMOD node" );
+				codeHint = json[CODE_KEY].GetString();
 			}
-			else
-			{
-				node.m_category = internString( categoryStr );
-			}
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodNodeDto from JSON (hint: code='{}')", codeHint );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
 		}
-
-		if ( json.HasMember( TYPE_KEY ) && json[TYPE_KEY].IsString() )
-		{
-			std::string typeStr = json[TYPE_KEY].GetString();
-			if ( typeStr.empty() )
-			{
-				SPDLOG_WARN( "Empty type field found in GMOD node" );
-			}
-			else
-			{
-				node.m_type = internString( typeStr );
-			}
-		}
-
-		if ( json.HasMember( CODE_KEY ) && json[CODE_KEY].IsString() )
-		{
-			std::string codeStr = json[CODE_KEY].GetString();
-			if ( codeStr.empty() )
-			{
-				SPDLOG_WARN( "Empty code field found in GMOD node" );
-			}
-			else
-			{
-				node.m_code = std::move( codeStr );
-			}
-		}
-
-		if ( json.HasMember( NAME_KEY ) && json[NAME_KEY].IsString() )
-		{
-			std::string nameStr = json[NAME_KEY].GetString();
-			if ( nameStr.empty() )
-			{
-				SPDLOG_WARN( "Empty name field found in GMOD node" );
-			}
-			else
-			{
-				node.m_name = std::move( nameStr );
-			}
-		}
-
-		SPDLOG_DEBUG( "Parsed required GMOD node fields: category={}, type={}, code={}, name={}",
-			node.m_category, node.m_type, node.m_code, node.m_name );
-
-		if ( json.HasMember( COMMON_NAME_KEY ) && json[COMMON_NAME_KEY].IsString() )
-			node.m_commonName = json[COMMON_NAME_KEY].GetString();
-
-		if ( json.HasMember( DEFINITION_KEY ) && json[DEFINITION_KEY].IsString() )
-			node.m_definition = json[DEFINITION_KEY].GetString();
-
-		if ( json.HasMember( COMMON_DEFINITION_KEY ) && json[COMMON_DEFINITION_KEY].IsString() )
-			node.m_commonDefinition = json[COMMON_DEFINITION_KEY].GetString();
-
-		if ( json.HasMember( INSTALL_SUBSTRUCTURE_KEY ) && json[INSTALL_SUBSTRUCTURE_KEY].IsBool() )
-			node.m_installSubstructure = json[INSTALL_SUBSTRUCTURE_KEY].GetBool();
-
-		if ( json.HasMember( NORMAL_ASSIGNMENT_NAMES_KEY ) && json[NORMAL_ASSIGNMENT_NAMES_KEY].IsObject() )
-		{
-			std::unordered_map<std::string, std::string> assignmentNames;
-			auto& namesObj = json[NORMAL_ASSIGNMENT_NAMES_KEY];
-			assignmentNames.reserve( namesObj.MemberCount() );
-
-			for ( auto it = namesObj.MemberBegin(); it != namesObj.MemberEnd(); ++it )
-			{
-				if ( it->name.IsString() && it->value.IsString() )
-					assignmentNames[it->name.GetString()] = it->value.GetString();
-			}
-
-			if ( !assignmentNames.empty() )
-			{
-				node.m_normalAssignmentNames = std::move( assignmentNames );
-				SPDLOG_DEBUG( "Parsed {} normal assignment name mappings", assignmentNames.size() );
-			}
-		}
-
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Successfully parsed GmodNodeDto: code={} in {} µs", node.m_code, duration.count() );
-
-		return node;
-	}
-
-	bool GmodNodeDto::tryFromJson( const rapidjson::Value& json, GmodNodeDto& dto )
-	{
-		try
-		{
-			dto = fromJson( json );
-			return true;
-		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing GmodNodeDto: {}", e.what() );
-			return false;
-		}
+		return std::move( dtoOpt.value() );
 	}
 
 	rapidjson::Value GmodNodeDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
@@ -306,18 +341,20 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	//-------------------------------------------------------------------
-	// Construction / Destruction
+	// Constructors / Destructor
 	//-------------------------------------------------------------------
 
-	GmodDto::GmodDto( std::string visVersion, std::vector<GmodNodeDto> items, std::vector<std::vector<std::string>> relations )
+	GmodDto::GmodDto( std::string visVersion, Items items, Relations relations )
 		: m_visVersion{ std::move( visVersion ) },
 		  m_items{ std::move( items ) },
 		  m_relations{ std::move( relations ) }
 	{
+		SPDLOG_INFO( "Creating GmodDto: visVersion={}, items={}, relations={}",
+			m_visVersion, m_items.size(), m_relations.size() );
 	}
 
 	//-------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------
 
 	const std::string& GmodDto::visVersion() const
@@ -325,135 +362,166 @@ namespace dnv::vista::sdk
 		return m_visVersion;
 	}
 
-	const std::vector<GmodNodeDto>& GmodDto::items() const
+	const GmodDto::Items& GmodDto::items() const
 	{
 		return m_items;
 	}
 
-	const std::vector<std::vector<std::string>>& GmodDto::relations() const
+	const GmodDto::Relations& GmodDto::relations() const
 	{
 		return m_relations;
 	}
 
 	//-------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------
 
-	GmodDto GmodDto::fromJson( const rapidjson::Value& json )
+	std::optional<GmodDto> GmodDto::tryFromJson( const rapidjson::Value& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
+		SPDLOG_INFO( "Attempting to parse GMOD from JSON" );
 
-		SPDLOG_INFO( "Parsing GMOD from JSON" );
-		GmodDto dto;
-
-		dto.m_visVersion = "unknown";
-
-		if ( json.HasMember( VIS_RELEASE_KEY ) && json[VIS_RELEASE_KEY].IsString() )
+		if ( !json.HasMember( VIS_RELEASE_KEY ) || !json[VIS_RELEASE_KEY].IsString() )
 		{
-			dto.m_visVersion = json[VIS_RELEASE_KEY].GetString();
-			SPDLOG_INFO( "GMOD VIS version: {}", dto.m_visVersion );
+			SPDLOG_ERROR( "GMOD JSON missing required '{}' field or not a string", VIS_RELEASE_KEY );
+			return std::nullopt;
 		}
+		std::string visVersion = json[VIS_RELEASE_KEY].GetString();
+		SPDLOG_INFO( "GMOD VIS version: {}", visVersion );
 
-		if ( json.HasMember( ITEMS_KEY ) && json[ITEMS_KEY].IsArray() )
+		Items items;
+		if ( json.HasMember( ITEMS_KEY ) )
 		{
-			size_t totalItems = json[ITEMS_KEY].Size();
-			SPDLOG_INFO( "Found {} GMOD node items to parse", totalItems );
-			dto.m_items.reserve( totalItems );
-
-			size_t successCount = 0;
-			for ( rapidjson::SizeType i = 0; i < json[ITEMS_KEY].Size(); ++i )
+			if ( !json[ITEMS_KEY].IsArray() )
 			{
-				try
-				{
-					dto.m_items.emplace_back( GmodNodeDto::fromJson( json[ITEMS_KEY][i] ) );
-					successCount++;
-				}
-				catch ( const std::exception& e )
-				{
-					SPDLOG_ERROR( "Skipping malformed GMOD node at index {}: {}", i, e.what() );
-				}
+				SPDLOG_WARN( "GMOD 'items' field is not an array for VIS version {}", visVersion );
 			}
-
-			SPDLOG_INFO( "Successfully parsed {}/{} GMOD nodes", successCount, totalItems );
-
-			if ( static_cast<double>( successCount ) < static_cast<double>( totalItems ) * 0.9 )
+			else
 			{
-				dto.m_items.shrink_to_fit();
+				const auto& itemsArray = json[ITEMS_KEY].GetArray();
+				size_t totalItems = itemsArray.Size();
+				SPDLOG_INFO( "Found {} GMOD node items to parse", totalItems );
+				items.reserve( totalItems );
+				size_t successCount = 0;
+
+				for ( rapidjson::SizeType i = 0; i < itemsArray.Size(); ++i )
+				{
+					auto nodeOpt = GmodNodeDto::tryFromJson( itemsArray[i] );
+					if ( nodeOpt.has_value() )
+					{
+						items.emplace_back( std::move( nodeOpt.value() ) );
+						successCount++;
+					}
+					else
+					{
+						SPDLOG_WARN( "Skipping malformed GMOD node at index {} during GmodDto parsing for VIS version {}", i, visVersion );
+					}
+				}
+				SPDLOG_INFO( "Successfully parsed {}/{} GMOD nodes", successCount, totalItems );
+				if ( totalItems > 0 && static_cast<double>( successCount ) < static_cast<double>( totalItems ) * 0.9 )
+				{
+					SPDLOG_INFO( "Shrinking items vector due to high parsing failure rate ({}/{}) for VIS version {}", successCount, totalItems, visVersion );
+					items.shrink_to_fit();
+				}
 			}
 		}
 		else
 		{
-			SPDLOG_WARN( "GMOD missing 'items' array or not in array format" );
+			SPDLOG_WARN( "GMOD missing 'items' array for VIS version {}", visVersion );
 		}
 
-		if ( json.HasMember( RELATIONS_KEY ) && json[RELATIONS_KEY].IsArray() )
+		Relations relations;
+		if ( json.HasMember( RELATIONS_KEY ) )
 		{
-			size_t relationCount = json[RELATIONS_KEY].Size();
-			SPDLOG_INFO( "Found {} GMOD relation entries to parse", relationCount );
-			dto.m_relations.reserve( relationCount );
-
-			size_t validRelationCount = 0;
-			for ( const auto& relation : json[RELATIONS_KEY].GetArray() )
+			if ( !json[RELATIONS_KEY].IsArray() )
 			{
-				if ( relation.IsArray() )
+				SPDLOG_WARN( "GMOD 'relations' field is not an array for VIS version {}", visVersion );
+			}
+			else
+			{
+				const auto& relationsArray = json[RELATIONS_KEY].GetArray();
+				size_t relationCount = relationsArray.Size();
+				SPDLOG_INFO( "Found {} GMOD relation entries to parse", relationCount );
+				relations.reserve( relationCount );
+				size_t validRelationCount = 0;
+
+				for ( const auto& relation : relationsArray )
 				{
-					std::vector<std::string> relationPair;
-					relationPair.reserve( relation.Size() );
-
-					for ( const auto& rel : relation.GetArray() )
+					if ( relation.IsArray() )
 					{
-						if ( rel.IsString() )
-							relationPair.emplace_back( rel.GetString() );
+						Relation relationPair;
+						relationPair.reserve( relation.Size() );
+						bool validPair = true;
+						for ( const auto& rel : relation.GetArray() )
+						{
+							if ( rel.IsString() )
+							{
+								relationPair.emplace_back( rel.GetString() );
+							}
+							else
+							{
+								SPDLOG_WARN( "Non-string value found in relation entry for VIS version {}", visVersion );
+								validPair = false;
+								break;
+							}
+						}
+
+						if ( validPair && !relationPair.empty() )
+						{
+							relations.emplace_back( std::move( relationPair ) );
+							validRelationCount++;
+						}
 					}
-
-					if ( !relationPair.empty() )
+					else
 					{
-						dto.m_relations.emplace_back( std::move( relationPair ) );
-						validRelationCount++;
+						SPDLOG_WARN( "Non-array entry found in 'relations' array for VIS version {}", visVersion );
 					}
 				}
-			}
-
-			SPDLOG_DEBUG( "Added {} valid relations to GMOD", validRelationCount );
-
-			if ( static_cast<double>( validRelationCount ) < static_cast<double>( relationCount ) * 0.9 )
-			{
-				dto.m_relations.shrink_to_fit();
+				SPDLOG_DEBUG( "Added {} valid relations to GMOD", validRelationCount );
+				if ( relationCount > 0 && static_cast<double>( validRelationCount ) < static_cast<double>( relationCount ) * 0.9 )
+				{
+					SPDLOG_INFO( "Shrinking relations vector due to high parsing failure rate ({}/{}) for VIS version {}", validRelationCount, relationCount, visVersion );
+					relations.shrink_to_fit();
+				}
 			}
 		}
 		else
 		{
-			SPDLOG_INFO( "GMOD has no relations or 'relations' is not an array" );
+			SPDLOG_INFO( "GMOD has no 'relations' array for VIS version {}", visVersion );
 		}
 
-		if ( dto.m_items.size() > 10000 )
+		if ( items.size() > 10000 )
 		{
 			const size_t approxMemoryUsage =
-				( dto.m_items.size() * sizeof( GmodNodeDto ) +
-					dto.m_relations.size() * 24 ) /
-				( 1024 * 1024 );
+				( items.size() * sizeof( GmodNodeDto ) + relations.size() * 24 ) / ( 1024 * 1024 );
 			SPDLOG_INFO( "Large GMOD model loaded: ~{} MB estimated memory usage",
 				approxMemoryUsage );
 		}
 
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_INFO( "Parsed GmodDto with {} nodes, {} relations and VIS version {} in {} ms", dto.m_items.size(), dto.m_relations.size(), dto.m_visVersion, duration.count() );
+		GmodDto resultDto( std::move( visVersion ), std::move( items ), std::move( relations ) );
 
-		return dto;
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+		SPDLOG_INFO( "Parsed GmodDto with {} nodes, {} relations and VIS version {} in {} ms",
+			resultDto.items().size(), resultDto.relations().size(), resultDto.visVersion(), duration.count() );
+
+		return std::optional<GmodDto>{ std::move( resultDto ) };
 	}
 
-	bool GmodDto::tryFromJson( const rapidjson::Value& json, GmodDto& dto )
+	GmodDto GmodDto::fromJson( const rapidjson::Value& json )
 	{
-		try
+		auto dtoOpt = GmodDto::tryFromJson( json );
+		if ( !dtoOpt.has_value() )
 		{
-			dto = fromJson( json );
-			return true;
+			std::string visHint = "[unknown version]";
+			if ( json.IsObject() && json.HasMember( VIS_RELEASE_KEY ) && json[VIS_RELEASE_KEY].IsString() )
+			{
+				visHint = json[VIS_RELEASE_KEY].GetString();
+			}
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodDto from JSON (hint: visRelease='{}')", visHint );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
 		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing GmodDto: {}", e.what() );
-			return false;
-		}
+		return std::move( dtoOpt.value() );
 	}
 
 	rapidjson::Value GmodDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
@@ -523,7 +591,8 @@ namespace dnv::vista::sdk
 		obj.AddMember( rapidjson::StringRef( RELATIONS_KEY ), relationsArray, allocator );
 
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_INFO( "Serialized GmodDto with {} items for VIS version {} in {} ms", m_items.size(), m_visVersion, duration.count() );
+		SPDLOG_INFO( "Serialized GmodDto with {} items for VIS version {} in {} ms",
+			m_items.size(), m_visVersion, duration.count() );
 
 		return obj;
 	}

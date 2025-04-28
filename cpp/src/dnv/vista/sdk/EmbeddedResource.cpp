@@ -44,8 +44,7 @@ namespace dnv::vista::sdk
 						visVersions.push_back( gmodJson["visRelease"].GetString() );
 					}
 
-					SPDLOG_INFO( "Found GMOD resource: {} with VIS version: {}", resourceName,
-						gmodJson["visRelease"].GetString() );
+					SPDLOG_INFO( "Found GMOD resource: {} with VIS version: {}", resourceName, gmodJson["visRelease"].GetString() );
 				}
 				catch ( const std::exception& e )
 				{
@@ -144,8 +143,8 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "Successfully loaded GMOD DTO for version {} in {} ms", visVersion, duration.count() );
 
 			std::lock_guard<std::mutex> lock( gmodCacheMutex );
-			gmodCache[visVersion] = gmodDto;
-			return gmodDto;
+			auto [emplaceIt, inserted] = gmodCache.emplace( visVersion, std::move( gmodDto ) );
+			return emplaceIt->second;
 		}
 		catch ( const std::exception& e )
 		{

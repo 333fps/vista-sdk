@@ -25,6 +25,16 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//-------------------------------------------------------------------
+		// Types and Aliases
+		//-------------------------------------------------------------------
+
+		/** @brief Type representing a collection of values within a group */
+		using ValueGroup = std::vector<std::string>;
+
+		/** @brief Type representing a mapping of group names to their values */
+		using ValuesMap = std::unordered_map<std::string, ValueGroup>;
+
+		//-------------------------------------------------------------------
 		// Constructors / Destructor
 		//-------------------------------------------------------------------
 
@@ -36,7 +46,7 @@ namespace dnv::vista::sdk
 		 * @param name The codebook name
 		 * @param values The map of group names to values
 		 */
-		CodebookDto( std::string name, std::unordered_map<std::string, std::vector<std::string>> values );
+		CodebookDto( std::string name, ValuesMap values );
 
 		/** @brief Copy constructor */
 		CodebookDto( const CodebookDto& ) = default;
@@ -61,11 +71,18 @@ namespace dnv::vista::sdk
 		 * @brief Get the values map of this codebook
 		 * @return The map of group names to their corresponding values
 		 */
-		const std::unordered_map<std::string, std::vector<std::string>>& values() const;
+		const ValuesMap& values() const;
 
 		//-------------------------------------------------------------------
 		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Try to deserialize a CodebookDto from a RapidJSON object
+		 * @param json The RapidJSON object to deserialize
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		static std::optional<CodebookDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Deserialize a CodebookDto from a RapidJSON object
@@ -74,13 +91,6 @@ namespace dnv::vista::sdk
 		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
 		static CodebookDto fromJson( const rapidjson::Value& json );
-
-		/**
-		 * @brief Try to deserialize a CodebookDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
-		 * @return Optional containing the deserialized object if successful, empty optional otherwise
-		 */
-		static std::optional<CodebookDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Serialize this CodebookDto to a RapidJSON Value
@@ -108,7 +118,7 @@ namespace dnv::vista::sdk
 		const std::string m_name;
 
 		/** @brief Map of group names to their corresponding values */
-		const std::unordered_map<std::string, std::vector<std::string>> m_values;
+		const ValuesMap m_values;
 	};
 
 	/**
@@ -121,6 +131,13 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//-------------------------------------------------------------------
+		// Types and Aliases
+		//-------------------------------------------------------------------
+
+		/** @brief Type representing a collection of codebook DTOs */
+		using Items = std::vector<CodebookDto>;
+
+		//-------------------------------------------------------------------
 		// Constructors / Destructor
 		//-------------------------------------------------------------------
 
@@ -132,7 +149,7 @@ namespace dnv::vista::sdk
 		 * @param visVersion The VIS version
 		 * @param items The collection of codebook DTOs
 		 */
-		CodebooksDto( std::string visVersion, std::vector<CodebookDto> items );
+		CodebooksDto( std::string visVersion, Items items );
 
 		/** @brief Copy constructor */
 		CodebooksDto( const CodebooksDto& ) = default;
@@ -157,11 +174,18 @@ namespace dnv::vista::sdk
 		 * @brief Get the collection of codebooks
 		 * @return The vector of codebook DTOs
 		 */
-		const std::vector<CodebookDto>& items() const;
+		const Items& items() const;
 
 		//-------------------------------------------------------------------
 		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Try to deserialize a CodebooksDto from a RapidJSON object
+		 * @param json The RapidJSON object to deserialize
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		static std::optional<CodebooksDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Deserialize a CodebooksDto from a RapidJSON object
@@ -170,13 +194,6 @@ namespace dnv::vista::sdk
 		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
 		static CodebooksDto fromJson( const rapidjson::Value& json );
-
-		/**
-		 * @brief Try to deserialize a CodebooksDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
-		 * @return Optional containing the deserialized object if successful, empty optional otherwise
-		 */
-		static std::optional<CodebooksDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Serialize this CodebooksDto to a RapidJSON Value
@@ -204,6 +221,6 @@ namespace dnv::vista::sdk
 		const std::string m_visVersion;
 
 		/** @brief Collection of codebook DTOs contained in this version */
-		const std::vector<CodebookDto> m_items;
+		const Items m_items;
 	};
 }

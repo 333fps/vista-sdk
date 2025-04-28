@@ -24,11 +24,18 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Construction / Destruction
+		// Types and Aliases
 		//-------------------------------------------------------------------
 
-		/** @brief Default constructor */
-		GmodNodeDto() = default;
+		/** @brief Shorthand for the normal assignment names map type */
+		using NormalAssignmentNamesMap = std::unordered_map<std::string, std::string>;
+
+		//-------------------------------------------------------------------
+		// Constructors / Destructor
+		//-------------------------------------------------------------------
+
+		/** @brief Default constructor - deleted for immutability */
+		GmodNodeDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
@@ -51,7 +58,7 @@ namespace dnv::vista::sdk
 			std::optional<std::string> definition = std::nullopt,
 			std::optional<std::string> commonDefinition = std::nullopt,
 			std::optional<bool> installSubstructure = std::nullopt,
-			std::optional<std::unordered_map<std::string, std::string>> normalAssignmentNames = std::nullopt );
+			std::optional<NormalAssignmentNamesMap> normalAssignmentNames = std::nullopt );
 
 		/** @brief Copy constructor */
 		GmodNodeDto( const GmodNodeDto& ) = default;
@@ -59,64 +66,85 @@ namespace dnv::vista::sdk
 		/** @brief Move constructor */
 		GmodNodeDto( GmodNodeDto&& ) noexcept = default;
 
-		/** @brief Copy assignment operator */
-		GmodNodeDto& operator=( const GmodNodeDto& ) = default;
-
-		/** @brief Move assignment operator */
-		GmodNodeDto& operator=( GmodNodeDto&& ) noexcept = default;
-
 		/** @brief Destructor */
 		~GmodNodeDto() = default;
 
 		//-------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------
 
-		/** @brief Get the category classification */
+		/**
+		 * @brief Get the category classification
+		 * @return The node's category
+		 */
 		const std::string& category() const;
 
-		/** @brief Get the type classification */
+		/**
+		 * @brief Get the type classification
+		 * @return The node's type
+		 */
 		const std::string& type() const;
 
-		/** @brief Get the unique code identifier */
+		/**
+		 * @brief Get the unique code identifier
+		 * @return The node's unique code
+		 */
 		const std::string& code() const;
 
-		/** @brief Get the human-readable name */
+		/**
+		 * @brief Get the human-readable name
+		 * @return The node's name
+		 */
 		const std::string& name() const;
 
-		/** @brief Get the optional common name/alias */
-		std::optional<std::string> commonName() const;
+		/**
+		 * @brief Get the optional common name/alias
+		 * @return The common name if available, empty optional otherwise
+		 */
+		const std::optional<std::string>& commonName() const;
 
-		/** @brief Get the optional detailed definition */
-		std::optional<std::string> definition() const;
+		/**
+		 * @brief Get the optional detailed definition
+		 * @return The detailed definition if available, empty optional otherwise
+		 */
+		const std::optional<std::string>& definition() const;
 
-		/** @brief Get the optional common definition */
-		std::optional<std::string> commonDefinition() const;
+		/**
+		 * @brief Get the optional common definition
+		 * @return The common definition if available, empty optional otherwise
+		 */
+		const std::optional<std::string>& commonDefinition() const;
 
-		/** @brief Get the optional installation flag */
-		std::optional<bool> installSubstructure() const;
+		/**
+		 * @brief Get the optional installation flag
+		 * @return The installation flag if available, empty optional otherwise
+		 */
+		const std::optional<bool>& installSubstructure() const;
 
-		/** @brief Get the optional assignment name mapping */
-		std::optional<std::unordered_map<std::string, std::string>> normalAssignmentNames() const;
+		/**
+		 * @brief Get the optional assignment name mapping
+		 * @return The assignment name mapping if available, empty optional otherwise
+		 */
+		const std::optional<NormalAssignmentNamesMap>& normalAssignmentNames() const;
 
 		//-------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Try to deserialize a GmodNodeDto from a RapidJSON object
+		 * @param json The RapidJSON object to deserialize
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		static std::optional<GmodNodeDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Deserialize a GmodNodeDto from a RapidJSON object
 		 * @param json The RapidJSON object to deserialize
 		 * @return The deserialized GmodNodeDto
+		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
 		static GmodNodeDto fromJson( const rapidjson::Value& json );
-
-		/**
-		 * @brief Try to deserialize a GmodNodeDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
-		 * @param dto Output parameter to receive the deserialized object
-		 * @return True if deserialization was successful, false otherwise
-		 */
-		static bool tryFromJson( const rapidjson::Value& json, GmodNodeDto& dto );
 
 		/**
 		 * @brief Serialize this GmodNodeDto to a RapidJSON Value
@@ -127,35 +155,45 @@ namespace dnv::vista::sdk
 
 	private:
 		//-------------------------------------------------------------------
+		// Assignment Operators - deleted for immutability
+		//-------------------------------------------------------------------
+
+		/** @brief Copy assignment operator - deleted for immutability */
+		GmodNodeDto& operator=( const GmodNodeDto& ) = delete;
+
+		/** @brief Move assignment operator - deleted for immutability */
+		GmodNodeDto& operator=( GmodNodeDto&& ) noexcept = delete;
+
+		//-------------------------------------------------------------------
 		// Private Member Variables
 		//-------------------------------------------------------------------
 
 		/** @brief Category classification of the node (e.g., "PRODUCT", "ASSET") */
-		std::string m_category;
+		const std::string m_category;
 
 		/** @brief Type classification within the category (e.g., "SELECTION", "TYPE") */
-		std::string m_type;
+		const std::string m_type;
 
 		/** @brief Unique code identifier for the node */
-		std::string m_code;
+		const std::string m_code;
 
 		/** @brief Human-readable name of the node */
-		std::string m_name;
+		const std::string m_name;
 
 		/** @brief Optional common name or alias */
-		std::optional<std::string> m_commonName;
+		const std::optional<std::string> m_commonName;
 
 		/** @brief Optional detailed definition */
-		std::optional<std::string> m_definition;
+		const std::optional<std::string> m_definition;
 
 		/** @brief Optional common definition */
-		std::optional<std::string> m_commonDefinition;
+		const std::optional<std::string> m_commonDefinition;
 
 		/** @brief Optional installation flag */
-		std::optional<bool> m_installSubstructure;
+		const std::optional<bool> m_installSubstructure;
 
 		/** @brief Optional mapping of normal assignment names */
-		std::optional<std::unordered_map<std::string, std::string>> m_normalAssignmentNames;
+		const std::optional<NormalAssignmentNamesMap> m_normalAssignmentNames;
 	};
 
 	//-------------------------------------------------------------------
@@ -171,11 +209,24 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Construction / Destruction
+		// Types and Aliases
 		//-------------------------------------------------------------------
 
-		/** @brief Default constructor */
-		GmodDto() = default;
+		/** @brief Type representing a relation between nodes */
+		using Relation = std::vector<std::string>;
+
+		/** @brief Type representing a collection of relations */
+		using Relations = std::vector<Relation>;
+
+		/** @brief Type representing a collection of GMOD nodes */
+		using Items = std::vector<GmodNodeDto>;
+
+		//-------------------------------------------------------------------
+		// Constructors / Destructor
+		//-------------------------------------------------------------------
+
+		/** @brief Default constructor - deleted for immutability */
+		GmodDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
@@ -185,8 +236,8 @@ namespace dnv::vista::sdk
 		 */
 		GmodDto(
 			std::string visVersion,
-			std::vector<GmodNodeDto> items,
-			std::vector<std::vector<std::string>> relations );
+			Items items,
+			Relations relations );
 
 		/** @brief Copy constructor */
 		GmodDto( const GmodDto& ) = default;
@@ -194,46 +245,49 @@ namespace dnv::vista::sdk
 		/** @brief Move constructor */
 		GmodDto( GmodDto&& ) noexcept = default;
 
-		/** @brief Copy assignment operator */
-		GmodDto& operator=( const GmodDto& ) = default;
-
-		/** @brief Move assignment operator */
-		GmodDto& operator=( GmodDto&& ) noexcept = default;
-
 		/** @brief Destructor */
 		~GmodDto() = default;
 
 		//-------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------
 
-		/** @brief Get the VIS version string */
+		/**
+		 * @brief Get the VIS version string
+		 * @return The VIS version
+		 */
 		const std::string& visVersion() const;
 
-		/** @brief Get the collection of GMOD node DTOs */
-		const std::vector<GmodNodeDto>& items() const;
+		/**
+		 * @brief Get the collection of GMOD node DTOs
+		 * @return The vector of node DTOs
+		 */
+		const Items& items() const;
 
-		/** @brief Get the collection of relationships between nodes */
-		const std::vector<std::vector<std::string>>& relations() const;
+		/**
+		 * @brief Get the collection of relationships between nodes
+		 * @return The vector of relation arrays
+		 */
+		const Relations& relations() const;
 
 		//-------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Try to deserialize a GmodDto from a RapidJSON object
+		 * @param json The RapidJSON object to deserialize
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		static std::optional<GmodDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Deserialize a GmodDto from a RapidJSON object
 		 * @param json The RapidJSON object to deserialize
 		 * @return The deserialized GmodDto
+		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
 		static GmodDto fromJson( const rapidjson::Value& json );
-
-		/**
-		 * @brief Try to deserialize a GmodDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
-		 * @param dto Output parameter to receive the deserialized object
-		 * @return True if deserialization was successful, false otherwise
-		 */
-		static bool tryFromJson( const rapidjson::Value& json, GmodDto& dto );
 
 		/**
 		 * @brief Serialize this GmodDto to a RapidJSON Value
@@ -244,16 +298,26 @@ namespace dnv::vista::sdk
 
 	private:
 		//-------------------------------------------------------------------
+		// Assignment Operators - deleted for immutability
+		//-------------------------------------------------------------------
+
+		/** @brief Copy assignment operator - deleted for immutability */
+		GmodDto& operator=( const GmodDto& ) = delete;
+
+		/** @brief Move assignment operator - deleted for immutability */
+		GmodDto& operator=( GmodDto&& ) noexcept = delete;
+
+		//-------------------------------------------------------------------
 		// Private Member Variables
 		//-------------------------------------------------------------------
 
 		/** @brief VIS version string (e.g., "3.8a") */
-		std::string m_visVersion;
+		const std::string m_visVersion;
 
 		/** @brief Collection of GMOD node DTOs */
-		std::vector<GmodNodeDto> m_items;
+		const Items m_items;
 
 		/** @brief Collection of relationships between nodes */
-		std::vector<std::vector<std::string>> m_relations;
+		const Relations m_relations;
 	};
 }

@@ -4,7 +4,6 @@
  */
 
 #include "pch.h"
-
 #include "dnv/vista/sdk/CodebooksDto.h"
 
 namespace dnv::vista::sdk
@@ -26,12 +25,13 @@ namespace dnv::vista::sdk
 	// Constructors / Destructor
 	//-------------------------------------------------------------------
 
-	CodebookDto::CodebookDto( std::string name, std::unordered_map<std::string, std::vector<std::string>> values )
+	CodebookDto::CodebookDto( std::string name, ValuesMap values )
 		: m_name{ std::move( name ) },
 		  m_values{ std::move( values ) }
 	{
 		SPDLOG_INFO( "CodebookDto constructed with name '{}' containing {} value groups", m_name, m_values.size() );
 	}
+
 	//-------------------------------------------------------------------
 	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------
@@ -41,7 +41,7 @@ namespace dnv::vista::sdk
 		return m_name;
 	}
 
-	const std::unordered_map<std::string, std::vector<std::string>>& CodebookDto::values() const
+	const CodebookDto::ValuesMap& CodebookDto::values() const
 	{
 		return m_values;
 	}
@@ -62,7 +62,7 @@ namespace dnv::vista::sdk
 		std::string tempName = json[NAME_KEY].GetString();
 		SPDLOG_DEBUG( "Attempting to parse CodebookDto with name: {}", tempName );
 
-		std::unordered_map<std::string, std::vector<std::string>> tempValues;
+		ValuesMap tempValues;
 		size_t totalValuesParsed = 0;
 
 		if ( json.HasMember( VALUES_KEY ) )
@@ -91,7 +91,7 @@ namespace dnv::vista::sdk
 						continue;
 					}
 
-					std::vector<std::string> groupValues;
+					ValueGroup groupValues;
 					const auto& jsonArray = it->value.GetArray();
 					groupValues.reserve( jsonArray.Size() );
 
@@ -190,7 +190,7 @@ namespace dnv::vista::sdk
 	// Constructors / Destructor
 	//-------------------------------------------------------------------
 
-	CodebooksDto::CodebooksDto( std::string visVersion, std::vector<CodebookDto> items )
+	CodebooksDto::CodebooksDto( std::string visVersion, Items items )
 		: m_visVersion{ std::move( visVersion ) },
 		  m_items{ std::move( items ) }
 	{
@@ -206,7 +206,7 @@ namespace dnv::vista::sdk
 		return m_visVersion;
 	}
 
-	const std::vector<CodebookDto>& CodebooksDto::items() const
+	const CodebooksDto::Items& CodebooksDto::items() const
 	{
 		return m_items;
 	}
@@ -227,7 +227,7 @@ namespace dnv::vista::sdk
 		std::string tempVisVersion = json[VIS_RELEASE_KEY].GetString();
 		SPDLOG_DEBUG( "Attempting to parse CodebooksDto for VIS version: {}", tempVisVersion );
 
-		std::vector<CodebookDto> tempItems;
+		Items tempItems;
 		size_t totalItems = 0;
 		size_t successCount = 0;
 
