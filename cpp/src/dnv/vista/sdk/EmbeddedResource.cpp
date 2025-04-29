@@ -217,7 +217,7 @@ namespace dnv::vista::sdk
 					auto dto = GmodVersioningDto::fromJson( versioningJson );
 
 					std::lock_guard<std::mutex> lock( resultMutex );
-					result[visVersion] = dto;
+					result.emplace( visVersion, std::move( dto ) );
 					foundAnyResource = true;
 
 					auto processEndTime = std::chrono::high_resolution_clock::now();
@@ -241,7 +241,7 @@ namespace dnv::vista::sdk
 		if ( foundAnyResource )
 		{
 			SPDLOG_INFO( "Successfully loaded {} GMOD Versioning DTOs in {} ms", result.size(), duration.count() );
-			gmodVersioningCache = result;
+			gmodVersioningCache.emplace( std::move( result ) );
 			return result;
 		}
 		else
@@ -359,7 +359,10 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "Locations resource not found for version: {}", visVersion );
 
 			std::lock_guard<std::mutex> lock( locationsCacheMutex );
-			locationsCache[visVersion] = std::nullopt;
+
+			locationsCache.erase( visVersion );
+			locationsCache.emplace( visVersion, std::nullopt );
+
 			return std::nullopt;
 		}
 
@@ -379,7 +382,10 @@ namespace dnv::vista::sdk
 					rapidjson::GetParseError_En( locationsJson.GetParseError() ) );
 
 				std::lock_guard<std::mutex> lock( locationsCacheMutex );
-				locationsCache[visVersion] = std::nullopt;
+
+				locationsCache.erase( visVersion );
+				locationsCache.emplace( visVersion, std::nullopt );
+
 				return std::nullopt;
 			}
 
@@ -392,8 +398,13 @@ namespace dnv::vista::sdk
 				visVersion, duration.count() );
 
 			std::lock_guard<std::mutex> lock( locationsCacheMutex );
-			locationsCache[visVersion] = result;
-			return result;
+
+			std::optional<LocationsDto> optResult( std::move( result ) );
+
+			locationsCache.erase( visVersion );
+			auto [cacheIt, inserted] = locationsCache.emplace( visVersion, std::move( optResult ) );
+
+			return cacheIt->second;
 		}
 		catch ( const std::exception& e )
 		{
@@ -401,7 +412,10 @@ namespace dnv::vista::sdk
 				visVersion, e.what() );
 
 			std::lock_guard<std::mutex> lock( locationsCacheMutex );
-			locationsCache[visVersion] = std::nullopt;
+
+			locationsCache.erase( visVersion );
+			locationsCache.emplace( visVersion, std::nullopt );
+
 			return std::nullopt;
 		}
 	}
@@ -458,7 +472,10 @@ namespace dnv::vista::sdk
 					rapidjson::GetParseError_En( dtNamesJson.GetParseError() ) );
 
 				std::lock_guard<std::mutex> lock( dataChannelTypeNamesCacheMutex );
-				dataChannelTypeNamesCache[version] = std::nullopt;
+
+				dataChannelTypeNamesCache.erase( version );
+				dataChannelTypeNamesCache.emplace( version, std::nullopt );
+
 				return std::nullopt;
 			}
 
@@ -469,16 +486,18 @@ namespace dnv::vista::sdk
 
 			SPDLOG_INFO( "Successfully loaded DataChannelTypeNames DTO for version {} in {} ms", version, duration.count() );
 
-			std::lock_guard<std::mutex> lock( dataChannelTypeNamesCacheMutex );
-			dataChannelTypeNamesCache[version] = result;
-			return result;
+			std::optional<DataChannelTypeNamesDto> optResult( std::move( result ) );
+
+			dataChannelTypeNamesCache.erase( version );
+			auto [cacheIt, inserted] = dataChannelTypeNamesCache.emplace( version, std::move( optResult ) );
+			return cacheIt->second;
 		}
 		catch ( const std::exception& e )
 		{
 			SPDLOG_ERROR( "Error parsing DataChannelTypeNames resource for version {}: {}", version, e.what() );
 
-			std::lock_guard<std::mutex> lock( dataChannelTypeNamesCacheMutex );
-			dataChannelTypeNamesCache[version] = std::nullopt;
+			dataChannelTypeNamesCache.erase( version );
+			dataChannelTypeNamesCache.emplace( version, std::nullopt );
 			return std::nullopt;
 		}
 	}
@@ -515,7 +534,10 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "FormatDataTypes resource not found for version: {}", version );
 
 			std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
-			fdTypesCache[version] = std::nullopt;
+
+			fdTypesCache.erase( version );
+			fdTypesCache.emplace( version, std::nullopt );
+
 			return std::nullopt;
 		}
 
@@ -532,7 +554,10 @@ namespace dnv::vista::sdk
 				SPDLOG_ERROR( "JSON parse error at offset {}: {}", fdTypesJson.GetErrorOffset(), rapidjson::GetParseError_En( fdTypesJson.GetParseError() ) );
 
 				std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
-				fdTypesCache[version] = std::nullopt;
+
+				fdTypesCache.erase( version );
+				fdTypesCache.emplace( version, std::nullopt );
+
 				return std::nullopt;
 			}
 
@@ -543,16 +568,24 @@ namespace dnv::vista::sdk
 
 			SPDLOG_INFO( "Successfully loaded FormatDataTypes DTO for version {} in {} ms", version, duration.count() );
 
+			std::optional<FormatDataTypesDto> optResult( std::move( result ) );
+
 			std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
-			fdTypesCache[version] = result;
-			return result;
+
+			fdTypesCache.erase( version );
+			auto [cacheIt, inserted] = fdTypesCache.emplace( version, std::move( optResult ) );
+
+			return cacheIt->second;
 		}
 		catch ( const std::exception& e )
 		{
 			SPDLOG_ERROR( "Error parsing FormatDataTypes resource for version {}: {}", version, e.what() );
 
 			std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
-			fdTypesCache[version] = std::nullopt;
+
+			fdTypesCache.erase( version );
+			fdTypesCache.emplace( version, std::nullopt );
+
 			return std::nullopt;
 		}
 	}

@@ -4,6 +4,7 @@
  */
 
 #include "pch.h"
+
 #include "dnv/vista/sdk/GmodDto.h"
 
 namespace dnv::vista::sdk
@@ -144,31 +145,40 @@ namespace dnv::vista::sdk
 		auto startTime = std::chrono::steady_clock::now();
 		SPDLOG_DEBUG( "Attempting to parse GmodNodeDto from JSON" );
 
-		if ( !json.HasMember( CATEGORY_KEY ) || !json[CATEGORY_KEY].IsString() )
+		std::string code = "[code unavailable]";
+		if ( json.HasMember( CODE_KEY ) && json[CODE_KEY].IsString() )
 		{
-			SPDLOG_ERROR( "GMOD Node JSON missing required '{}' field or not a string", CATEGORY_KEY );
-			return std::nullopt;
+			code = json[CODE_KEY].GetString();
+			if ( code.empty() )
+			{
+				SPDLOG_WARN( "Empty code field found in GMOD node" );
+				code = "[empty code]";
+			}
 		}
-		if ( !json.HasMember( TYPE_KEY ) || !json[TYPE_KEY].IsString() )
-		{
-			SPDLOG_ERROR( "GMOD Node JSON missing required '{}' field or not a string", TYPE_KEY );
-			return std::nullopt;
-		}
-		if ( !json.HasMember( CODE_KEY ) || !json[CODE_KEY].IsString() )
+		else
 		{
 			SPDLOG_ERROR( "GMOD Node JSON missing required '{}' field or not a string", CODE_KEY );
 			return std::nullopt;
 		}
+
+		if ( !json.HasMember( CATEGORY_KEY ) || !json[CATEGORY_KEY].IsString() )
+		{
+			SPDLOG_ERROR( "GMOD Node JSON (code='{}') missing required '{}' field or not a string", code, CATEGORY_KEY );
+			return std::nullopt;
+		}
+		if ( !json.HasMember( TYPE_KEY ) || !json[TYPE_KEY].IsString() )
+		{
+			SPDLOG_ERROR( "GMOD Node JSON (code='{}') missing required '{}' field or not a string", code, TYPE_KEY );
+			return std::nullopt;
+		}
 		if ( !json.HasMember( NAME_KEY ) || !json[NAME_KEY].IsString() )
 		{
-			SPDLOG_ERROR( "GMOD Node JSON missing required '{}' field or not a string", NAME_KEY );
-			SPDLOG_ERROR( "PROBLEMATIC CODE KEY: {}", json[CODE_KEY].GetString() );
+			SPDLOG_ERROR( "GMOD Node JSON (code='{}') missing required '{}' field or not a string", code, NAME_KEY );
 			return std::nullopt;
 		}
 
 		std::string category = internString( json[CATEGORY_KEY].GetString() );
 		std::string type = internString( json[TYPE_KEY].GetString() );
-		std::string code = json[CODE_KEY].GetString();
 		std::string name = json[NAME_KEY].GetString();
 
 		if ( category.empty() )

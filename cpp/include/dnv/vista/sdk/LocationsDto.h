@@ -11,6 +11,7 @@ namespace dnv::vista::sdk
 	 * @brief Data Transfer Object (DTO) for a relative location.
 	 *
 	 * Represents a relative location with a code, name, and optional definition.
+	 * This class is immutable - all properties are set during construction.
 	 */
 	class RelativeLocationsDto final
 	{
@@ -20,9 +21,9 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
-		 * @brief Default constructor
+		 * @brief Default constructor deleted to enforce immutability
 		 */
-		RelativeLocationsDto() = default;
+		RelativeLocationsDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
@@ -49,17 +50,17 @@ namespace dnv::vista::sdk
 		~RelativeLocationsDto() = default;
 
 		/**
-		 * @brief Copy assignment operator
+		 * @brief Copy assignment operator deleted to enforce immutability
 		 */
-		RelativeLocationsDto& operator=( const RelativeLocationsDto& ) = default;
+		RelativeLocationsDto& operator=( const RelativeLocationsDto& ) = delete;
 
 		/**
-		 * @brief Move assignment operator
+		 * @brief Move assignment operator deleted to enforce immutability
 		 */
-		RelativeLocationsDto& operator=( RelativeLocationsDto&& ) noexcept = default;
+		RelativeLocationsDto& operator=( RelativeLocationsDto&& ) noexcept = delete;
 
 		//-------------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------------
 
 		/**
@@ -78,30 +79,32 @@ namespace dnv::vista::sdk
 		 * @brief Get the location definition
 		 * @return The optional definition of the location
 		 */
-		std::optional<std::string> definition() const;
+		const std::optional<std::string>& definition() const;
 
 		//-------------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------------
 
 		/**
+		 * @brief Try to deserialize a RelativeLocationsDto from a RapidJSON object.
+		 *
+		 * @param json The RapidJSON object to deserialize.
+		 * @return An optional containing the deserialized DTO if successful, or std::nullopt if parsing failed
+		 */
+		static std::optional<RelativeLocationsDto> tryFromJson( const rapidjson::Value& json );
+
+		/**
 		 * @brief Deserialize a RelativeLocationsDto from a RapidJSON object.
+		 *
 		 * @param json The RapidJSON object to deserialize.
 		 * @return The deserialized RelativeLocationsDto.
-		 * @throws std::runtime_error If JSON format is invalid
+		 * @throws std::invalid_argument If JSON format is invalid or required fields are missing
 		 */
 		static RelativeLocationsDto fromJson( const rapidjson::Value& json );
 
 		/**
-		 * @brief Try to deserialize a RelativeLocationsDto from a RapidJSON object.
-		 * @param json The RapidJSON object to deserialize.
-		 * @param dto Output parameter to receive the deserialized object.
-		 * @return True if deserialization was successful, false otherwise.
-		 */
-		static bool tryFromJson( const rapidjson::Value& json, RelativeLocationsDto& dto );
-
-		/**
 		 * @brief Serialize this RelativeLocationsDto to a RapidJSON Value
+		 *
 		 * @param allocator The JSON value allocator to use
 		 * @return The serialized JSON value
 		 */
@@ -113,19 +116,20 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief The character code representing the location (JSON: "code"). */
-		char m_code{};
+		const char m_code;
 
 		/** @brief The name of the location (JSON: "name"). */
-		std::string m_name;
+		const std::string m_name;
 
 		/** @brief An optional definition of the location (JSON: "definition"). */
-		std::optional<std::string> m_definition;
+		const std::optional<std::string> m_definition;
 	};
 
 	/**
 	 * @brief Data Transfer Object (DTO) for a collection of locations.
 	 *
 	 * Represents a collection of relative locations and the VIS version they belong to.
+	 * This class is immutable - all properties are set during construction.
 	 */
 	class LocationsDto final
 	{
@@ -135,9 +139,9 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
-		 * @brief Default constructor
+		 * @brief Default constructor deleted to enforce immutability
 		 */
-		LocationsDto() = default;
+		LocationsDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
@@ -163,17 +167,17 @@ namespace dnv::vista::sdk
 		~LocationsDto() = default;
 
 		/**
-		 * @brief Copy assignment operator
+		 * @brief Copy assignment operator deleted to enforce immutability
 		 */
-		LocationsDto& operator=( const LocationsDto& ) = default;
+		LocationsDto& operator=( const LocationsDto& ) = delete;
 
 		/**
-		 * @brief Move assignment operator
+		 * @brief Move assignment operator deleted to enforce immutability
 		 */
-		LocationsDto& operator=( LocationsDto&& ) noexcept = default;
+		LocationsDto& operator=( LocationsDto&& ) noexcept = delete;
 
 		//-------------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------------
 
 		/**
@@ -189,27 +193,29 @@ namespace dnv::vista::sdk
 		const std::vector<RelativeLocationsDto>& items() const;
 
 		//-------------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------------
 
 		/**
+		 * @brief Try to deserialize a LocationsDto from a RapidJSON object.
+		 *
+		 * @param json The RapidJSON object to deserialize.
+		 * @return An optional containing the deserialized DTO if successful, or std::nullopt if parsing failed
+		 */
+		static std::optional<LocationsDto> tryFromJson( const rapidjson::Value& json );
+
+		/**
 		 * @brief Deserialize a LocationsDto from a RapidJSON object.
+		 *
 		 * @param json The RapidJSON object to deserialize.
 		 * @return The deserialized LocationsDto.
-		 * @throws std::runtime_error If JSON format is invalid
+		 * @throws std::invalid_argument If JSON format is invalid or required fields are missing
 		 */
 		static LocationsDto fromJson( const rapidjson::Value& json );
 
 		/**
-		 * @brief Try to deserialize a LocationsDto from a RapidJSON object.
-		 * @param json The RapidJSON object to deserialize.
-		 * @param dto Output parameter to receive the deserialized object.
-		 * @return True if deserialization was successful, false otherwise.
-		 */
-		static bool tryFromJson( const rapidjson::Value& json, LocationsDto& dto );
-
-		/**
 		 * @brief Serialize this LocationsDto to a RapidJSON Value
+		 *
 		 * @param allocator The JSON value allocator to use
 		 * @return The serialized JSON value
 		 */
@@ -221,9 +227,9 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief The VIS version string (JSON: "visRelease"). */
-		std::string m_visVersion;
+		const std::string m_visVersion;
 
 		/** @brief A vector of relative locations (JSON: "items"). */
-		std::vector<RelativeLocationsDto> m_items;
+		const std::vector<RelativeLocationsDto> m_items;
 	};
 }

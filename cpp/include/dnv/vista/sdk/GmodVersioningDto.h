@@ -1,32 +1,41 @@
 /**
  * @file GmodVersioningDto.h
  * @brief Data transfer objects for GMOD version conversion
- * @details Provides classes for serializing and deserializing Generic Product Model (GMOD)
- *          version conversion information according to the ISO 19848 standard.
+ *
+ * This file defines the data transfer objects used for serializing and deserializing
+ * GMOD version conversion information according to the ISO 19848 standard. These DTOs
+ * are used as an intermediate representation when loading or saving version conversion
+ * data to JSON.
  */
 
 #pragma once
 
 namespace dnv::vista::sdk
 {
+	//-------------------------------------------------------------------
+	// GMOD Versioning Data Transfer Objects
+	//-------------------------------------------------------------------
+
 	/**
 	 * @brief Data transfer object for GMOD node assignment changes
-	 * @details Represents a change in assignment between VIS versions.
+	 *
+	 * Represents serialized information about assignment changes between VIS versions.
+	 * Each assignment change contains the previous and current assignment values.
 	 */
 	class GmodVersioningAssignmentChangeDto final
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Construction / Destruction
+		// Constructors / Destructor
 		//-------------------------------------------------------------------
 
-		/** @brief Default constructor */
-		GmodVersioningAssignmentChangeDto() = default;
+		/** @brief Default constructor - deleted for immutability */
+		GmodVersioningAssignmentChangeDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
-		 * @param oldAssignment Previous assignment value
-		 * @param currentAssignment Current assignment value
+		 * @param oldAssignment The previous assignment value
+		 * @param currentAssignment The current assignment value
 		 */
 		GmodVersioningAssignmentChangeDto( std::string oldAssignment, std::string currentAssignment );
 
@@ -36,43 +45,43 @@ namespace dnv::vista::sdk
 		/** @brief Move constructor */
 		GmodVersioningAssignmentChangeDto( GmodVersioningAssignmentChangeDto&& ) noexcept = default;
 
-		/** @brief Copy assignment operator */
-		GmodVersioningAssignmentChangeDto& operator=( const GmodVersioningAssignmentChangeDto& ) = default;
-
-		/** @brief Move assignment operator */
-		GmodVersioningAssignmentChangeDto& operator=( GmodVersioningAssignmentChangeDto&& ) noexcept = default;
-
 		/** @brief Destructor */
 		~GmodVersioningAssignmentChangeDto() = default;
 
 		//-------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------
 
-		/** @brief Get the previous assignment value */
+		/**
+		 * @brief Get the old assignment value
+		 * @return The previous assignment value
+		 */
 		const std::string& oldAssignment() const;
 
-		/** @brief Get the current assignment value */
+		/**
+		 * @brief Get the current assignment value
+		 * @return The current assignment value
+		 */
 		const std::string& currentAssignment() const;
 
 		//-------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Try to deserialize a GmodVersioningAssignmentChangeDto from a RapidJSON object
+		 * @param json The RapidJSON object to deserialize
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		static std::optional<GmodVersioningAssignmentChangeDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Deserialize a GmodVersioningAssignmentChangeDto from a RapidJSON object
 		 * @param json The RapidJSON object to deserialize
 		 * @return The deserialized GmodVersioningAssignmentChangeDto
+		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
 		static GmodVersioningAssignmentChangeDto fromJson( const rapidjson::Value& json );
-
-		/**
-		 * @brief Try to deserialize a GmodVersioningAssignmentChangeDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
-		 * @param dto Output parameter to receive the deserialized object
-		 * @return True if deserialization was successful, false otherwise
-		 */
-		static bool tryFromJson( const rapidjson::Value& json, GmodVersioningAssignmentChangeDto& dto );
 
 		/**
 		 * @brief Serialize this GmodVersioningAssignmentChangeDto to a RapidJSON Value
@@ -83,41 +92,60 @@ namespace dnv::vista::sdk
 
 	private:
 		//-------------------------------------------------------------------
+		// Assignment Operators - deleted for immutability
+		//-------------------------------------------------------------------
+
+		/** @brief Copy assignment operator - deleted for immutability */
+		GmodVersioningAssignmentChangeDto& operator=( const GmodVersioningAssignmentChangeDto& ) = delete;
+
+		/** @brief Move assignment operator - deleted for immutability */
+		GmodVersioningAssignmentChangeDto& operator=( GmodVersioningAssignmentChangeDto&& ) noexcept = delete;
+
+		//-------------------------------------------------------------------
 		// Private Member Variables
 		//-------------------------------------------------------------------
 
 		/** @brief Previous assignment value (JSON: "oldAssignment") */
-		std::string m_oldAssignment;
+		const std::string m_oldAssignment;
 
 		/** @brief Current assignment value (JSON: "currentAssignment") */
-		std::string m_currentAssignment;
+		const std::string m_currentAssignment;
 	};
 
 	/**
 	 * @brief Data transfer object for GMOD node conversion information
-	 * @details Contains instructions for converting a node between VIS versions.
+	 *
+	 * Represents serialized information about how to convert a GMOD node between VIS versions.
+	 * Contains operations to apply, source and target codes, and assignment change information.
 	 */
 	class GmodNodeConversionDto final
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Construction / Destruction
+		// Types and Aliases
 		//-------------------------------------------------------------------
 
-		/** @brief Default constructor */
-		GmodNodeConversionDto() = default;
+		/** @brief Type representing a set of operation names */
+		using OperationSet = std::unordered_set<std::string>;
+
+		//-------------------------------------------------------------------
+		// Constructors / Destructor
+		//-------------------------------------------------------------------
+
+		/** @brief Default constructor - deleted for immutability */
+		GmodNodeConversionDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
-		 * @param operations Set of operations to apply
-		 * @param source Source node code
-		 * @param target Target node code
-		 * @param oldAssignment Old assignment code
-		 * @param newAssignment New assignment code
-		 * @param deleteAssignment Whether to delete assignment
+		 * @param operations The set of operations to apply
+		 * @param source The source node code
+		 * @param target The target node code
+		 * @param oldAssignment The old assignment code
+		 * @param newAssignment The new assignment code
+		 * @param deleteAssignment Whether the assignment should be deleted
 		 */
 		GmodNodeConversionDto(
-			std::unordered_set<std::string> operations,
+			OperationSet operations,
 			std::string source,
 			std::string target,
 			std::string oldAssignment,
@@ -130,55 +158,67 @@ namespace dnv::vista::sdk
 		/** @brief Move constructor */
 		GmodNodeConversionDto( GmodNodeConversionDto&& ) noexcept = default;
 
-		/** @brief Copy assignment operator */
-		GmodNodeConversionDto& operator=( const GmodNodeConversionDto& ) = default;
-
-		/** @brief Move assignment operator */
-		GmodNodeConversionDto& operator=( GmodNodeConversionDto&& ) noexcept = default;
-
 		/** @brief Destructor */
 		~GmodNodeConversionDto() = default;
 
 		//-------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------
 
-		/** @brief Get the set of operations to apply */
-		const std::unordered_set<std::string>& operations() const;
+		/**
+		 * @brief Get the set of operations to apply
+		 * @return The set of operation names
+		 */
+		const OperationSet& operations() const;
 
-		/** @brief Get the source node code */
+		/**
+		 * @brief Get the source node code
+		 * @return The source node code
+		 */
 		const std::string& source() const;
 
-		/** @brief Get the target node code */
+		/**
+		 * @brief Get the target node code
+		 * @return The target node code
+		 */
 		const std::string& target() const;
 
-		/** @brief Get the old assignment code */
+		/**
+		 * @brief Get the old assignment code
+		 * @return The old assignment code
+		 */
 		const std::string& oldAssignment() const;
 
-		/** @brief Get the new assignment code */
+		/**
+		 * @brief Get the new assignment code
+		 * @return The new assignment code
+		 */
 		const std::string& newAssignment() const;
 
-		/** @brief Get whether to delete assignment */
+		/**
+		 * @brief Check if the assignment should be deleted
+		 * @return True if the assignment should be deleted, false otherwise
+		 */
 		bool deleteAssignment() const;
 
 		//-------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Try to deserialize a GmodNodeConversionDto from a RapidJSON object
+		 * @param json The RapidJSON object to deserialize
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		static std::optional<GmodNodeConversionDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Deserialize a GmodNodeConversionDto from a RapidJSON object
 		 * @param json The RapidJSON object to deserialize
 		 * @return The deserialized GmodNodeConversionDto
+		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
 		static GmodNodeConversionDto fromJson( const rapidjson::Value& json );
-
-		/**
-		 * @brief Try to deserialize a GmodNodeConversionDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
-		 * @param dto Output parameter to receive the deserialized object
-		 * @return True if deserialization was successful, false otherwise
-		 */
-		static bool tryFromJson( const rapidjson::Value& json, GmodNodeConversionDto& dto );
 
 		/**
 		 * @brief Serialize this GmodNodeConversionDto to a RapidJSON Value
@@ -189,48 +229,67 @@ namespace dnv::vista::sdk
 
 	private:
 		//-------------------------------------------------------------------
+		// Assignment Operators - deleted for immutability
+		//-------------------------------------------------------------------
+
+		/** @brief Copy assignment operator - deleted for immutability */
+		GmodNodeConversionDto& operator=( const GmodNodeConversionDto& ) = delete;
+
+		/** @brief Move assignment operator - deleted for immutability */
+		GmodNodeConversionDto& operator=( GmodNodeConversionDto&& ) noexcept = delete;
+
+		//-------------------------------------------------------------------
 		// Private Member Variables
 		//-------------------------------------------------------------------
 
 		/** @brief Set of operations to apply (JSON: "operations") */
-		std::unordered_set<std::string> m_operations;
+		const OperationSet m_operations;
 
 		/** @brief Source node code (JSON: "source") */
-		std::string m_source;
+		const std::string m_source;
 
 		/** @brief Target node code (JSON: "target") */
-		std::string m_target;
+		const std::string m_target;
 
 		/** @brief Old assignment code (JSON: "oldAssignment") */
-		std::string m_oldAssignment;
+		const std::string m_oldAssignment;
 
 		/** @brief New assignment code (JSON: "newAssignment") */
-		std::string m_newAssignment;
+		const std::string m_newAssignment;
 
 		/** @brief Whether to delete assignment (JSON: "deleteAssignment") */
-		bool m_deleteAssignment;
+		const bool m_deleteAssignment;
 	};
 
 	/**
-	 * @brief Data transfer object for GMOD version conversion information
-	 * @details Contains all node conversion information for a specific VIS version.
+	 * @brief Data transfer object for a collection of GMOD version conversions
+	 *
+	 * Represents a complete set of node conversion information for a specific VIS version,
+	 * used for serialization to and from JSON format.
 	 */
 	class GmodVersioningDto final
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Construction / Destruction
+		// Types and Aliases
 		//-------------------------------------------------------------------
 
-		/** @brief Default constructor */
-		GmodVersioningDto() = default;
+		/** @brief Type representing a mapping of node codes to conversion information */
+		using ItemsMap = std::unordered_map<std::string, GmodNodeConversionDto>;
+
+		//-------------------------------------------------------------------
+		// Constructors / Destructor
+		//-------------------------------------------------------------------
+
+		/** @brief Default constructor - deleted for immutability */
+		GmodVersioningDto() = delete;
 
 		/**
 		 * @brief Constructor with parameters
-		 * @param visVersion VIS version identifier
-		 * @param items Map of node codes to conversion information
+		 * @param visVersion The VIS version
+		 * @param items The map of node codes to conversion information
 		 */
-		GmodVersioningDto( std::string visVersion, std::unordered_map<std::string, GmodNodeConversionDto> items );
+		GmodVersioningDto( std::string visVersion, ItemsMap items );
 
 		/** @brief Copy constructor */
 		GmodVersioningDto( const GmodVersioningDto& ) = default;
@@ -238,43 +297,43 @@ namespace dnv::vista::sdk
 		/** @brief Move constructor */
 		GmodVersioningDto( GmodVersioningDto&& ) noexcept = default;
 
-		/** @brief Copy assignment operator */
-		GmodVersioningDto& operator=( const GmodVersioningDto& ) = default;
-
-		/** @brief Move assignment operator */
-		GmodVersioningDto& operator=( GmodVersioningDto&& ) noexcept = default;
-
 		/** @brief Destructor */
 		~GmodVersioningDto() = default;
 
 		//-------------------------------------------------------------------
-		// Accessor Methods
+		// Public Interface - Accessor Methods
 		//-------------------------------------------------------------------
 
-		/** @brief Get the VIS version identifier */
+		/**
+		 * @brief Get the VIS version string
+		 * @return The VIS version string
+		 */
 		const std::string& visVersion() const;
 
-		/** @brief Get the map of node codes to conversion information */
-		const std::unordered_map<std::string, GmodNodeConversionDto>& items() const;
+		/**
+		 * @brief Get the map of node codes to conversion information
+		 * @return The map of node codes to their conversion DTOs
+		 */
+		const ItemsMap& items() const;
 
 		//-------------------------------------------------------------------
-		// Serialization Methods
+		// Public Interface - Serialization Methods
 		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Try to deserialize a GmodVersioningDto from a RapidJSON object
+		 * @param json The RapidJSON object to deserialize
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		static std::optional<GmodVersioningDto> tryFromJson( const rapidjson::Value& json );
 
 		/**
 		 * @brief Deserialize a GmodVersioningDto from a RapidJSON object
 		 * @param json The RapidJSON object to deserialize
 		 * @return The deserialized GmodVersioningDto
+		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
 		static GmodVersioningDto fromJson( const rapidjson::Value& json );
-
-		/**
-		 * @brief Try to deserialize a GmodVersioningDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
-		 * @param dto Output parameter to receive the deserialized object
-		 * @return True if deserialization was successful, false otherwise
-		 */
-		static bool tryFromJson( const rapidjson::Value& json, GmodVersioningDto& dto );
 
 		/**
 		 * @brief Serialize this GmodVersioningDto to a RapidJSON Value
@@ -285,13 +344,23 @@ namespace dnv::vista::sdk
 
 	private:
 		//-------------------------------------------------------------------
+		// Assignment Operators - deleted for immutability
+		//-------------------------------------------------------------------
+
+		/** @brief Copy assignment operator - deleted for immutability */
+		GmodVersioningDto& operator=( const GmodVersioningDto& ) = delete;
+
+		/** @brief Move assignment operator - deleted for immutability */
+		GmodVersioningDto& operator=( GmodVersioningDto&& ) noexcept = delete;
+
+		//-------------------------------------------------------------------
 		// Private Member Variables
 		//-------------------------------------------------------------------
 
-		/** @brief VIS version identifier (JSON: "visRelease") */
-		std::string m_visVersion;
+		/** @brief VIS version string (e.g., "3.8a") */
+		const std::string m_visVersion;
 
-		/** @brief Map of node codes to their conversion information (JSON: "items") */
-		std::unordered_map<std::string, GmodNodeConversionDto> m_items;
+		/** @brief Map of node codes to their conversion information */
+		const ItemsMap m_items;
 	};
 }

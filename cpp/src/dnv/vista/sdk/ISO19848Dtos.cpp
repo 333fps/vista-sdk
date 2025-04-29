@@ -9,9 +9,9 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------
+	//-------------------------------------------------------------------------
 	// Constants
-	//-------------------------------------------------------------------
+	//-------------------------------------------------------------------------
 
 	static constexpr const char* VALUES_KEY = "values";
 	static constexpr const char* TYPE_KEY = "type";
@@ -19,9 +19,9 @@ namespace dnv::vista::sdk
 
 	static constexpr size_t BATCH_SIZE = 1000;
 
-	//-------------------------------------------------------------------
+	//-------------------------------------------------------------------------
 	// Utility Functions
-	//-------------------------------------------------------------------
+	//-------------------------------------------------------------------------
 
 	namespace
 	{
@@ -84,10 +84,11 @@ namespace dnv::vista::sdk
 		: m_type{ std::move( type ) },
 		  m_description{ std::move( description ) }
 	{
+		SPDLOG_INFO( "Creating DataChannelTypeNameDto: type={}, description={}", m_type, m_description );
 	}
 
 	//-------------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------------
 
 	const std::string& DataChannelTypeNameDto::type() const
@@ -101,18 +102,26 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------------
 
-	DataChannelTypeNameDto DataChannelTypeNameDto::fromJson( const rapidjson::Value& json )
+	std::optional<DataChannelTypeNameDto> DataChannelTypeNameDto::tryFromJson( const rapidjson::Value& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_DEBUG( "Parsing DataChannelTypeNameDto from JSON" );
-		DataChannelTypeNameDto dto;
+		SPDLOG_DEBUG( "Attempting to parse DataChannelTypeNameDto from JSON" );
+
+		if ( !json.IsObject() )
+		{
+			SPDLOG_ERROR( "JSON value is not an object" );
+			return std::nullopt;
+		}
+
+		std::string typeStr;
+		std::string descriptionStr;
 
 		if ( json.HasMember( TYPE_KEY ) && json[TYPE_KEY].IsString() )
 		{
-			dto.m_type = internString( json[TYPE_KEY].GetString() );
+			typeStr = internString( json[TYPE_KEY].GetString() );
 		}
 		else
 		{
@@ -121,32 +130,28 @@ namespace dnv::vista::sdk
 
 		if ( json.HasMember( DESCRIPTION_KEY ) && json[DESCRIPTION_KEY].IsString() )
 		{
-			dto.m_description = internString( json[DESCRIPTION_KEY].GetString() );
+			descriptionStr = internString( json[DESCRIPTION_KEY].GetString() );
 		}
 
-		if ( dto.m_type.empty() )
+		if ( typeStr.empty() )
 		{
 			SPDLOG_WARN( "Parsed DataChannelTypeNameDto has empty type field" );
 		}
 
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Parsed DataChannelTypeNameDto: type={}, description={} in {:.2f}ms", dto.m_type, dto.m_description, duration.count() / 1000.0 );
+		SPDLOG_DEBUG( "Parsed DataChannelTypeNameDto: type={}, description={} in {:.2f}ms", typeStr, descriptionStr, duration.count() / 1000.0 );
 
-		return dto;
+		return DataChannelTypeNameDto( std::move( typeStr ), std::move( descriptionStr ) );
 	}
 
-	bool DataChannelTypeNameDto::tryFromJson( const rapidjson::Value& json, DataChannelTypeNameDto& dto )
+	DataChannelTypeNameDto DataChannelTypeNameDto::fromJson( const rapidjson::Value& json )
 	{
-		try
+		auto dtoOpt = tryFromJson( json );
+		if ( !dtoOpt )
 		{
-			dto = fromJson( json );
-			return true;
+			throw std::invalid_argument( "Failed to parse DataChannelTypeNameDto from JSON" );
 		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing DataChannelTypeNameDto: {}", e.what() );
-			return false;
-		}
+		return std::move( *dtoOpt );
 	}
 
 	rapidjson::Value DataChannelTypeNameDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
@@ -175,10 +180,11 @@ namespace dnv::vista::sdk
 	DataChannelTypeNamesDto::DataChannelTypeNamesDto( std::vector<DataChannelTypeNameDto> values )
 		: m_values{ std::move( values ) }
 	{
+		SPDLOG_INFO( "Creating DataChannelTypeNamesDto with {} values", m_values.size() );
 	}
 
 	//-------------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------------
 
 	const std::vector<DataChannelTypeNameDto>& DataChannelTypeNamesDto::values() const
@@ -187,14 +193,21 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------------
 
-	DataChannelTypeNamesDto DataChannelTypeNamesDto::fromJson( const rapidjson::Value& json )
+	std::optional<DataChannelTypeNamesDto> DataChannelTypeNamesDto::tryFromJson( const rapidjson::Value& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_INFO( "Parsing data channel type names from JSON" );
-		DataChannelTypeNamesDto dto;
+		SPDLOG_INFO( "Attempting to parse data channel type names from JSON" );
+
+		if ( !json.IsObject() )
+		{
+			SPDLOG_ERROR( "JSON value is not an object" );
+			return std::nullopt;
+		}
+
+		std::vector<DataChannelTypeNameDto> parsedValues;
 
 		if ( json.HasMember( VALUES_KEY ) && json[VALUES_KEY].IsArray() )
 		{
@@ -202,7 +215,7 @@ namespace dnv::vista::sdk
 			size_t valueCount = jsonArray.Size();
 			SPDLOG_INFO( "Found {} data channel type entries to parse", valueCount );
 
-			dto.m_values.reserve( valueCount );
+			parsedValues.reserve( valueCount );
 			size_t successCount = 0;
 			bool useBatching = valueCount > 5000;
 
@@ -219,34 +232,39 @@ namespace dnv::vista::sdk
 					size_t batchSuccess = 0;
 					for ( size_t j = i; j < batchEnd; j++ )
 					{
-						try
+						auto itemOpt = DataChannelTypeNameDto::tryFromJson(
+							jsonArray[static_cast<rapidjson::SizeType>( j )] );
+						if ( itemOpt )
 						{
-							dto.m_values.emplace_back( DataChannelTypeNameDto::fromJson( jsonArray[static_cast<rapidjson::SizeType>( j )] ) );
+							parsedValues.emplace_back( std::move( *itemOpt ) );
 							batchSuccess++;
 							successCount++;
 						}
-						catch ( const std::exception& e )
+						else
 						{
-							SPDLOG_ERROR( "Skipping malformed data channel type name at index {}: {}", j, e.what() );
+							SPDLOG_ERROR( "Skipping malformed data channel type name at index {}", j );
 						}
 					}
 
-					auto batchDuration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - batchStart );
-					SPDLOG_DEBUG( "Batch {}-{} processed: {}/{} items in {}ms", i, batchEnd - 1, batchSuccess, batchEnd - i, batchDuration.count() );
+					auto batchDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
+						std::chrono::steady_clock::now() - batchStart );
+					SPDLOG_DEBUG( "Batch {}-{} processed: {}/{} items in {}ms",
+						i, batchEnd - 1, batchSuccess, batchEnd - i, batchDuration.count() );
 				}
 			}
 			else
 			{
-				for ( const auto& item : jsonArray )
+				for ( rapidjson::SizeType i = 0; i < jsonArray.Size(); i++ )
 				{
-					try
+					auto itemOpt = DataChannelTypeNameDto::tryFromJson( jsonArray[i] );
+					if ( itemOpt )
 					{
-						dto.m_values.emplace_back( DataChannelTypeNameDto::fromJson( item ) );
+						parsedValues.emplace_back( std::move( *itemOpt ) );
 						successCount++;
 					}
-					catch ( const std::exception& e )
+					else
 					{
-						SPDLOG_ERROR( "Skipping malformed data channel type name: {}", e.what() );
+						SPDLOG_ERROR( "Skipping malformed data channel type name at index {}", i );
 					}
 				}
 			}
@@ -254,10 +272,10 @@ namespace dnv::vista::sdk
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
 				std::chrono::steady_clock::now() - startTime );
 
-			if ( dto.m_values.size() > 1000 )
+			if ( parsedValues.size() > 1000 )
 			{
-				size_t approxBytes = estimateMemoryUsage( dto.m_values );
-				SPDLOG_INFO( "Large collection loaded: {} items, ~{} KB", dto.m_values.size(), approxBytes / 1024 );
+				size_t approxBytes = estimateMemoryUsage( parsedValues );
+				SPDLOG_INFO( "Large collection loaded: {} items, ~{} KB", parsedValues.size(), approxBytes / 1024 );
 			}
 
 			SPDLOG_INFO( "Successfully parsed {}/{} data channel type names in {}ms ({:.1f} items/sec)",
@@ -269,21 +287,17 @@ namespace dnv::vista::sdk
 			SPDLOG_WARN( "No '{}' array found in data channel type names JSON", VALUES_KEY );
 		}
 
-		return dto;
+		return DataChannelTypeNamesDto( std::move( parsedValues ) );
 	}
 
-	bool DataChannelTypeNamesDto::tryFromJson( const rapidjson::Value& json, DataChannelTypeNamesDto& dto )
+	DataChannelTypeNamesDto DataChannelTypeNamesDto::fromJson( const rapidjson::Value& json )
 	{
-		try
+		auto dtoOpt = tryFromJson( json );
+		if ( !dtoOpt )
 		{
-			dto = fromJson( json );
-			return true;
+			throw std::invalid_argument( "Failed to parse DataChannelTypeNamesDto from JSON" );
 		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing DataChannelTypeNamesDto: {}", e.what() );
-			return false;
-		}
+		return std::move( *dtoOpt );
 	}
 
 	rapidjson::Value DataChannelTypeNamesDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
@@ -302,8 +316,11 @@ namespace dnv::vista::sdk
 
 		obj.AddMember( rapidjson::StringRef( VALUES_KEY ), valuesArray, allocator );
 
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Serialized {} data channel type names in {}ms ({:.1f} items/sec)", m_values.size(), duration.count(), duration.count() > 0 ? m_values.size() * 1000.0 / duration.count() : 0 );
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::steady_clock::now() - startTime );
+		SPDLOG_DEBUG( "Serialized {} data channel type names in {}ms ({:.1f} items/sec)",
+			m_values.size(), duration.count(),
+			duration.count() > 0 ? m_values.size() * 1000.0 / duration.count() : 0 );
 
 		return obj;
 	}
@@ -320,10 +337,11 @@ namespace dnv::vista::sdk
 		: m_type{ std::move( type ) },
 		  m_description{ std::move( description ) }
 	{
+		SPDLOG_INFO( "Creating FormatDataTypeDto: type={}, description={}", m_type, m_description );
 	}
 
 	//-------------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------------
 
 	const std::string& FormatDataTypeDto::type() const
@@ -337,18 +355,26 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------------
 
-	FormatDataTypeDto FormatDataTypeDto::fromJson( const rapidjson::Value& json )
+	std::optional<FormatDataTypeDto> FormatDataTypeDto::tryFromJson( const rapidjson::Value& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_DEBUG( "Parsing FormatDataTypeDto from JSON" );
-		FormatDataTypeDto dto;
+		SPDLOG_DEBUG( "Attempting to parse FormatDataTypeDto from JSON" );
+
+		if ( !json.IsObject() )
+		{
+			SPDLOG_ERROR( "JSON value is not an object" );
+			return std::nullopt;
+		}
+
+		std::string typeStr;
+		std::string descriptionStr;
 
 		if ( json.HasMember( TYPE_KEY ) && json[TYPE_KEY].IsString() )
 		{
-			dto.m_type = internString( json[TYPE_KEY].GetString() );
+			typeStr = internString( json[TYPE_KEY].GetString() );
 		}
 		else
 		{
@@ -357,32 +383,30 @@ namespace dnv::vista::sdk
 
 		if ( json.HasMember( DESCRIPTION_KEY ) && json[DESCRIPTION_KEY].IsString() )
 		{
-			dto.m_description = internString( json[DESCRIPTION_KEY].GetString() );
+			descriptionStr = internString( json[DESCRIPTION_KEY].GetString() );
 		}
 
-		if ( dto.m_type.empty() )
+		if ( typeStr.empty() )
 		{
 			SPDLOG_WARN( "Parsed FormatDataTypeDto has empty type field" );
 		}
 
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Parsed FormatDataTypeDto: type={}, description={} in {:.2f}ms", dto.m_type, dto.m_description, duration.count() / 1000.0 );
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+			std::chrono::steady_clock::now() - startTime );
+		SPDLOG_DEBUG( "Parsed FormatDataTypeDto: type={}, description={} in {:.2f}ms",
+			typeStr, descriptionStr, duration.count() / 1000.0 );
 
-		return dto;
+		return FormatDataTypeDto( std::move( typeStr ), std::move( descriptionStr ) );
 	}
 
-	bool FormatDataTypeDto::tryFromJson( const rapidjson::Value& json, FormatDataTypeDto& dto )
+	FormatDataTypeDto FormatDataTypeDto::fromJson( const rapidjson::Value& json )
 	{
-		try
+		auto dtoOpt = tryFromJson( json );
+		if ( !dtoOpt )
 		{
-			dto = fromJson( json );
-			return true;
+			throw std::invalid_argument( "Failed to parse FormatDataTypeDto from JSON" );
 		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing FormatDataTypeDto: {}", e.what() );
-			return false;
-		}
+		return std::move( *dtoOpt );
 	}
 
 	rapidjson::Value FormatDataTypeDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
@@ -411,10 +435,11 @@ namespace dnv::vista::sdk
 	FormatDataTypesDto::FormatDataTypesDto( std::vector<FormatDataTypeDto> values )
 		: m_values{ std::move( values ) }
 	{
+		SPDLOG_INFO( "Creating FormatDataTypesDto with {} values", m_values.size() );
 	}
 
 	//-------------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------------
 
 	const std::vector<FormatDataTypeDto>& FormatDataTypesDto::values() const
@@ -423,14 +448,21 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------------
 
-	FormatDataTypesDto FormatDataTypesDto::fromJson( const rapidjson::Value& json )
+	std::optional<FormatDataTypesDto> FormatDataTypesDto::tryFromJson( const rapidjson::Value& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_INFO( "Parsing format data types from JSON" );
-		FormatDataTypesDto dto;
+		SPDLOG_INFO( "Attempting to parse format data types from JSON" );
+
+		if ( !json.IsObject() )
+		{
+			SPDLOG_ERROR( "JSON value is not an object" );
+			return std::nullopt;
+		}
+
+		std::vector<FormatDataTypeDto> parsedValues;
 
 		if ( json.HasMember( VALUES_KEY ) && json[VALUES_KEY].IsArray() )
 		{
@@ -438,7 +470,7 @@ namespace dnv::vista::sdk
 			size_t valueCount = jsonArray.Size();
 			SPDLOG_INFO( "Found {} format data type entries to parse", valueCount );
 
-			dto.m_values.reserve( valueCount );
+			parsedValues.reserve( valueCount );
 			size_t successCount = 0;
 			bool useBatching = valueCount > 5000;
 
@@ -455,34 +487,39 @@ namespace dnv::vista::sdk
 					size_t batchSuccess = 0;
 					for ( size_t j = i; j < batchEnd; j++ )
 					{
-						try
+						auto itemOpt = FormatDataTypeDto::tryFromJson(
+							jsonArray[static_cast<rapidjson::SizeType>( j )] );
+						if ( itemOpt )
 						{
-							dto.m_values.emplace_back( FormatDataTypeDto::fromJson( jsonArray[static_cast<rapidjson::SizeType>( j )] ) );
+							parsedValues.emplace_back( std::move( *itemOpt ) );
 							batchSuccess++;
 							successCount++;
 						}
-						catch ( const std::exception& e )
+						else
 						{
-							SPDLOG_ERROR( "Skipping malformed format data type at index {}: {}", j, e.what() );
+							SPDLOG_ERROR( "Skipping malformed format data type at index {}", j );
 						}
 					}
 
-					auto batchDuration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - batchStart );
-					SPDLOG_DEBUG( "Batch {}-{} processed: {}/{} items in {}ms", i, batchEnd - 1, batchSuccess, batchEnd - i, batchDuration.count() );
+					auto batchDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
+						std::chrono::steady_clock::now() - batchStart );
+					SPDLOG_DEBUG( "Batch {}-{} processed: {}/{} items in {}ms",
+						i, batchEnd - 1, batchSuccess, batchEnd - i, batchDuration.count() );
 				}
 			}
 			else
 			{
-				for ( const auto& item : jsonArray )
+				for ( rapidjson::SizeType i = 0; i < jsonArray.Size(); i++ )
 				{
-					try
+					auto itemOpt = FormatDataTypeDto::tryFromJson( jsonArray[i] );
+					if ( itemOpt )
 					{
-						dto.m_values.emplace_back( FormatDataTypeDto::fromJson( item ) );
+						parsedValues.emplace_back( std::move( *itemOpt ) );
 						successCount++;
 					}
-					catch ( const std::exception& e )
+					else
 					{
-						SPDLOG_ERROR( "Skipping malformed format data type: {}", e.what() );
+						SPDLOG_ERROR( "Skipping malformed format data type at index {}", i );
 					}
 				}
 			}
@@ -490,10 +527,10 @@ namespace dnv::vista::sdk
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
 				std::chrono::steady_clock::now() - startTime );
 
-			if ( dto.m_values.size() > 1000 )
+			if ( parsedValues.size() > 1000 )
 			{
-				size_t approxBytes = estimateMemoryUsage( dto.m_values );
-				SPDLOG_INFO( "Large collection loaded: {} items, ~{} KB", dto.m_values.size(), approxBytes / 1024 );
+				size_t approxBytes = estimateMemoryUsage( parsedValues );
+				SPDLOG_INFO( "Large collection loaded: {} items, ~{} KB", parsedValues.size(), approxBytes / 1024 );
 			}
 
 			SPDLOG_INFO( "Successfully parsed {}/{} format data types in {}ms ({:.1f} items/sec)",
@@ -505,21 +542,17 @@ namespace dnv::vista::sdk
 			SPDLOG_WARN( "No '{}' array found in format data types JSON", VALUES_KEY );
 		}
 
-		return dto;
+		return FormatDataTypesDto( std::move( parsedValues ) );
 	}
 
-	bool FormatDataTypesDto::tryFromJson( const rapidjson::Value& json, FormatDataTypesDto& dto )
+	FormatDataTypesDto FormatDataTypesDto::fromJson( const rapidjson::Value& json )
 	{
-		try
+		auto dtoOpt = tryFromJson( json );
+		if ( !dtoOpt )
 		{
-			dto = fromJson( json );
-			return true;
+			throw std::invalid_argument( "Failed to parse FormatDataTypesDto from JSON" );
 		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing FormatDataTypesDto: {}", e.what() );
-			return false;
-		}
+		return std::move( *dtoOpt );
 	}
 
 	rapidjson::Value FormatDataTypesDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
@@ -538,8 +571,11 @@ namespace dnv::vista::sdk
 
 		obj.AddMember( rapidjson::StringRef( VALUES_KEY ), valuesArray, allocator );
 
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Serialized {} format data types in {}ms ({:.1f} items/sec)", m_values.size(), duration.count(), duration.count() > 0 ? m_values.size() * 1000.0 / duration.count() : 0 );
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::steady_clock::now() - startTime );
+		SPDLOG_DEBUG( "Serialized {} format data types in {}ms ({:.1f} items/sec)",
+			m_values.size(), duration.count(),
+			duration.count() > 0 ? m_values.size() * 1000.0 / duration.count() : 0 );
 
 		return obj;
 	}

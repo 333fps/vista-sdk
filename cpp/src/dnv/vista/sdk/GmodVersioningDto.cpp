@@ -83,10 +83,11 @@ namespace dnv::vista::sdk
 		: m_oldAssignment{ std::move( oldAssignment ) },
 		  m_currentAssignment{ std::move( currentAssignment ) }
 	{
+		SPDLOG_INFO( "Created GmodVersioningAssignmentChangeDto: {} → {}", m_oldAssignment, m_currentAssignment );
 	}
 
 	//-------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------
 
 	const std::string& GmodVersioningAssignmentChangeDto::oldAssignment() const
@@ -100,46 +101,56 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------
 
-	GmodVersioningAssignmentChangeDto GmodVersioningAssignmentChangeDto::fromJson( const rapidjson::Value& json )
+	std::optional<GmodVersioningAssignmentChangeDto> GmodVersioningAssignmentChangeDto::tryFromJson( const rapidjson::Value& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_DEBUG( "Parsing assignment change from JSON" );
-		GmodVersioningAssignmentChangeDto dto;
+		SPDLOG_DEBUG( "Attempting to parse assignment change from JSON" );
+
+		if ( !json.IsObject() )
+		{
+			SPDLOG_ERROR( "JSON value is not an object" );
+			return std::nullopt;
+		}
+
+		std::string oldAssignment;
+		std::string currentAssignment;
 
 		if ( json.HasMember( OLD_ASSIGNMENT_KEY ) && json[OLD_ASSIGNMENT_KEY].IsString() )
 		{
-			std::string oldAssignment = json[OLD_ASSIGNMENT_KEY].GetString();
-			dto.m_oldAssignment = internString( oldAssignment );
+			oldAssignment = internString( json[OLD_ASSIGNMENT_KEY].GetString() );
+		}
+		else
+		{
+			SPDLOG_WARN( "Missing or invalid 'oldAssignment' field" );
 		}
 
 		if ( json.HasMember( CURRENT_ASSIGNMENT_KEY ) && json[CURRENT_ASSIGNMENT_KEY].IsString() )
 		{
-			std::string currentAssignment = json[CURRENT_ASSIGNMENT_KEY].GetString();
-			dto.m_currentAssignment = internString( currentAssignment );
+			currentAssignment = internString( json[CURRENT_ASSIGNMENT_KEY].GetString() );
+		}
+		else
+		{
+			SPDLOG_WARN( "Missing or invalid 'currentAssignment' field" );
 		}
 
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Parsed assignment change: {} → {} in {:.2f} ms", dto.m_oldAssignment, dto.m_currentAssignment, duration.count() / 1000.0 );
+		SPDLOG_DEBUG( "Parsed assignment change: {} → {} in {:.2f} ms", oldAssignment, currentAssignment, duration.count() / 1000.0 );
 
-		return dto;
+		return GmodVersioningAssignmentChangeDto( std::move( oldAssignment ), std::move( currentAssignment ) );
 	}
 
-	bool GmodVersioningAssignmentChangeDto::tryFromJson(
-		const rapidjson::Value& json, GmodVersioningAssignmentChangeDto& dto )
+	GmodVersioningAssignmentChangeDto GmodVersioningAssignmentChangeDto::fromJson( const rapidjson::Value& json )
 	{
-		try
+		auto dto = tryFromJson( json );
+		if ( !dto )
 		{
-			dto = fromJson( json );
-			return true;
+			SPDLOG_ERROR( "Failed to parse GmodVersioningAssignmentChangeDto from JSON" );
+			throw std::invalid_argument( "Invalid JSON for GmodVersioningAssignmentChangeDto" );
 		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing GmodVersioningAssignmentChangeDto: {}", e.what() );
-			return false;
-		}
+		return std::move( *dto );
 	}
 
 	rapidjson::Value GmodVersioningAssignmentChangeDto::toJson(
@@ -167,7 +178,7 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	GmodNodeConversionDto::GmodNodeConversionDto(
-		std::unordered_set<std::string> operations, std::string source,
+		OperationSet operations, std::string source,
 		std::string target, std::string oldAssignment,
 		std::string newAssignment, bool deleteAssignment )
 		: m_operations{ std::move( operations ) },
@@ -177,13 +188,14 @@ namespace dnv::vista::sdk
 		  m_newAssignment{ std::move( newAssignment ) },
 		  m_deleteAssignment{ deleteAssignment }
 	{
+		SPDLOG_INFO( "Created GmodNodeConversionDto: source={}, target={}, operations={}", m_source, m_target, m_operations.size() );
 	}
 
 	//-------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------
 
-	const std::unordered_set<std::string>& GmodNodeConversionDto::operations() const
+	const GmodNodeConversionDto::OperationSet& GmodNodeConversionDto::operations() const
 	{
 		return m_operations;
 	}
@@ -214,76 +226,91 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------
 
-	GmodNodeConversionDto GmodNodeConversionDto::fromJson( const rapidjson::Value& json )
+	std::optional<GmodNodeConversionDto> GmodNodeConversionDto::tryFromJson( const rapidjson::Value& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_DEBUG( "Parsing node conversion from JSON" );
-		GmodNodeConversionDto dto;
+		SPDLOG_DEBUG( "Attempting to parse node conversion from JSON" );
+
+		if ( !json.IsObject() )
+		{
+			SPDLOG_ERROR( "JSON value for GmodNodeConversionDto is not an object" );
+			return std::nullopt;
+		}
+
+		OperationSet operations;
+		std::string source;
+		std::string target;
+		std::string oldAssignment;
+		std::string newAssignment;
+		bool deleteAssignment = false;
 
 		if ( json.HasMember( OPERATIONS_KEY ) && json[OPERATIONS_KEY].IsArray() )
 		{
 			size_t opCount = json[OPERATIONS_KEY].Size();
 			SPDLOG_DEBUG( "Found {} operations", opCount );
-			dto.m_operations.reserve( opCount );
+			operations.reserve( opCount );
 
 			for ( const auto& operation : json[OPERATIONS_KEY].GetArray() )
 			{
 				if ( operation.IsString() )
 				{
-					dto.m_operations.insert( internString( operation.GetString() ) );
+					operations.insert( internString( operation.GetString() ) );
 				}
 			}
 		}
 
 		if ( json.HasMember( SOURCE_KEY ) && json[SOURCE_KEY].IsString() )
 		{
-			dto.m_source = internString( json[SOURCE_KEY].GetString() );
+			source = internString( json[SOURCE_KEY].GetString() );
 		}
 
 		if ( json.HasMember( TARGET_KEY ) && json[TARGET_KEY].IsString() )
 		{
-			dto.m_target = internString( json[TARGET_KEY].GetString() );
+			target = internString( json[TARGET_KEY].GetString() );
 		}
 
 		if ( json.HasMember( OLD_ASSIGNMENT_KEY ) && json[OLD_ASSIGNMENT_KEY].IsString() )
-			dto.m_oldAssignment = json[OLD_ASSIGNMENT_KEY].GetString();
+			oldAssignment = json[OLD_ASSIGNMENT_KEY].GetString();
 
 		if ( json.HasMember( NEW_ASSIGNMENT_KEY ) && json[NEW_ASSIGNMENT_KEY].IsString() )
-			dto.m_newAssignment = json[NEW_ASSIGNMENT_KEY].GetString();
+			newAssignment = json[NEW_ASSIGNMENT_KEY].GetString();
 
 		if ( json.HasMember( DELETE_ASSIGNMENT_KEY ) && json[DELETE_ASSIGNMENT_KEY].IsBool() )
-			dto.m_deleteAssignment = json[DELETE_ASSIGNMENT_KEY].GetBool();
+			deleteAssignment = json[DELETE_ASSIGNMENT_KEY].GetBool();
 
-		if ( dto.m_operations.empty() )
+		if ( operations.empty() )
 		{
-			SPDLOG_WARN( "Node conversion has no operations: source={}, target={}", dto.m_source, dto.m_target );
+			SPDLOG_WARN( "Node conversion has no operations: source={}, target={}", source, target );
 		}
-		if ( dto.m_source.empty() && dto.m_target.empty() )
+		if ( source.empty() && target.empty() )
 		{
 			SPDLOG_WARN( "Node conversion has empty source and target" );
 		}
 
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Parsed node conversion: source={}, target={}, operations={} in {:.2f} ms", dto.m_source, dto.m_target, dto.m_operations.size(), duration.count() / 1000.0 );
+		SPDLOG_DEBUG( "Parsed node conversion: source={}, target={}, operations={} in {:.2f} ms", source, target, operations.size(), duration.count() / 1000.0 );
 
-		return dto;
+		return GmodNodeConversionDto(
+			std::move( operations ),
+			std::move( source ),
+			std::move( target ),
+			std::move( oldAssignment ),
+			std::move( newAssignment ),
+			deleteAssignment );
 	}
 
-	bool GmodNodeConversionDto::tryFromJson( const rapidjson::Value& json, GmodNodeConversionDto& dto )
+	GmodNodeConversionDto GmodNodeConversionDto::fromJson( const rapidjson::Value& json )
 	{
-		try
+		auto dto = tryFromJson( json );
+		if ( !dto )
 		{
-			dto = fromJson( json );
-			return true;
+			SPDLOG_ERROR( "Failed to parse GmodNodeConversionDto from JSON" );
+			throw std::invalid_argument( "Invalid JSON for GmodNodeConversionDto" );
 		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing GmodNodeConversionDto: {}", e.what() );
-			return false;
-		}
+		return std::move( *dto );
 	}
 
 	rapidjson::Value GmodNodeConversionDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
@@ -332,14 +359,15 @@ namespace dnv::vista::sdk
 	// Construction / Destruction
 	//-------------------------------------------------------------------
 
-	GmodVersioningDto::GmodVersioningDto( std::string visVersion, std::unordered_map<std::string, GmodNodeConversionDto> items )
+	GmodVersioningDto::GmodVersioningDto( std::string visVersion, ItemsMap items )
 		: m_visVersion{ std::move( visVersion ) },
 		  m_items{ std::move( items ) }
 	{
+		SPDLOG_INFO( "Created GmodVersioningDto for VIS version: {}", m_visVersion );
 	}
 
 	//-------------------------------------------------------------------
-	// Accessor Methods
+	// Public Interface - Accessor Methods
 	//-------------------------------------------------------------------
 
 	const std::string& GmodVersioningDto::visVersion() const
@@ -347,31 +375,38 @@ namespace dnv::vista::sdk
 		return m_visVersion;
 	}
 
-	const std::unordered_map<std::string, GmodNodeConversionDto>& GmodVersioningDto::items() const
+	const GmodVersioningDto::ItemsMap& GmodVersioningDto::items() const
 	{
 		return m_items;
 	}
 
 	//-------------------------------------------------------------------
-	// Serialization Methods
+	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------
 
-	GmodVersioningDto GmodVersioningDto::fromJson( const rapidjson::Value& json )
+	std::optional<GmodVersioningDto> GmodVersioningDto::tryFromJson( const rapidjson::Value& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_INFO( "Parsing GMOD versioning data from JSON" );
-		GmodVersioningDto dto;
+		SPDLOG_INFO( "Attempting to parse GMOD versioning data from JSON" );
 
 		if ( !json.IsObject() )
 		{
 			SPDLOG_ERROR( "JSON value is not an object" );
-			throw std::runtime_error( "Invalid JSON: expected an object" );
+			return std::nullopt;
 		}
+
+		std::string visVersion;
+		ItemsMap items;
 
 		if ( json.HasMember( VIS_RELEASE_KEY ) && json[VIS_RELEASE_KEY].IsString() )
 		{
-			dto.m_visVersion = json[VIS_RELEASE_KEY].GetString();
-			SPDLOG_INFO( "GMOD versioning for VIS version: {}", dto.m_visVersion );
+			visVersion = json[VIS_RELEASE_KEY].GetString();
+			SPDLOG_INFO( "GMOD versioning for VIS version: {}", visVersion );
+		}
+		else
+		{
+			SPDLOG_ERROR( "Missing or invalid 'visRelease' field" );
+			return std::nullopt;
 		}
 
 		if ( json.HasMember( ITEMS_KEY ) && json[ITEMS_KEY].IsObject() )
@@ -384,7 +419,7 @@ namespace dnv::vista::sdk
 				SPDLOG_INFO( "Large versioning dataset detected, consider using parallel parsing implementation" );
 			}
 
-			dto.m_items.reserve( itemCount );
+			items.reserve( itemCount );
 
 			size_t successCount = 0;
 			size_t emptyOperationsCount = 0;
@@ -395,21 +430,20 @@ namespace dnv::vista::sdk
 			{
 				if ( it->value.IsObject() )
 				{
-					try
+					auto nodeDto = GmodNodeConversionDto::tryFromJson( it->value );
+					if ( nodeDto )
 					{
-						auto& nodeDto = dto.m_items[it->name.GetString()] =
-							GmodNodeConversionDto::fromJson( it->value );
+						auto& emplaced = items.emplace( it->name.GetString(), std::move( *nodeDto ) ).first->second;
 						successCount++;
 
-						if ( nodeDto.operations().empty() )
+						if ( emplaced.operations().empty() )
 						{
 							emptyOperationsCount++;
 						}
 					}
-					catch ( const std::exception& e )
+					else
 					{
-						SPDLOG_ERROR( "Error parsing conversion item '{}': {}",
-							it->name.GetString(), e.what() );
+						SPDLOG_ERROR( "Error parsing conversion item '{}'", it->name.GetString() );
 					}
 				}
 			}
@@ -425,7 +459,7 @@ namespace dnv::vista::sdk
 			if ( successCount > 0 && static_cast<double>( successCount ) < static_cast<double>( itemCount ) * 0.9 )
 			{
 				SPDLOG_INFO( "Optimizing memory usage after parsing {} of {} items", successCount, itemCount );
-				dto.m_items.rehash( static_cast<size_t>( static_cast<double>( successCount ) * 1.25 ) );
+				items.rehash( static_cast<size_t>( static_cast<double>( successCount ) * 1.25 ) );
 			}
 		}
 		else
@@ -436,29 +470,26 @@ namespace dnv::vista::sdk
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
 			std::chrono::steady_clock::now() - startTime );
 
-		if ( dto.m_items.size() > 1000 )
+		if ( items.size() > 1000 )
 		{
-			size_t approxMemoryBytes = dto.m_items.size() * ( sizeof( GmodNodeConversionDto ) + sizeof( std::string ) * 4 + 32 ); // estimate
-			SPDLOG_INFO( "Large versioning dataset loaded: {} items, ~{} MB estimated memory", dto.m_items.size(), approxMemoryBytes / ( 1024 * 1024 ) );
+			size_t approxMemoryBytes = items.size() * ( sizeof( GmodNodeConversionDto ) + sizeof( std::string ) * 4 + 32 ); // estimate
+			SPDLOG_INFO( "Large versioning dataset loaded: {} items, ~{} MB estimated memory", items.size(), approxMemoryBytes / ( 1024 * 1024 ) );
 		}
 
 		SPDLOG_INFO( "GMOD versioning parsing completed in {} ms", duration.count() );
 
-		return dto;
+		return GmodVersioningDto( std::move( visVersion ), std::move( items ) );
 	}
 
-	bool GmodVersioningDto::tryFromJson( const rapidjson::Value& json, GmodVersioningDto& dto )
+	GmodVersioningDto GmodVersioningDto::fromJson( const rapidjson::Value& json )
 	{
-		try
+		auto dto = tryFromJson( json );
+		if ( !dto )
 		{
-			dto = fromJson( json );
-			return true;
+			SPDLOG_ERROR( "Failed to parse GmodVersioningDto from JSON" );
+			throw std::invalid_argument( "Invalid JSON for GmodVersioningDto" );
 		}
-		catch ( const std::exception& e )
-		{
-			SPDLOG_ERROR( "Error deserializing GmodVersioningDto: {}", e.what() );
-			return false;
-		}
+		return std::move( *dto );
 	}
 
 	rapidjson::Value GmodVersioningDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
