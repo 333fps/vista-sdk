@@ -156,7 +156,7 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Iterator type for traversing groups
 		 */
-		using iterator = std::unordered_set<std::string>::const_iterator;
+		using Iterator = std::unordered_set<std::string>::const_iterator;
 
 		//-------------------------------------------------------------------
 		// Construction / Destruction
@@ -202,13 +202,13 @@ namespace dnv::vista::sdk
 		 * @brief Get iterator to the beginning
 		 * @return Iterator to the first group
 		 */
-		iterator begin() const;
+		Iterator begin() const;
 
 		/**
 		 * @brief Get iterator to the end
 		 * @return Iterator past the last group
 		 */
-		iterator end() const;
+		Iterator end() const;
 
 	private:
 		//-------------------------------------------------------------------

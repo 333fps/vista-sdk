@@ -6,8 +6,7 @@
  * for vessel information structure, along with utility functions to convert between
  * enum values and their string prefix representations.
  *
- * @see ISO 19848:2018 - Ships and marine technology — Standard data for shipboard
- *      machinery and equipment
+ * @see ISO 19848:2018 - Ships and marine technology — Standard data for shipboard machinery and equipment
  */
 
 #pragma once
@@ -74,19 +73,19 @@ namespace dnv::vista::sdk
 	{
 	public:
 		/**
-		 * @brief Convert a string prefix to a CodebookName
+		 * @brief Try to convert a string prefix to a CodebookName
 		 * @param prefix The string prefix to convert (e.g., "pos", "qty", "calc")
-		 * @return The corresponding CodebookName value
-		 * @throws std::invalid_argument If the prefix is empty or unknown
+		 * @return An optional containing the CodebookName if the prefix is known,
+		 *         otherwise std::nullopt.
 		 */
-		static CodebookName fromPrefix( const std::string_view prefix );
+		static std::optional<CodebookName> fromPrefix( const std::string_view prefix );
 
 		/**
-		 * @brief Convert a CodebookName to its string prefix
+		 * @brief Convert a CodebookName to its string prefix view
 		 * @param name The CodebookName to convert
-		 * @return The corresponding string prefix (e.g., "pos" for Position)
+		 * @return The corresponding string prefix view (e.g., "pos" for Position)
 		 * @throws std::invalid_argument If the name is unknown
 		 */
-		static std::string toPrefix( CodebookName name );
+		static std::string_view toPrefix( CodebookName name );
 	};
 }

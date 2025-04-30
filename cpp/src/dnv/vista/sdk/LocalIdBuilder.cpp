@@ -1692,9 +1692,10 @@ namespace dnv::vista::sdk
 		std::string_view value = segment.substr( prefixIndex + 1 );
 		if ( value.empty() )
 		{
-			SPDLOG_WARN( "Invalid {} metadata tag: missing value", CodebookNames::toPrefix( codebookName ) );
+			SPDLOG_ERROR( "Invalid {} metadata tag: missing value", CodebookNames::toPrefix( codebookName ) );
 			addError( errorBuilder, state,
-				"Invalid " + CodebookNames::toPrefix( codebookName ) + " metadata tag: missing value" );
+				fmt::format( "Invalid {} metadata tag: missing value", CodebookNames::toPrefix( codebookName ) ) );
+
 			return false;
 		}
 
@@ -1703,23 +1704,27 @@ namespace dnv::vista::sdk
 		{
 			if ( prefixIndex == tildeIndex )
 			{
-				SPDLOG_WARN( "Invalid custom {} metadata tag: {}", CodebookNames::toPrefix( codebookName ), value );
-				addError( errorBuilder, state, "Invalid custom " + CodebookNames::toPrefix( codebookName ) + " metadata tag: failed to create " + std::string( value ) );
+				SPDLOG_ERROR( "Invalid custom {} metadata tag: {}", CodebookNames::toPrefix( codebookName ), value );
+				addError( errorBuilder, state,
+					fmt::format( "Invalid custom {} metadata tag: failed to create {}", CodebookNames::toPrefix( codebookName ), value ) );
 			}
 			else
 			{
-				SPDLOG_WARN( "Invalid {} metadata tag: {}", CodebookNames::toPrefix( codebookName ), value );
-				addError( errorBuilder, state, "Invalid " + CodebookNames::toPrefix( codebookName ) + " metadata tag: failed to create " + std::string( value ) );
+				SPDLOG_ERROR( "Invalid {} metadata tag: {}", CodebookNames::toPrefix( codebookName ), value );
+				addError( errorBuilder, state,
+					fmt::format( "Invalid {} metadata tag: failed to create {}", CodebookNames::toPrefix( codebookName ), value ) );
 			}
 
 			advanceParser( i, segment, state );
+
 			return true;
 		}
 
 		if ( prefixIndex == dashIndex && tag->prefix() == '~' )
 		{
-			SPDLOG_WARN( "Invalid prefix for custom value: {}", value );
-			addError( errorBuilder, state, "Invalid " + CodebookNames::toPrefix( codebookName ) + " metadata tag: '" + std::string( value ) + "'. Use prefix '~' for custom values" );
+			SPDLOG_ERROR( "Invalid prefix for custom value: {}", value );
+			addError( errorBuilder, state,
+				fmt::format( "Invalid {} metadata tag: '{}'. Use prefix '~' for custom values", CodebookNames::toPrefix( codebookName ), value ) );
 
 			return false;
 		}

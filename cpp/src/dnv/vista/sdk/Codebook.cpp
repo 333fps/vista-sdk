@@ -46,6 +46,8 @@ namespace dnv::vista::sdk
 	CodebookStandardValues::CodebookStandardValues( CodebookName name, const std::unordered_set<std::string>& standardValues )
 		: m_name{ name }, m_standardValues{ standardValues }
 	{
+		SPDLOG_INFO( "CodebookStandardValues constructed for '{}' with {} values",
+			static_cast<int>( m_name ), m_standardValues.size() );
 	}
 
 	//-------------------------------------------------------------------
@@ -99,6 +101,7 @@ namespace dnv::vista::sdk
 	CodebookGroups::CodebookGroups( const std::unordered_set<std::string>& groups )
 		: m_groups{ groups }
 	{
+		SPDLOG_INFO( "CodebookGroups constructed with {} groups", m_groups.size() );
 	}
 
 	//-------------------------------------------------------------------
@@ -123,12 +126,12 @@ namespace dnv::vista::sdk
 	// Iterators
 	//-------------------------------------------------------------------
 
-	CodebookGroups::iterator CodebookGroups::begin() const
+	CodebookGroups::Iterator CodebookGroups::begin() const
 	{
 		return m_groups.begin();
 	}
 
-	CodebookGroups::iterator CodebookGroups::end() const
+	CodebookGroups::Iterator CodebookGroups::end() const
 	{
 		return m_groups.end();
 	}

@@ -81,6 +81,7 @@ namespace dnv::vista::sdk
 			if ( cacheIt != gmodCache.end() )
 			{
 				SPDLOG_DEBUG( "Using cached GMOD DTO for version: {}", visVersion );
+
 				return cacheIt->second;
 			}
 		}
@@ -110,6 +111,7 @@ namespace dnv::vista::sdk
 
 			std::lock_guard<std::mutex> lock( gmodCacheMutex );
 			gmodCache[visVersion] = std::nullopt;
+
 			return std::nullopt;
 		}
 
@@ -132,6 +134,7 @@ namespace dnv::vista::sdk
 
 				std::lock_guard<std::mutex> lock( gmodCacheMutex );
 				gmodCache[visVersion] = std::nullopt;
+
 				return std::nullopt;
 			}
 
@@ -144,6 +147,7 @@ namespace dnv::vista::sdk
 
 			std::lock_guard<std::mutex> lock( gmodCacheMutex );
 			auto [emplaceIt, inserted] = gmodCache.emplace( visVersion, std::move( gmodDto ) );
+
 			return emplaceIt->second;
 		}
 		catch ( const std::exception& e )
@@ -152,6 +156,7 @@ namespace dnv::vista::sdk
 
 			std::lock_guard<std::mutex> lock( gmodCacheMutex );
 			gmodCache[visVersion] = std::nullopt;
+
 			return std::nullopt;
 		}
 	}
@@ -167,6 +172,7 @@ namespace dnv::vista::sdk
 			if ( cacheInitialized )
 			{
 				SPDLOG_DEBUG( "Using cached GMOD Versioning DTO" );
+
 				return gmodVersioningCache;
 			}
 		}
@@ -242,12 +248,14 @@ namespace dnv::vista::sdk
 		{
 			SPDLOG_INFO( "Successfully loaded {} GMOD Versioning DTOs in {} ms", result.size(), duration.count() );
 			gmodVersioningCache.emplace( std::move( result ) );
+
 			return result;
 		}
 		else
 		{
 			SPDLOG_ERROR( "No GMOD Versioning resources found after {} ms", duration.count() );
 			gmodVersioningCache = std::nullopt;
+
 			return std::nullopt;
 		}
 	}
@@ -263,6 +271,7 @@ namespace dnv::vista::sdk
 			if ( cacheIt != codebooksCache.end() )
 			{
 				SPDLOG_DEBUG( "Using cached Codebooks DTO for version: {}", visVersion );
+
 				return cacheIt->second;
 			}
 		}
@@ -284,6 +293,7 @@ namespace dnv::vista::sdk
 
 			std::lock_guard<std::mutex> lock( codebooksCacheMutex );
 			codebooksCache[visVersion] = std::nullopt;
+
 			return std::nullopt;
 		}
 
@@ -302,6 +312,7 @@ namespace dnv::vista::sdk
 
 				std::lock_guard<std::mutex> lock( codebooksCacheMutex );
 				codebooksCache[visVersion] = std::nullopt;
+
 				return std::nullopt;
 			}
 
@@ -324,6 +335,7 @@ namespace dnv::vista::sdk
 
 			std::lock_guard<std::mutex> lock( codebooksCacheMutex );
 			codebooksCache[visVersion] = std::nullopt;
+
 			return std::nullopt;
 		}
 	}
@@ -339,6 +351,7 @@ namespace dnv::vista::sdk
 			if ( cacheIt != locationsCache.end() )
 			{
 				SPDLOG_DEBUG( "Using cached Locations DTO for version: {}", visVersion );
+
 				return cacheIt->second;
 			}
 		}
@@ -490,6 +503,7 @@ namespace dnv::vista::sdk
 
 			dataChannelTypeNamesCache.erase( version );
 			auto [cacheIt, inserted] = dataChannelTypeNamesCache.emplace( version, std::move( optResult ) );
+
 			return cacheIt->second;
 		}
 		catch ( const std::exception& e )
@@ -498,6 +512,7 @@ namespace dnv::vista::sdk
 
 			dataChannelTypeNamesCache.erase( version );
 			dataChannelTypeNamesCache.emplace( version, std::nullopt );
+
 			return std::nullopt;
 		}
 	}
@@ -569,7 +584,6 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "Successfully loaded FormatDataTypes DTO for version {} in {} ms", version, duration.count() );
 
 			std::optional<FormatDataTypesDto> optResult( std::move( result ) );
-
 			std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
 
 			fdTypesCache.erase( version );

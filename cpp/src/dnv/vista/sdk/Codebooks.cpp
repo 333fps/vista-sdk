@@ -19,7 +19,8 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	Codebooks::Codebooks( VisVersion version, const CodebooksDto& dto )
-		: m_visVersion( version ), m_codebooks{}
+		: m_visVersion{ version },
+		  m_codebooks{}
 	{
 		SPDLOG_DEBUG( "Initializing codebooks for VIS version: {}", VisVersionExtensions::toVersionString( version ) );
 
@@ -139,7 +140,8 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	Codebooks::Iterator::Iterator( const std::array<Codebook, NUM_CODEBOOKS>* codebooks, size_t index )
-		: m_codebooks( codebooks ), m_index( index )
+		: m_codebooks{ codebooks },
+		  m_index{ index }
 	{
 	}
 

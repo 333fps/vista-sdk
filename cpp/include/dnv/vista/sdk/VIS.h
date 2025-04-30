@@ -406,11 +406,19 @@ namespace dnv::vista::sdk
 		class Cache final
 		{
 		public:
-			Cache() : m_lastCleanup( std::chrono::steady_clock::now() ) {}
+			Cache() : m_lastCleanup{ std::chrono::steady_clock::now() } {}
+
+			Cache( const Cache& ) = delete;
+			Cache& operator=( const Cache& ) = delete;
+			Cache( Cache&& ) = delete;
+			Cache& operator=( Cache&& ) = delete;
 
 			V& getOrCreate( const K& key, std::function<V()> factory ) const
 			{
 				const auto now = std::chrono::steady_clock::now();
+
+				std::scoped_lock lock( m_mutex );
+
 				if ( now - m_lastCleanup > std::chrono::hours( 1 ) )
 				{
 					cleanupCache();
@@ -426,12 +434,16 @@ namespace dnv::vista::sdk
 					}
 
 					auto result = factory();
-					auto [inserted_it, success] = m_cache.emplace(
-						key, CacheItem{ std::move( result ), now } );
+					auto [inserted_it, success] = m_cache.emplace( key, CacheItem{ std::move( result ), now } );
+					SPDLOG_TRACE( "Cache miss for key. Created and inserted." );
+
 					return inserted_it->second.value;
 				}
 
 				it->second.lastAccess = now;
+
+				SPDLOG_TRACE( "Cache hit for key." );
+
 				return it->second.value;
 			}
 
@@ -452,6 +464,8 @@ namespace dnv::vista::sdk
 					else
 						++it;
 				}
+
+				SPDLOG_TRACE( "Cache cleanup performed." );
 			}
 
 			void removeOldestEntry() const
@@ -467,8 +481,11 @@ namespace dnv::vista::sdk
 					}
 				}
 				m_cache.erase( oldest );
+
+				SPDLOG_TRACE( "Cache eviction performed (removed oldest)." );
 			}
 
+			mutable std::mutex m_mutex;
 			mutable std::unordered_map<K, CacheItem> m_cache;
 			mutable std::chrono::steady_clock::time_point m_lastCleanup;
 		};
