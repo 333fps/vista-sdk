@@ -1,3 +1,8 @@
+/**
+ * @file VIS.cpp
+ * @brief Implementation of Vessel Information Structure (VIS) interface
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/VIS.h"
@@ -14,8 +19,25 @@
 
 namespace dnv::vista::sdk
 {
+	//-------------------------------------------------------------------------
+	// Constants
+	//-------------------------------------------------------------------------
+
 	const VisVersion VIS::LatestVisVersion = VisVersionExtensions::latestVersion();
 	const std::string VIS::m_versioning = "versioning";
+
+	//-------------------------------------------------------------------------
+	// Constructors & Special Member Functions
+	//-------------------------------------------------------------------------
+
+	VIS::VIS() : IVIS{}
+	{
+		SPDLOG_INFO( "Initializing VIS singleton with empty caches" );
+	}
+
+	//-------------------------------------------------------------------------
+	// Singleton Access
+	//-------------------------------------------------------------------------
 
 	VIS& VIS::instance()
 	{
@@ -23,34 +45,9 @@ namespace dnv::vista::sdk
 		return instance;
 	}
 
-	VIS::VIS() : IVIS{}
-	{
-	}
-
-	GmodDto VIS::gmodDto( VisVersion visVersion ) const
-	{
-		SPDLOG_INFO( "Getting GMOD DTO for version: {}",
-			VisVersionExtensions::toVersionString( visVersion ) );
-
-		return m_gmodDtoCache.getOrCreate( visVersion, [visVersion]() {
-			auto dto = loadGmodDto( visVersion );
-			if ( !dto )
-			{
-				SPDLOG_ERROR( "Failed to load GMOD DTO for version: {}",
-					VisVersionExtensions::toVersionString( visVersion ) );
-				throw std::runtime_error( "Failed to load GMOD DTO for version" );
-			}
-			return *dto;
-		} );
-	}
-
-	std::optional<GmodDto> VIS::loadGmodDto( VisVersion visVersion )
-	{
-		SPDLOG_INFO( "Loading GMOD DTO from resources for version: {}",
-			VisVersionExtensions::toVersionString( visVersion ) );
-
-		return EmbeddedResource::gmod( VisVersionExtensions::toVersionString( visVersion ) );
-	}
+	//-------------------------------------------------------------------------
+	// IVIS Interface Implementation
+	//-------------------------------------------------------------------------
 
 	Gmod VIS::gmod( VisVersion visVersion ) const
 	{
@@ -78,49 +75,6 @@ namespace dnv::vista::sdk
 		} );
 	}
 
-	std::unordered_map<std::string, GmodVersioningDto> VIS::gmodVersioningDto()
-	{
-		SPDLOG_INFO( "Getting GMOD versioning DTO" );
-
-		return m_gmodVersioningDtoCache.getOrCreate( m_versioning, []() {
-			auto dto = EmbeddedResource::gmodVersioning();
-			if ( !dto )
-			{
-				SPDLOG_ERROR( "Failed to load GMOD versioning data" );
-				throw std::runtime_error( "Failed to load GMOD versioning data" );
-			}
-			return *dto;
-		} );
-	}
-
-	GmodVersioning VIS::gmodVersioning()
-	{
-		SPDLOG_INFO( "Getting GMOD versioning" );
-
-		return m_gmodVersioningCache.getOrCreate( m_versioning, [this]() {
-			auto dto = gmodVersioningDto();
-			SPDLOG_INFO( "Successfully loaded GMOD versioning data with {} entries", dto.size() );
-			return GmodVersioning( dto );
-		} );
-	}
-
-	CodebooksDto VIS::codebooksDto( VisVersion visVersion )
-	{
-		SPDLOG_INFO( "Getting codebooks DTO for version: {}",
-			VisVersionExtensions::toVersionString( visVersion ) );
-
-		return m_codebooksDtoCache.getOrCreate( visVersion, [visVersion]() {
-			auto dto = EmbeddedResource::codebooks( VisVersionExtensions::toVersionString( visVersion ) );
-			if ( !dto )
-			{
-				SPDLOG_ERROR( "Failed to load codebooks DTO for version: {}",
-					VisVersionExtensions::toVersionString( visVersion ) );
-				throw std::runtime_error( "Failed to load codebooks DTO" );
-			}
-			return *dto;
-		} );
-	}
-
 	Codebooks VIS::codebooks( VisVersion visVersion )
 	{
 		if ( !VisVersionExtensions::isValid( visVersion ) )
@@ -137,23 +91,6 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "Successfully loaded codebooks for version: {}",
 				VisVersionExtensions::toVersionString( visVersion ) );
 			return Codebooks( visVersion, dto );
-		} );
-	}
-
-	LocationsDto VIS::locationsDto( VisVersion visVersion )
-	{
-		SPDLOG_INFO( "Getting locations DTO for version: {}",
-			VisVersionExtensions::toVersionString( visVersion ) );
-
-		return m_locationsDtoCache.getOrCreate( visVersion, [visVersion]() {
-			auto dto = EmbeddedResource::locations( VisVersionExtensions::toVersionString( visVersion ) );
-			if ( !dto )
-			{
-				SPDLOG_ERROR( "Failed to load locations DTO for version: {}",
-					VisVersionExtensions::toVersionString( visVersion ) );
-				throw std::runtime_error( "Failed to load locations DTO" );
-			}
-			return *dto;
 		} );
 	}
 
@@ -245,26 +182,31 @@ namespace dnv::vista::sdk
 		return VisVersionExtensions::allVersions();
 	}
 
-	std::optional<GmodNode> VIS::convertNode( const GmodNode& sourceNode, VisVersion targetVersion, [[maybe_unused]] const GmodNode* sourceParent )
-	{
-		return convertNode( sourceNode.visVersion(), sourceNode, targetVersion );
-	}
-
 	std::optional<GmodNode> VIS::convertNode( VisVersion sourceVersion, const GmodNode& sourceNode,
 		VisVersion targetVersion )
 	{
 		return gmodVersioning().convertNode( sourceVersion, sourceNode, targetVersion );
 	}
 
-	std::optional<GmodPath> VIS::convertPath( const GmodPath& sourcePath, VisVersion targetVersion )
-	{
-		return convertPath( sourcePath.visVersion(), sourcePath, targetVersion );
-	}
-
 	std::optional<GmodPath> VIS::convertPath( VisVersion sourceVersion, const GmodPath& sourcePath,
 		VisVersion targetVersion )
 	{
 		return gmodVersioning().convertPath( sourceVersion, sourcePath, targetVersion );
+	}
+
+	//-------------------------------------------------------------------------
+	// Extended Conversion Methods
+	//-------------------------------------------------------------------------
+
+	std::optional<GmodNode> VIS::convertNode( const GmodNode& sourceNode, VisVersion targetVersion,
+		[[maybe_unused]] const GmodNode* sourceParent )
+	{
+		return convertNode( sourceNode.visVersion(), sourceNode, targetVersion );
+	}
+
+	std::optional<GmodPath> VIS::convertPath( const GmodPath& sourcePath, VisVersion targetVersion )
+	{
+		return convertPath( sourcePath.visVersion(), sourcePath, targetVersion );
 	}
 
 	std::optional<LocalIdBuilder> VIS::convertLocalId( const LocalIdBuilder& sourceLocalId,
@@ -277,6 +219,99 @@ namespace dnv::vista::sdk
 	{
 		return gmodVersioning().convertLocalId( sourceLocalId, targetVersion );
 	}
+
+	//-------------------------------------------------------------------------
+	// DTO Access Methods
+	//-------------------------------------------------------------------------
+
+	GmodDto VIS::gmodDto( VisVersion visVersion ) const
+	{
+		SPDLOG_INFO( "Getting GMOD DTO for version: {}",
+			VisVersionExtensions::toVersionString( visVersion ) );
+
+		return m_gmodDtoCache.getOrCreate( visVersion, [visVersion]() {
+			auto dto = loadGmodDto( visVersion );
+			if ( !dto )
+			{
+				SPDLOG_ERROR( "Failed to load GMOD DTO for version: {}",
+					VisVersionExtensions::toVersionString( visVersion ) );
+				throw std::runtime_error( "Failed to load GMOD DTO for version" );
+			}
+			return *dto;
+		} );
+	}
+
+	std::optional<GmodDto> VIS::loadGmodDto( VisVersion visVersion )
+	{
+		SPDLOG_INFO( "Loading GMOD DTO from resources for version: {}",
+			VisVersionExtensions::toVersionString( visVersion ) );
+
+		return EmbeddedResource::gmod( VisVersionExtensions::toVersionString( visVersion ) );
+	}
+
+	std::unordered_map<std::string, GmodVersioningDto> VIS::gmodVersioningDto()
+	{
+		SPDLOG_INFO( "Getting GMOD versioning DTO" );
+
+		return m_gmodVersioningDtoCache.getOrCreate( m_versioning, []() {
+			auto dto = EmbeddedResource::gmodVersioning();
+			if ( !dto )
+			{
+				SPDLOG_ERROR( "Failed to load GMOD versioning data" );
+				throw std::runtime_error( "Failed to load GMOD versioning data" );
+			}
+			return *dto;
+		} );
+	}
+
+	GmodVersioning VIS::gmodVersioning()
+	{
+		SPDLOG_INFO( "Getting GMOD versioning" );
+
+		return m_gmodVersioningCache.getOrCreate( m_versioning, [this]() {
+			auto dto = gmodVersioningDto();
+			SPDLOG_INFO( "Successfully loaded GMOD versioning data with {} entries", dto.size() );
+			return GmodVersioning( dto );
+		} );
+	}
+
+	CodebooksDto VIS::codebooksDto( VisVersion visVersion )
+	{
+		SPDLOG_INFO( "Getting codebooks DTO for version: {}",
+			VisVersionExtensions::toVersionString( visVersion ) );
+
+		return m_codebooksDtoCache.getOrCreate( visVersion, [visVersion]() {
+			auto dto = EmbeddedResource::codebooks( VisVersionExtensions::toVersionString( visVersion ) );
+			if ( !dto )
+			{
+				SPDLOG_ERROR( "Failed to load codebooks DTO for version: {}",
+					VisVersionExtensions::toVersionString( visVersion ) );
+				throw std::runtime_error( "Failed to load codebooks DTO" );
+			}
+			return *dto;
+		} );
+	}
+
+	LocationsDto VIS::locationsDto( VisVersion visVersion )
+	{
+		SPDLOG_INFO( "Getting locations DTO for version: {}",
+			VisVersionExtensions::toVersionString( visVersion ) );
+
+		return m_locationsDtoCache.getOrCreate( visVersion, [visVersion]() {
+			auto dto = EmbeddedResource::locations( VisVersionExtensions::toVersionString( visVersion ) );
+			if ( !dto )
+			{
+				SPDLOG_ERROR( "Failed to load locations DTO for version: {}",
+					VisVersionExtensions::toVersionString( visVersion ) );
+				throw std::runtime_error( "Failed to load locations DTO" );
+			}
+			return *dto;
+		} );
+	}
+
+	//-------------------------------------------------------------------------
+	// ISO String Validation Methods
+	//-------------------------------------------------------------------------
 
 	bool VIS::matchISOLocalIdString( const std::string& value )
 	{
@@ -365,6 +400,7 @@ namespace dnv::vista::sdk
 		std::string str = builder.str();
 		return isISOString( std::string_view( str ) );
 	}
+
 	bool VIS::isISOLocalIdString( const std::string& value )
 	{
 		SPDLOG_DEBUG( "Checking if string is ISO local ID compliant: '{}'", value );
