@@ -1,3 +1,15 @@
+/**
+ * @file GmodNode.h
+ * @brief Generic Model (GMOD) node and metadata classes
+ *
+ * This file defines the GmodNode and GmodNodeMetadata classes which represent
+ * the fundamental building blocks of the Generic Product Model as defined in
+ * ISO 19848. These classes provide the node structure, relationships, and
+ * type classification used throughout the VISTA SDK.
+ *
+ * @see ISO 19848:2018 - Ships and marine technology - Standard data for shipboard machinery and equipment
+ */
+
 #pragma once
 
 #include "GmodDto.h"
@@ -5,8 +17,13 @@
 
 namespace dnv::vista::sdk
 {
+	//-------------------------------------------------------------------
+	// Forward declarations
+	//-------------------------------------------------------------------
+
 	enum class VisVersion;
 	class ParsingErrors;
+	class Gmod;
 
 	/**
 	 * @brief Metadata for a GMOD (Generic Product Model) node
@@ -18,7 +35,7 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Constructors
+		// Construction / Destruction
 		//-------------------------------------------------------------------
 
 		/**
@@ -71,10 +88,6 @@ namespace dnv::vista::sdk
 		 */
 		const std::string& name() const;
 
-		//-------------------------------------------------------------------
-		// Optional Property Accessors
-		//-------------------------------------------------------------------
-
 		/**
 		 * @brief Get the common name of the node
 		 * @return Optional reference to the common name
@@ -124,15 +137,36 @@ namespace dnv::vista::sdk
 		bool operator!=( const GmodNodeMetadata& other ) const;
 
 	private:
-		std::string m_category;												  ///< Category classification
-		std::string m_type;													  ///< Type classification
-		std::string m_name;													  ///< Human-readable name
-		std::optional<std::string> m_commonName;							  ///< Optional common name/alias
-		std::optional<std::string> m_definition;							  ///< Optional detailed definition
-		std::optional<std::string> m_commonDefinition;						  ///< Optional common definition
-		std::optional<bool> m_installSubstructure;							  ///< Optional installation flag
-		std::unordered_map<std::string, std::string> m_normalAssignmentNames; ///< Assignment name mapping
-		std::string m_fullType;												  ///< Combined category and type
+		//-------------------------------------------------------------------
+		// Private Member Variables
+		//-------------------------------------------------------------------
+
+		/** @brief Category classification */
+		std::string m_category;
+
+		/** @brief Type classification */
+		std::string m_type;
+
+		/** @brief Human-readable name */
+		std::string m_name;
+
+		/** @brief Optional common name/alias */
+		std::optional<std::string> m_commonName;
+
+		/** @brief Optional detailed definition */
+		std::optional<std::string> m_definition;
+
+		/** @brief Optional common definition */
+		std::optional<std::string> m_commonDefinition;
+
+		/** @brief Optional installation flag */
+		std::optional<bool> m_installSubstructure;
+
+		/** @brief Assignment name mapping */
+		std::unordered_map<std::string, std::string> m_normalAssignmentNames;
+
+		/** @brief Combined category and type */
+		std::string m_fullType;
 	};
 
 	/**
@@ -146,15 +180,12 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//-------------------------------------------------------------------
-		// Constructors & Destructor
+		// Construction / Destruction
 		//-------------------------------------------------------------------
 
-		/**
-		 * @brief Default constructor
-		 *
-		 * Creates an empty node with default values and no relationships
-		 */
 		GmodNode();
+
+		GmodNode( const GmodNode& other, bool b );
 
 		/**
 		 * @brief Construct from DTO
@@ -165,27 +196,33 @@ namespace dnv::vista::sdk
 		GmodNode( VisVersion version, const GmodNodeDto& dto );
 
 		/**
-		 * @brief Copy constructor
+		 * @brief Copy constructor (deleted)
+		 *
+		 * Copying GmodNodes with their raw pointers to other nodes is unsafe
+		 * and would violate the immutability guarantees of the node graph.
 		 */
-		GmodNode( const GmodNode& );
+		GmodNode( const GmodNode& ) = default;
 
 		/**
-		 * @brief Copy assignment operator (default)
+		 * @brief Copy assignment operator (deleted)
+		 *
+		 * Copying GmodNodes with their raw pointers to other nodes is unsafe
+		 * and would violate the immutability guarantees of the node graph.
 		 */
 		GmodNode& operator=( const GmodNode& ) = default;
 
 		/**
-		 * @brief Move constructor (default)
+		 * @brief Move constructor
 		 */
-		GmodNode( GmodNode&& ) noexcept = default;
+		GmodNode( GmodNode&& ) noexcept;
 
 		/**
-		 * @brief Move assignment operator (default)
+		 * @brief Move assignment operator
 		 */
 		GmodNode& operator=( GmodNode&& ) noexcept = default;
 
 		/**
-		 * @brief Destructor (default)
+		 * @brief Destructor
 		 */
 		~GmodNode() = default;
 
@@ -216,6 +253,12 @@ namespace dnv::vista::sdk
 		 * @return Reference to the metadata
 		 */
 		const GmodNodeMetadata& metadata() const;
+
+		/**
+		 * @brief Calculate a hash code for this GmodNode.
+		 * @return A size_t hash code value.
+		 */
+		[[nodiscard]] size_t hashCode() const noexcept;
 
 		//-------------------------------------------------------------------
 		// Relationship Accessors
@@ -367,7 +410,7 @@ namespace dnv::vista::sdk
 		bool isRoot() const;
 
 		//-------------------------------------------------------------------
-		// Node Relationship Methods
+		// Node Relationship Query Methods
 		//-------------------------------------------------------------------
 
 		/**
@@ -386,21 +429,19 @@ namespace dnv::vista::sdk
 		 */
 		bool isChild( const std::string& code ) const;
 
-		/**
-		 * @brief Add a child node
-		 * @param child Pointer to the child node to add
-		 */
-		void addChild( GmodNode* child );
-
-		/**
-		 * @brief Add a parent node
-		 * @param parent Pointer to the parent node to add
-		 */
-		void addParent( GmodNode* parent );
-
 		//-------------------------------------------------------------------
 		// Operators
 		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Equality comparison method (explicit)
+		 *
+		 * Nodes are considered equal if they have the same code and location
+		 *
+		 * @param other The node to compare with
+		 * @return True if nodes are equal
+		 */
+		[[nodiscard]] bool equals( const GmodNode& other ) const;
 
 		/**
 		 * @brief Equality comparison operator
@@ -436,6 +477,22 @@ namespace dnv::vista::sdk
 		 */
 		void toString( std::stringstream& builder ) const;
 
+		//-------------------------------------------------------------------
+		// Relationship Management Methods
+		//-------------------------------------------------------------------
+
+		/**
+		 * @brief Add a child node
+		 * @param child Pointer to the child node to add
+		 */
+		void addChild( GmodNode* child );
+
+		/**
+		 * @brief Add a parent node
+		 * @param parent Pointer to the parent node to add
+		 */
+		void addParent( GmodNode* parent );
+
 		/**
 		 * @brief Trim excess capacity and build child code index
 		 *
@@ -443,13 +500,29 @@ namespace dnv::vista::sdk
 		 */
 		void trim();
 
-	private:
-		std::string m_code;							   ///< Unique identifier code
-		std::optional<Location> m_location;			   ///< Optional location information
-		VisVersion m_visVersion;					   ///< VIS version of this node
-		GmodNodeMetadata m_metadata;				   ///< Node metadata
-		std::vector<GmodNode*> m_children;			   ///< Child nodes
-		std::vector<GmodNode*> m_parents;			   ///< Parent nodes
-		std::unordered_set<std::string> m_childrenSet; ///< Set of child codes for fast lookups
+		//-------------------------------------------------------------------
+		// Member Variables
+		//-------------------------------------------------------------------
+
+		/** @brief Unique identifier code */
+		std::string m_code;
+
+		/** @brief Optional location information */
+		std::optional<Location> m_location;
+
+		/** @brief VIS version of this node */
+		VisVersion m_visVersion;
+
+		/** @brief Node metadata */
+		GmodNodeMetadata m_metadata;
+
+		/** @brief Child nodes */
+		std::vector<GmodNode*> m_children;
+
+		/** @brief Parent nodes */
+		std::vector<GmodNode*> m_parents;
+
+		/** @brief Set of child codes for fast lookups */
+		std::unordered_set<std::string> m_childrenSet;
 	};
 }

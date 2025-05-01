@@ -1,3 +1,8 @@
+/**
+ * @file LocalId.cpp
+ * @brief Implementation of the LocalId class
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/LocalId.h"
@@ -20,129 +25,24 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------------
 
 	LocalId::LocalId( const LocalIdBuilder& builder )
-		: m_builder( builder )
+		: m_builder( std::make_shared<LocalIdBuilder>( builder ) )
 	{
-		if ( m_builder.isEmpty() )
+		SPDLOG_INFO( "Constructing LocalId from builder" );
+
+		if ( m_builder->isEmpty() )
 		{
 			SPDLOG_ERROR( "LocalId cannot be constructed from empty LocalIdBuilder" );
 			throw std::invalid_argument( "LocalId cannot be constructed from empty LocalIdBuilder" );
 		}
-		if ( !m_builder.isValid() )
+
+		if ( !m_builder->isValid() )
 		{
 			SPDLOG_ERROR( "LocalId cannot be constructed from invalid LocalIdBuilder" );
 			throw std::invalid_argument( "LocalId cannot be constructed from invalid LocalIdBuilder" );
 		}
-	}
 
-	LocalId::LocalId( LocalId&& other ) noexcept
-		: m_builder( std::move( other.m_builder ) )
-	{
-	}
-
-	LocalId& LocalId::operator=( LocalId&& other ) noexcept
-	{
-		if ( this != &other )
-		{
-			m_builder = std::move( other.m_builder );
-		}
-		return *this;
-	}
-
-	//-------------------------------------------------------------------------
-	// ILocalId Interface Implementation
-	//-------------------------------------------------------------------------
-
-	VisVersion LocalId::visVersion() const
-	{
-		return *m_builder.visVersion();
-	}
-
-	bool LocalId::isVerboseMode() const
-	{
-		return m_builder.isVerboseMode();
-	}
-
-	const GmodPath& LocalId::primaryItem() const
-	{
-		if ( m_builder.primaryItem().length() == 0 )
-		{
-			SPDLOG_ERROR( "Attempted to access unset primary item" );
-			throw std::runtime_error( "Primary item is not set" );
-		}
-		return m_builder.primaryItem();
-	}
-
-	std::optional<GmodPath> LocalId::secondaryItem() const
-	{
-		return m_builder.secondaryItem();
-	}
-
-	bool LocalId::hasCustomTag() const
-	{
-		return m_builder.hasCustomTag();
-	}
-
-	std::vector<MetadataTag> LocalId::metadataTags() const
-	{
-		return m_builder.metadataTags();
-	}
-
-	std::string LocalId::toString() const
-	{
-		SPDLOG_INFO( "Converting LocalId to string: primaryItem={}, hasSecondary={}",
-			m_builder.primaryItem().toString(),
-			m_builder.secondaryItem().has_value() );
-
-		return m_builder.toString();
-	}
-
-	bool LocalId::equals( const LocalId& other ) const
-	{
-		return m_builder == other.m_builder;
-	}
-
-	//-------------------------------------------------------------------------
-	// Metadata Tag Accessors
-	//-------------------------------------------------------------------------
-
-	std::optional<MetadataTag> LocalId::quantity() const
-	{
-		return m_builder.quantity();
-	}
-
-	std::optional<MetadataTag> LocalId::content() const
-	{
-		return m_builder.content();
-	}
-
-	std::optional<MetadataTag> LocalId::calculation() const
-	{
-		return m_builder.calculation();
-	}
-
-	std::optional<MetadataTag> LocalId::state() const
-	{
-		return m_builder.state();
-	}
-
-	std::optional<MetadataTag> LocalId::command() const
-	{
-		return m_builder.command();
-	}
-
-	std::optional<MetadataTag> LocalId::type() const
-	{
-		return m_builder.type();
-	}
-
-	std::optional<MetadataTag> LocalId::position() const
-	{
-		return m_builder.position();
-	}
-
-	std::optional<MetadataTag> LocalId::detail() const
-	{
-		return m_builder.detail();
+		SPDLOG_INFO( "LocalId constructed successfully: primaryItem={}",
+			m_builder->primaryItem().toString() );
 	}
 
 	//-------------------------------------------------------------------------
@@ -151,7 +51,143 @@ namespace dnv::vista::sdk
 
 	const LocalIdBuilder& LocalId::builder() const
 	{
-		return m_builder;
+		return *m_builder;
+	}
+
+	//-------------------------------------------------------------------------
+	// ILocalId Interface Implementation
+	//-------------------------------------------------------------------------
+
+	VisVersion LocalId::visVersion() const
+	{
+		if ( !m_builder->visVersion().has_value() )
+		{
+			SPDLOG_ERROR( "Attempted to access unset VIS version" );
+			throw std::runtime_error( "VIS version is not set" );
+		}
+
+		return *m_builder->visVersion();
+	}
+
+	bool LocalId::isVerboseMode() const
+	{
+		return m_builder->isVerboseMode();
+	}
+
+	const GmodPath& LocalId::primaryItem() const
+	{
+		if ( m_builder->primaryItem().length() == 0 )
+		{
+			SPDLOG_ERROR( "Attempted to access unset primary item" );
+			throw std::runtime_error( "Primary item is not set" );
+		}
+
+		return m_builder->primaryItem();
+	}
+
+	const std::optional<GmodPath>& LocalId::secondaryItem() const
+	{
+		return m_builder->secondaryItem();
+	}
+
+	bool LocalId::hasCustomTag() const
+	{
+		return m_builder->hasCustomTag();
+	}
+
+	const std::vector<MetadataTag>& LocalId::metadataTags() const
+	{
+		return m_builder->metadataTags();
+	}
+
+	//-------------------------------------------------------------------------
+	// Metadata Tag Accessors
+	//-------------------------------------------------------------------------
+
+	const std::optional<MetadataTag>& LocalId::quantity() const
+	{
+		return m_builder->quantity();
+	}
+
+	const std::optional<MetadataTag>& LocalId::content() const
+	{
+		return m_builder->content();
+	}
+
+	const std::optional<MetadataTag>& LocalId::calculation() const
+	{
+		return m_builder->calculation();
+	}
+
+	const std::optional<MetadataTag>& LocalId::state() const
+	{
+		return m_builder->state();
+	}
+
+	const std::optional<MetadataTag>& LocalId::command() const
+	{
+		return m_builder->command();
+	}
+
+	const std::optional<MetadataTag>& LocalId::type() const
+	{
+		return m_builder->type();
+	}
+
+	const std::optional<MetadataTag>& LocalId::position() const
+	{
+		return m_builder->position();
+	}
+
+	const std::optional<MetadataTag>& LocalId::detail() const
+	{
+		return m_builder->detail();
+	}
+
+	//-------------------------------------------------------------------------
+	// Object Overrides and Operators
+	//-------------------------------------------------------------------------
+
+	std::string LocalId::toString() const
+	{
+		SPDLOG_INFO( "Converting LocalId to string" );
+		return m_builder->toString();
+	}
+
+	bool LocalId::equals( const LocalId& other ) const
+	{
+		return *m_builder == *other.m_builder;
+	}
+
+	bool LocalId::operator==( const LocalId& other ) const noexcept
+	{
+		try
+		{
+			return equals( other );
+		}
+		catch ( const std::exception& e )
+		{
+			SPDLOG_ERROR( "Exception in operator==: {}", e.what() );
+			return false;
+		}
+	}
+
+	bool LocalId::operator!=( const LocalId& other ) const noexcept
+	{
+		try
+		{
+			return !equals( other );
+		}
+		catch ( const std::exception& e )
+		{
+			SPDLOG_ERROR( "Exception in operator!=: {}", e.what() );
+			return true;
+		}
+	}
+
+	size_t LocalId::hashCode() const
+	{
+		return m_builder->hashCode();
 	}
 
 	//-------------------------------------------------------------------------
@@ -161,53 +197,38 @@ namespace dnv::vista::sdk
 	LocalId LocalId::parse( const std::string& localIdStr )
 	{
 		SPDLOG_INFO( "Parsing LocalId from string: {}", localIdStr );
-		return LocalIdBuilder::parse( localIdStr ).build();
+
+		LocalIdBuilder builder = LocalIdBuilder::parse( localIdStr );
+		return LocalId( builder );
 	}
 
 	bool LocalId::tryParse( const std::string& localIdStr, ParsingErrors& errors, std::optional<LocalId>& localId )
 	{
-		SPDLOG_TRACE( "Attempting to parse LocalId from: {}", localIdStr );
+		SPDLOG_INFO( "Attempting to parse LocalId from: '{}'", localIdStr );
 
 		std::optional<LocalIdBuilder> localIdBuilder;
 		if ( !LocalIdBuilder::tryParse( localIdStr, errors, localIdBuilder ) )
 		{
-			SPDLOG_ERROR( "LocalId parsing failed" );
+			SPDLOG_ERROR( "LocalId parsing failed with {} errors", std::distance( errors.begin(), errors.end() ) );
+
 			localId = std::nullopt;
 			return false;
 		}
 
-		SPDLOG_DEBUG( "LocalId parsing succeeded, building final LocalId" );
+		SPDLOG_DEBUG( "LocalId parsing succeeded, constructing final LocalId" );
 		try
 		{
-			localId.emplace( std::move( localIdBuilder->build() ) );
+			localId = LocalId( *localIdBuilder );
+			SPDLOG_INFO( "LocalId successfully constructed from parsed string" );
 			return true;
 		}
 		catch ( const std::exception& e )
 		{
-			SPDLOG_ERROR( "Failed to build LocalId after parsing: {}", e.what() );
-			errors.addError( "BuildError", e.what() );
+			SPDLOG_ERROR( "Failed to construct LocalId after parsing: {}", e.what() );
+			errors.addError( "ConstructionError", e.what() );
 			localId = std::nullopt;
 			return false;
 		}
-	}
-
-	//-------------------------------------------------------------------------
-	// Operators and Hash Code
-	//-------------------------------------------------------------------------
-
-	bool LocalId::operator==( const LocalId& other ) const noexcept
-	{
-		return equals( other );
-	}
-
-	bool LocalId::operator!=( const LocalId& other ) const noexcept
-	{
-		return !equals( other );
-	}
-
-	size_t LocalId::hashCode() const
-	{
-		return m_builder.hashCode();
 	}
 
 	//-------------------------------------------------------------------------

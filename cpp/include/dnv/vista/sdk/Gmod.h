@@ -72,8 +72,11 @@ namespace dnv::vista::sdk
 		// Private Members
 		//-------------------------------------------------------------------
 
-		std::vector<const GmodNode*> m_nodes;				///< Parent node pointers in traversal order
-		std::unordered_map<std::string, int> m_occurrences; ///< Node occurrence counter
+		/** @brief Parent node pointers in traversal order. */
+		std::vector<const GmodNode*> m_nodes;
+
+		/** @brief Node occurrence counter. */
+		std::unordered_map<std::string, int> m_occurrences;
 	};
 
 	/**
@@ -96,9 +99,9 @@ namespace dnv::vista::sdk
 		 */
 		enum class TraversalHandlerResult
 		{
-			Stop,		 ///< Stop traversal completely
-			SkipSubtree, ///< Skip traversing children of current node
-			Continue	 ///< Continue normal traversal
+			Stop,
+			SkipSubtree,
+			Continue
 		};
 
 		/**
@@ -256,12 +259,12 @@ namespace dnv::vista::sdk
 		bool tryGetNode( const std::string& code, GmodNode& node ) const;
 
 		/**
-		 * @brief Try to find a node by code (string_view version)
-		 * @param code The node code to find
-		 * @param[out] node The found node, if successful
-		 * @return true if node was found, false otherwise
+		 * @brief Tries to get a pointer to the node associated with the specified code.
+		 * @param code The code of the node to find.
+		 * @param outNodePtr Reference to a pointer that will be set to the address of the found node.
+		 * @return true if the node was found, false otherwise.
 		 */
-		bool tryGetNode( std::string_view code, GmodNode& node ) const;
+		bool tryGetNode( std::string_view code, const GmodNode*& outNodePtr ) const;
 
 		/**
 		 * @brief Check if the GMOD node dictionary is empty
@@ -294,7 +297,7 @@ namespace dnv::vista::sdk
 		 * @param[out] path The parsed path, if successful
 		 * @return true if parsing succeeded, false otherwise
 		 */
-		bool tryParsePath( const std::string& item, std::optional<GmodPath>& path ) const;
+		bool tryParsePath( const std::string& item, GmodPath& path ) const;
 
 		/**
 		 * @brief Parse a full path string
@@ -480,11 +483,11 @@ namespace dnv::vista::sdk
 		 */
 		struct TraversalContext final
 		{
-			Parents parents;				///< Parent node management
-			const TraverseHandler& handler; ///< Handler function for traversal
-			int maxTraversalOccurrence;		///< Maximum node occurrences allowed
-			size_t nodesVisited = 0;		///< Counter for total nodes visited
-			size_t maxNodes;				///< Maximum nodes to visit
+			Parents parents;
+			const TraverseHandler& handler;
+			int maxTraversalOccurrence;
+			size_t nodesVisited = 0;
+			size_t maxNodes;
 
 			/**
 			 * @brief Construct a traversal context
@@ -504,15 +507,15 @@ namespace dnv::vista::sdk
 		template <typename TState>
 		struct StatefulTraversalContext
 		{
-			Parents parents;							///< Parent node management
-			TState& state;								///< User-defined state
-			const std::function<TraversalHandlerResult( ///< Handler function
+			Parents parents;
+			TState& state;
+			const std::function<TraversalHandlerResult(
 				TState&,
 				const std::vector<GmodNode>&,
 				const GmodNode& )>& handler;
-			int maxTraversalOccurrence; ///< Maximum node occurrences allowed
-			size_t nodesVisited = 0;	///< Counter for total nodes visited
-			size_t maxNodes;			///< Maximum nodes to visit
+			int maxTraversalOccurrence;
+			size_t nodesVisited = 0;
+			size_t maxNodes;
 
 			/**
 			 * @brief Construct a stateful traversal context

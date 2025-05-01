@@ -71,30 +71,34 @@ namespace dnv::vista::sdk
 
 		validateSourceAndTargetVersions( sourceVersion, targetVersion );
 
-		VisVersion source = sourceVersion;
-		GmodNode node = sourceNode;
+		VisVersion currentVersion = sourceVersion;
+		std::optional<GmodNode> currentNode = sourceNode;
 
-		while ( source < targetVersion )
+		while ( currentVersion < targetVersion )
 		{
-			VisVersion next = static_cast<VisVersion>( static_cast<int>( source ) + 1 );
-			node = convertNodeInternal( source, node, next );
+			VisVersion nextVersion = static_cast<VisVersion>( static_cast<int>( currentVersion ) + 1 );
 
-			if ( node.code().empty() )
+			currentNode = convertNodeInternal( currentVersion, *currentNode, nextVersion );
+
+			if ( !currentNode.has_value() )
 			{
-				SPDLOG_ERROR( "Node conversion failed from {} to {}",
-					static_cast<int>( source ),
-					static_cast<int>( next ) );
+				SPDLOG_ERROR( "Node conversion failed going from version {} to {}",
+					static_cast<int>( currentVersion ),
+					static_cast<int>( nextVersion ) );
 				return std::nullopt;
 			}
 
-			source = next;
+			currentVersion = nextVersion;
 		}
 
-		SPDLOG_INFO( "Node successfully converted to {}", node.code() );
-		return node;
+		if ( currentNode.has_value() )
+		{
+			SPDLOG_INFO( "Node successfully converted to {}", currentNode->code() );
+		}
+		return currentNode;
 	}
 
-	std::optional<GmodPath> GmodVersioning::convertPath( VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const
+	GmodPath GmodVersioning::convertPath( VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const
 	{
 		SPDLOG_INFO( "Converting path with end node {} from version {} to {}",
 			sourcePath.node().code(),
@@ -107,13 +111,13 @@ namespace dnv::vista::sdk
 		if ( !targetEndNode.has_value() )
 		{
 			SPDLOG_ERROR( "Failed to convert end node: {}", sourcePath.node().code() );
-			return std::nullopt;
+			return GmodPath{};
 		}
 
 		if ( targetEndNode->isRoot() )
 		{
 			SPDLOG_INFO( "End node is a root node, returning simple path" );
-			return GmodPath( {}, *targetEndNode, true );
+			return GmodPath( std::vector<GmodNode>{}, targetEndNode.value(), targetEndNode.value().visVersion(), true );
 		}
 
 		const auto& targetGmod = VIS::instance().gmod( targetVersion );
@@ -125,7 +129,7 @@ namespace dnv::vista::sdk
 			if ( !convertedNode.has_value() )
 			{
 				SPDLOG_ERROR( "Failed to convert path node: {}", pathNode.second.get().code() );
-				return std::nullopt;
+				return GmodPath{};
 			}
 
 			qualifyingNodes.emplace_back( pathNode.second, *convertedNode );
@@ -150,7 +154,7 @@ namespace dnv::vista::sdk
 		if ( GmodPath::isValid( potentialParents, *targetEndNode ) )
 		{
 			SPDLOG_INFO( "Found valid direct path" );
-			return GmodPath( potentialParents, *targetEndNode, true );
+			return GmodPath( potentialParents, targetEndNode.value(), targetEndNode->visVersion(), true );
 		}
 
 		auto addToPath = []( const Gmod& targetGmod, std::vector<GmodNode>& path, const GmodNode& node ) -> bool {
@@ -361,7 +365,7 @@ namespace dnv::vista::sdk
 		potentialParents = std::vector<GmodNode>( path.begin(), path.end() - 1 );
 		targetEndNode = path.back();
 
-		int missingLinkAt = -1;
+		size_t missingLinkAt = std::numeric_limits<size_t>::max();
 		if ( !GmodPath::isValid( potentialParents, *targetEndNode, missingLinkAt ) )
 		{
 			SPDLOG_ERROR( "Failed to create a valid path. Missing link at: {}", missingLinkAt );
@@ -370,7 +374,7 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_INFO( "Successfully created path with {} parents", potentialParents.size() );
-		return GmodPath( potentialParents, *targetEndNode );
+		return GmodPath( potentialParents, targetEndNode.value(), targetEndNode->visVersion(), true );
 	}
 
 	std::optional<LocalIdBuilder> GmodVersioning::convertLocalId(
@@ -384,7 +388,7 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "Cannot convert local ID without a specific VIS version" );
 		}
 
-		std::optional<GmodPath> primaryItem;
+		GmodPath primaryItem;
 		if ( sourceLocalId.primaryItem().length() > 0 )
 		{
 			SPDLOG_INFO( "Converting primary item" );
@@ -393,18 +397,10 @@ namespace dnv::vista::sdk
 				sourceLocalId.primaryItem(),
 				targetVersion );
 
-			if ( convertedPath )
-			{
-				primaryItem = std::move( convertedPath );
-			}
-			else
-			{
-				SPDLOG_ERROR( "Failed to convert primary item" );
-				return std::nullopt;
-			}
+			primaryItem = convertedPath;
 		}
 
-		std::optional<GmodPath> secondaryItem;
+		GmodPath secondaryItem;
 		if ( sourceLocalId.secondaryItem().has_value() )
 		{
 			SPDLOG_INFO( "Converting secondary item" );
@@ -413,15 +409,7 @@ namespace dnv::vista::sdk
 				sourceLocalId.secondaryItem().value(),
 				targetVersion );
 
-			if ( convertedPath )
-			{
-				secondaryItem = std::move( convertedPath );
-			}
-			else
-			{
-				SPDLOG_ERROR( "Failed to convert secondary item" );
-				return std::nullopt;
-			}
+			secondaryItem = convertedPath;
 		}
 
 		SPDLOG_INFO( "Building converted LocalIdBuilder" );
@@ -488,7 +476,7 @@ namespace dnv::vista::sdk
 	// Private Helper Methods
 	//-------------------------------------------------------------------------
 
-	GmodNode GmodVersioning::convertNodeInternal(
+	std::optional<GmodNode> GmodVersioning::convertNodeInternal(
 		VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) const
 	{
 		SPDLOG_INFO( "Converting node {} internally from {} to {}",
@@ -514,32 +502,45 @@ namespace dnv::vista::sdk
 			}
 		}
 
-		GmodNode targetNode;
-		if ( !targetGmod.tryGetNode( nextCode, targetNode ) )
+		const GmodNode* targetNodePtr = nullptr;
+		if ( !targetGmod.tryGetNode( nextCode, targetNodePtr ) )
 		{
 			SPDLOG_ERROR( "Failed to find target node with code {}", nextCode );
-			return GmodNode();
+			return std::nullopt;
 		}
 
-		GmodNode result = targetNode;
+		GmodNode result = *targetNodePtr;
 
 		if ( sourceNode.location().has_value() )
 		{
-			SPDLOG_INFO( "Attempting to carry over location information" );
+			SPDLOG_INFO( "Attempting to carry over location information for node {}", result.code() );
+			const auto& sourceLocation = *sourceNode.location();
+
 			if ( result.isIndividualizable( false, true ) )
 			{
-				result = result.withLocation( *sourceNode.location() );
+				GmodNode resultWithLocation = result.withLocation( sourceLocation );
 
-				if ( result.location() != sourceNode.location() )
+				if ( resultWithLocation.location().has_value() && resultWithLocation.location() == sourceLocation )
 				{
-					SPDLOG_ERROR( "Failed to set location for node {}", sourceNode.code() );
-					throw std::runtime_error( "Failed to set location" );
+					result = resultWithLocation;
+					SPDLOG_INFO( "Successfully applied location '{}' to node '{}'", sourceLocation.value(), result.code() );
+				}
+				else
+				{
+					if ( !resultWithLocation.location().has_value() )
+					{
+						SPDLOG_WARN( "Location '{}' could not be applied to target node '{}'. Continuing without location.", sourceLocation.value(), result.code() );
+					}
+					else
+					{
+						SPDLOG_WARN( "Applying location '{}' resulted in different location '{}' on target node '{}'. Continuing with new location.", sourceLocation.value(), resultWithLocation.location()->value(), result.code() );
+						result = resultWithLocation;
+					}
 				}
 			}
 			else
 			{
-				SPDLOG_ERROR( "Failed to set location for node {} (not individualizable)", sourceNode.code() );
-				throw std::runtime_error( "Failed to set location" );
+				SPDLOG_WARN( "Target node {} is not individualizable, cannot carry over location {}", result.code(), sourceLocation.value() );
 			}
 		}
 

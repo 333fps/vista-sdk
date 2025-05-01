@@ -126,19 +126,19 @@ namespace dnv::vista::sdk::tests
 		auto [vis, gmod] = visAndGmod( input.visVersion );
 		auto codebooks = vis.codebooks( input.visVersion );
 
-		std::optional<GmodPath> primaryPath;
+		GmodPath primaryPath;
 		ASSERT_TRUE( gmod.tryParsePath( input.PrimaryItem, primaryPath ) );
-		ASSERT_TRUE( primaryPath.has_value() );
+		// ASSERT_TRUE( primaryPath.has_value() );
 
 		LocalIdBuilder builder = LocalIdBuilder::create( input.visVersion )
-									 .withPrimaryItem( *primaryPath )
+									 .withPrimaryItem( primaryPath )
 									 .withVerboseMode( input.Verbose );
 
 		if ( input.SecondaryItem.has_value() )
 		{
-			std::optional<GmodPath> secondaryPath;
+			GmodPath secondaryPath;
 			ASSERT_TRUE( gmod.tryParsePath( input.SecondaryItem.value(), secondaryPath ) );
-			builder = builder.withSecondaryItem( *secondaryPath );
+			builder = builder.withSecondaryItem( secondaryPath );
 		}
 
 		if ( input.Quantity.has_value() )
@@ -168,21 +168,21 @@ namespace dnv::vista::sdk::tests
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 		auto codebooks = vis.codebooks( VisVersion::v3_4a );
 
-		std::optional<GmodPath> primaryPath;
-		std::optional<GmodPath> secondaryPath;
+		GmodPath primaryPath;
+		GmodPath secondaryPath;
 
 		ASSERT_TRUE( gmod.tryParsePath( "411.1/C101.31-2", primaryPath ) );
 		ASSERT_TRUE( gmod.tryParsePath( "411.1/C101.31-5", secondaryPath ) );
 
-		ASSERT_TRUE( primaryPath.has_value() );
-		ASSERT_TRUE( secondaryPath.has_value() );
+		// ASSERT_TRUE( primaryPath.has_value() );
+		// ASSERT_TRUE( secondaryPath.has_value() );
 
-		SPDLOG_INFO( "Primary: {}", primaryPath->toString() );
-		SPDLOG_INFO( "Secondary: {}", secondaryPath->toString() );
+		SPDLOG_INFO( "Primary: {}", primaryPath.toString() );
+		SPDLOG_INFO( "Secondary: {}", secondaryPath.toString() );
 
 		LocalIdBuilder localId = LocalIdBuilder::create( VisVersion::v3_4a )
-									 .withPrimaryItem( *primaryPath )
-									 .withSecondaryItem( *secondaryPath )
+									 .withPrimaryItem( primaryPath )
+									 .withSecondaryItem( secondaryPath )
 									 .withVerboseMode( false )
 									 .withQuantity( codebooks.codebook( CodebookName::Quantity ).createTag( "quantity" ) )
 									 .withContent( codebooks.codebook( CodebookName::Content ).createTag( "content" ) )
@@ -287,22 +287,22 @@ namespace dnv::vista::sdk::tests
 			auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 			auto codebooks = vis.codebooks( VisVersion::v3_4a );
 
-			std::optional<GmodPath> primaryPath;
+			GmodPath primaryPath;
 			ASSERT_TRUE( gmod.tryParsePath( input.PrimaryItem, primaryPath ) );
 
-			std::optional<GmodPath> secondaryPath;
+			GmodPath secondaryPath;
 			if ( input.SecondaryItem.has_value() )
 			{
 				ASSERT_TRUE( gmod.tryParsePath( input.SecondaryItem.value(), secondaryPath ) );
 			}
 
 			LocalIdBuilder localId = LocalIdBuilder::create( VisVersion::v3_4a )
-										 .withPrimaryItem( *primaryPath );
+										 .withPrimaryItem( primaryPath );
 
-			if ( secondaryPath.has_value() )
-			{
-				localId = localId.withSecondaryItem( *secondaryPath );
-			}
+			// if ( secondaryPath.has_value() )
+			//{
+			localId = localId.withSecondaryItem( secondaryPath );
+			//}
 
 			if ( input.Quantity.has_value() )
 			{

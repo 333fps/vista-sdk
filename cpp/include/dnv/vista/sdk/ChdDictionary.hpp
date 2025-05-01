@@ -72,17 +72,20 @@ namespace dnv::vista::sdk
 
 	template <typename TValue>
 	ChdDictionary<TValue>::ChdDictionary()
+		: m_table{}, m_seeds{}
 	{
+		SPDLOG_DEBUG( "Created empty CHD Dictionary (default constructor)" );
 	}
 
 	template <typename TValue>
-	ChdDictionary<TValue>::ChdDictionary( const std::vector<std::pair<std::string, TValue>>& items )
+	ChdDictionary<TValue>::ChdDictionary( std::vector<std::pair<std::string, TValue>> items )
+		: m_table{}, m_seeds{}
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 
 		if ( items.empty() )
 		{
-			SPDLOG_DEBUG( "Created empty CHD Dictionary" );
+			SPDLOG_DEBUG( "Created empty CHD Dictionary from empty input" );
 			return;
 		}
 
@@ -95,13 +98,10 @@ namespace dnv::vista::sdk
 
 		SPDLOG_INFO( "Building CHD dictionary with {} items, table size {}", items.size(), size );
 
-		m_table.reserve( size );
-		m_seeds.reserve( size );
-
 		auto hashBuckets{ std::vector<std::vector<std::pair<unsigned, uint32_t>>>( size ) };
 		for ( auto& bucket : hashBuckets )
 		{
-			bucket.reserve( 8 );
+			bucket.reserve( 4 );
 		}
 
 		for ( size_t i{ 0 }; i < items.size(); ++i )
@@ -109,30 +109,12 @@ namespace dnv::vista::sdk
 			const auto& key{ items[i].first };
 			auto hashValue{ hash( key ) };
 			auto index{ hashValue & ( size - 1 ) };
-			hashBuckets[index].push_back( { static_cast<int>( i + 1 ), hashValue } );
+			hashBuckets[index].emplace_back( static_cast<unsigned>( i + 1 ), hashValue );
 		}
 
 		std::sort( hashBuckets.begin(), hashBuckets.end(), []( const auto& a, const auto& b ) {
 			return a.size() > b.size();
 		} );
-
-		{
-			size_t collisionCount{ 0 };
-			size_t maxCollisions{ 0 };
-			size_t bucketsWithCollisions{ 0 };
-
-			for ( const auto& bucket : hashBuckets )
-			{
-				if ( bucket.size() > 1 )
-				{
-					++bucketsWithCollisions;
-					collisionCount += bucket.size() - 1;
-					maxCollisions = std::max( maxCollisions, bucket.size() );
-				}
-			}
-
-			SPDLOG_INFO( "CHD dictionary collision stats: {} items, {} total collisions, {} buckets with collisions, max collision chain: {}", items.size(), collisionCount, bucketsWithCollisions, maxCollisions );
-		}
 
 		auto indices{ std::vector<unsigned int>( size, 0 ) };
 		auto seeds{ std::vector<int>( size, 0 ) };
@@ -151,15 +133,12 @@ namespace dnv::vista::sdk
 				entries.clear();
 				bool seedValid{ true };
 
-				SPDLOG_TRACE( "Trying seed {} for bucket {}", seed, index );
-
 				for ( const auto& k : subKeys )
 				{
-					auto hash{ uint32_t{ internal::Hashing::seed( seed, k.second, size ) } };
-
-					if ( entries.find( hash ) == entries.end() && indices[hash] == 0 )
+					auto finalHash{ internal::Hashing::seed( seed, k.second, size ) };
+					if ( indices[finalHash] == 0 && entries.find( finalHash ) == entries.end() )
 					{
-						entries[hash] = k.first;
+						entries[finalHash] = k.first;
 					}
 					else
 					{
@@ -167,47 +146,47 @@ namespace dnv::vista::sdk
 						break;
 					}
 				}
-
 				if ( seedValid )
-				{
-					SPDLOG_TRACE( "Found valid seed {} for bucket {}", seed, index );
 					break;
-				}
 			}
 
-			for ( const auto& [hash, idx] : entries )
+			for ( const auto& [finalHash, itemIdx] : entries )
 			{
-				indices[hash] = idx;
+				indices[finalHash] = itemIdx;
 			}
-
 			seeds[subKeys[0].second & ( size - 1 )] = static_cast<int>( seed );
 		}
 
 		m_table.resize( size );
-		std::vector<size_t> free{};
+		std::vector<size_t> freeSlots;
+		freeSlots.reserve( size );
 
 		for ( size_t i{ 0 }; i < indices.size(); ++i )
 		{
 			if ( indices[i] == 0 )
 			{
-				free.push_back( i );
+				freeSlots.push_back( i );
 			}
 			else
 			{
-				--indices[i];
-				m_table[i] = items[indices[i]];
+				m_table[i] = std::move( items[indices[i] - 1] );
 			}
 		}
 
 		size_t freeIndex{ 0 };
-		for ( size_t i{ 0 }; index < hashBuckets.size() && hashBuckets[index].size() > 0; ++i, ++index )
+		for ( ; index < hashBuckets.size() && !hashBuckets[index].empty(); ++index )
 		{
 			const auto& k{ hashBuckets[index][0] };
-			if ( freeIndex < free.size() )
+			if ( freeIndex < freeSlots.size() )
 			{
-				auto slotIndex{ free[freeIndex++] };
-				m_table[slotIndex] = items[k.first - 1];
+				auto slotIndex{ freeSlots[freeIndex++] };
+				m_table[slotIndex] = std::move( items[k.first - 1] );
 				seeds[k.second & ( size - 1 )] = -static_cast<int>( slotIndex + 1 );
+			}
+			else
+			{
+				SPDLOG_ERROR( "Ran out of free slots!" );
+				break;
 			}
 		}
 
@@ -215,7 +194,6 @@ namespace dnv::vista::sdk
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration<double, std::milli>( end - start ).count();
-
 		SPDLOG_INFO( "CHD Dictionary construction complete: {} entries, {} seeds in {:.2f}ms", m_table.size(), m_seeds.size(), duration );
 
 		auto memoryUsage = sizeof( decltype( m_table )::value_type ) * m_table.capacity() + sizeof( int ) * m_seeds.capacity();
@@ -313,9 +291,10 @@ namespace dnv::vista::sdk
 	}
 
 	template <typename TValue>
-	bool ChdDictionary<TValue>::tryGetValue( std::string_view key, TValue* value ) const
+	bool ChdDictionary<TValue>::tryGetValue( std::string_view key, const TValue* outValue ) const
 	{
 		auto start = std::chrono::high_resolution_clock::now();
+		outValue = nullptr;
 
 		if ( key.empty() || m_table.empty() || m_seeds.empty() )
 		{
@@ -337,25 +316,35 @@ namespace dnv::vista::sdk
 		SPDLOG_TRACE( "Key: '{}', Hash: {}, Index: {}, Seed: {}", key, hashValue, index, seed );
 
 		const std::pair<std::string, TValue>* kvp{ nullptr };
+		size_t finalIndex = 0;
 		if ( seed < 0 )
 		{
-			kvp = &m_table[static_cast<size_t>( -seed - 1 )];
+			finalIndex = static_cast<size_t>( -seed - 1 );
+			if ( finalIndex >= m_table.size() )
+			{
+				SPDLOG_WARN( "Invalid negative seed index {} for key '{}'", finalIndex, key );
+				return false;
+			}
+			kvp = &m_table[finalIndex];
 		}
 		else
 		{
-			index = internal::Hashing::seed( static_cast<uint32_t>( seed ), hashValue, size );
-			kvp = &m_table[index];
+			finalIndex = internal::Hashing::seed( static_cast<uint32_t>( seed ), hashValue, size );
+			if ( finalIndex >= m_table.size() )
+			{
+				SPDLOG_WARN( "Invalid positive seed index {} for key '{}'", finalIndex, key );
+				return false;
+			}
+			kvp = &m_table[finalIndex];
 		}
 
 		if ( !stringsEqual( key, kvp->first ) )
 		{
+			SPDLOG_TRACE( "Key mismatch at index {}: expected '{}', found '{}'", finalIndex, key, kvp->first );
 			return false;
 		}
 
-		if ( value )
-		{
-			*value = kvp->second;
-		}
+		outValue = &kvp->second;
 
 		++s_lookupHits;
 

@@ -39,10 +39,10 @@ namespace dnv::vista::sdk
 		virtual ~ILocalId() = default;
 
 		/** @brief Delete copy constructor - interfaces shouldn't be copied */
-		ILocalId( const ILocalId& ) = delete;
+		ILocalId( const ILocalId& ) = default;
 
 		/** @brief Delete copy assignment - interfaces shouldn't be assigned */
-		ILocalId& operator=( const ILocalId& ) = delete;
+		ILocalId& operator=( const ILocalId& ) = default;
 
 		/** @brief Default move constructor */
 		ILocalId( ILocalId&& ) = default;
@@ -77,7 +77,7 @@ namespace dnv::vista::sdk
 		 * @brief Get the secondary item
 		 * @return The secondary item, if present
 		 */
-		virtual std::optional<GmodPath> secondaryItem() const = 0;
+		virtual const std::optional<GmodPath>& secondaryItem() const = 0;
 
 		//-------------------------------------------------------------------------
 		// Metadata Access
@@ -93,7 +93,7 @@ namespace dnv::vista::sdk
 		 * @brief Get all metadata tags
 		 * @return A constant reference to the vector of metadata tags
 		 */
-		virtual std::vector<MetadataTag> metadataTags() const = 0;
+		virtual const std::vector<MetadataTag>& metadataTags() const = 0;
 
 		//-------------------------------------------------------------------------
 		// Conversion and Comparison

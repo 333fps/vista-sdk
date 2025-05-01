@@ -222,10 +222,9 @@ TEST_F( GmodPathTest, Test_GmodPath_Does_Not_Individualize )
 	auto version = VisVersion::v3_7a;
 	auto gmod = vis->gmod( version );
 
-	std::optional<GmodPath> path;
+	GmodPath path;
 	bool parsed = gmod.tryParsePath( "500a-1", path );
 	ASSERT_FALSE( parsed );
-	ASSERT_FALSE( path.has_value() );
 }
 
 TEST_F( GmodPathTest, Test_ToFullPathString )
@@ -233,15 +232,15 @@ TEST_F( GmodPathTest, Test_ToFullPathString )
 	auto version = VisVersion::v3_7a;
 	auto gmod = vis->gmod( version );
 
-	std::optional<GmodPath> path1;
+	GmodPath path1;
 	ASSERT_TRUE( gmod.tryParsePath( "511.11-1/C101.663i-1/C663", path1 ) );
 	EXPECT_EQ( "VE/500a/510/511/511.1/511.1i-1/511.11-1/CS1/C101/C101.6/C101.66/C101.663/C101.663i-1/C663",
-		path1->toFullPathString() );
+		path1.toFullPathString() );
 
-	std::optional<GmodPath> path2;
+	GmodPath path2;
 	ASSERT_TRUE( gmod.tryParsePath( "846/G203.32-2/S110.2-1/E31", path2 ) );
 	EXPECT_EQ( "VE/800a/840/846/G203/G203.3-2/G203.32-2/S110/S110.2-1/CS1/E31",
-		path2->toFullPathString() );
+		path2.toFullPathString() );
 }
 
 INSTANTIATE_TEST_SUITE_P(

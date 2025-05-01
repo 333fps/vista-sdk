@@ -85,14 +85,17 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	Gmod::Gmod( VisVersion version, const GmodDto& dto )
-		: m_visVersion( version )
+		: m_visVersion{ version },
+		  m_rootNode{}
 	{
-		std::unordered_map<std::string, GmodNode> nodeMap;
+		std::unordered_map<std::string, GmodNode> tempNodeMap;
+		tempNodeMap.reserve( dto.items().size() );
 
 		for ( const auto& nodeDto : dto.items() )
 		{
-			GmodNode node( version, nodeDto );
-			nodeMap.emplace( nodeDto.code(), std::move( node ) );
+			tempNodeMap.emplace( std::piecewise_construct,
+				std::forward_as_tuple( nodeDto.code() ),
+				std::forward_as_tuple( version, nodeDto ) );
 		}
 
 		for ( const auto& relation : dto.relations() )
@@ -102,78 +105,99 @@ namespace dnv::vista::sdk
 				const std::string& parentCode = relation[0];
 				const std::string& childCode = relation[1];
 
-				auto parentIt = nodeMap.find( parentCode );
-				auto childIt = nodeMap.find( childCode );
+				auto parentIt = tempNodeMap.find( parentCode );
+				auto childIt = tempNodeMap.find( childCode );
 
-				if ( parentIt != nodeMap.end() && childIt != nodeMap.end() )
+				if ( parentIt != tempNodeMap.end() && childIt != tempNodeMap.end() )
 				{
 					parentIt->second.addChild( &childIt->second );
 					childIt->second.addParent( &parentIt->second );
 				}
+				else
+				{
+					if ( parentIt == tempNodeMap.end() )
+						SPDLOG_WARN( "Relation skipped: Parent node '{}' not found.", parentCode );
+					if ( childIt == tempNodeMap.end() )
+						SPDLOG_WARN( "Relation skipped: Child node '{}' not found.", childCode );
+				}
 			}
 		}
 
-		for ( auto& [code, node] : nodeMap )
+		for ( auto& [code, node] : tempNodeMap )
 		{
 			node.trim();
 		}
 
-		auto rootIt = nodeMap.find( "VE" );
-		if ( rootIt != nodeMap.end() )
+		auto rootIt = tempNodeMap.find( "VE" );
+		if ( rootIt != tempNodeMap.end() )
 		{
-			m_rootNode = rootIt->second;
+			m_rootNode = GmodNode( rootIt->second, true );
+		}
+		else
+		{
+			SPDLOG_WARN( "Root node 'VE' not found in GMOD data." );
 		}
 
 		std::vector<std::pair<std::string, GmodNode>> nodePairs;
-		nodePairs.reserve( nodeMap.size() );
-		for ( const auto& [code, node] : nodeMap )
+		nodePairs.reserve( tempNodeMap.size() );
+		for ( auto& [code, node] : tempNodeMap )
 		{
-			nodePairs.emplace_back( code, node );
+			nodePairs.emplace_back( code, std::move( node ) );
 		}
 
 		m_nodeMap = ChdDictionary<GmodNode>( std::move( nodePairs ) );
 
-		SPDLOG_INFO( "Creating Gmod with {} items - dictionary has {} entries", dto.items().size(), m_nodeMap.isEmpty() ? 0 : dto.items().size() );
+		size_t dictionarySize = 0;
+		if ( !m_nodeMap.isEmpty() )
+		{
+			dictionarySize = dto.items().size();
+		}
 
-		if ( m_nodeMap.isEmpty() )
+		SPDLOG_INFO( "Creating Gmod with {} items - dictionary has approx {} entries", dto.items().size(), dictionarySize );
+
+		if ( m_nodeMap.isEmpty() && !dto.items().empty() )
 		{
 			SPDLOG_ERROR( "Failed to initialize node dictionary in constructor!" );
 		}
 	}
 
 	Gmod::Gmod( VisVersion version, const std::unordered_map<std::string, GmodNode>& nodeMap )
-		: m_visVersion( version ),
-		  m_rootNode( [&nodeMap]() { return nodeMap.at( "VE" ); }() ),
-		  m_nodeMap( [&nodeMap]() {
+		: m_visVersion{ version },
+		  m_rootNode{ [&nodeMap]() -> GmodNode {
+			  auto it = nodeMap.find( "VE" );
+			  if ( it != nodeMap.end() )
+			  {
+				  return GmodNode( it->second, true );
+			  }
+			  SPDLOG_WARN( "Root node 'VE' not found in provided nodeMap for Gmod constructor." );
+			  return GmodNode();
+		  }() },
+		  m_nodeMap{ [&nodeMap]() {
 			  std::vector<std::pair<std::string, GmodNode>> pairs;
 			  pairs.reserve( nodeMap.size() );
 			  for ( const auto& [code, node] : nodeMap )
 			  {
-				  pairs.emplace_back( code, node );
+				  pairs.emplace_back( code, GmodNode( node, true ) );
 			  }
 			  return ChdDictionary<GmodNode>( std::move( pairs ) );
-		  }() )
+		  }() }
 	{
-		for ( const auto& [code, node] : nodeMap )
+		SPDLOG_INFO( "Creating Gmod from existing map with {} nodes.", nodeMap.size() );
+
+		if ( m_rootNode.code() != "VE" && nodeMap.count( "VE" ) )
 		{
-			const_cast<GmodNode&>( node ).trim();
+			SPDLOG_ERROR( "Failed to correctly initialize root node from provided map." );
 		}
-
-		m_rootNode = nodeMap.at( "VE" );
-
-		std::vector<std::pair<std::string, GmodNode>> nodePairs;
-		for ( const auto& [code, node] : nodeMap )
+		if ( m_nodeMap.isEmpty() && !nodeMap.empty() )
 		{
-			nodePairs.emplace_back( code, node );
+			SPDLOG_ERROR( "Failed to initialize node dictionary from provided map." );
 		}
-
-		m_nodeMap = ChdDictionary<GmodNode>( std::move( nodePairs ) );
 	}
 
 	Gmod::Gmod( const Gmod& other )
-		: m_visVersion( other.m_visVersion ),
-		  m_rootNode( other.m_rootNode ),
-		  m_nodeMap( other.m_nodeMap )
+		: m_visVersion{ other.m_visVersion },
+		  m_rootNode{ other.m_rootNode, true },
+		  m_nodeMap{ other.m_nodeMap }
 	{
 		SPDLOG_INFO( "Copying Gmod with {} nodes in dictionary",
 			m_nodeMap.isEmpty() ? "empty" : "non-empty" );
@@ -219,7 +243,7 @@ namespace dnv::vista::sdk
 		if ( this != &other )
 		{
 			m_visVersion = other.m_visVersion;
-			m_rootNode = other.m_rootNode;
+			m_rootNode = GmodNode( other.m_rootNode, true );
 			m_nodeMap = other.m_nodeMap;
 		}
 		return *this;
@@ -237,31 +261,33 @@ namespace dnv::vista::sdk
 		{
 			static thread_local std::unordered_map<std::string, GmodNode> nodeCache;
 
-			auto it = nodeCache.find( key );
-			if ( it != nodeCache.end() )
+			auto cacheIt = nodeCache.find( key );
+			if ( cacheIt != nodeCache.end() )
 			{
-				return it->second;
+				return cacheIt->second;
 			}
 
-			GmodNode node;
-			if ( tryGetNode( key, node ) )
+			GmodNode nodeFromDict;
+			if ( tryGetNode( key, nodeFromDict ) )
 			{
-				auto result = nodeCache.insert_or_assign( key, std::move( node ) );
-				return result.first->second;
+				auto insertResult = nodeCache.insert_or_assign( key, std::move( nodeFromDict ) );
+				return insertResult.first->second;
 			}
 
-			SPDLOG_WARN( "Node with key '{}' not found", key );
-			nodeCache[key] = nullNode;
-			return nodeCache[key];
+			SPDLOG_WARN( "Node with key '{}' not found in GMOD dictionary", key );
+
+			auto insertResult = nodeCache.insert_or_assign( key, GmodNode( nullNode, true ) );
+
+			return insertResult.first->second;
 		}
 		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Exception in operator[]: {}", ex.what() );
+			SPDLOG_ERROR( "Exception in Gmod::operator[] for key '{}': {}", key, ex.what() );
 			return nullNode;
 		}
 		catch ( ... )
 		{
-			SPDLOG_ERROR( "Unknown exception in operator[]" );
+			SPDLOG_ERROR( "Unknown exception in Gmod::operator[] for key '{}'", key );
 			return nullNode;
 		}
 	}
@@ -299,8 +325,9 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	bool Gmod::tryGetNode( std::string_view code, GmodNode& node ) const
+	bool Gmod::tryGetNode( std::string_view code, const GmodNode*& outNodePtr ) const
 	{
+		outNodePtr = nullptr;
 		try
 		{
 			if ( code.empty() )
@@ -309,9 +336,15 @@ namespace dnv::vista::sdk
 				return false;
 			}
 
-			if ( !m_nodeMap.tryGetValue( code, &node ) )
+			if ( !m_nodeMap.tryGetValue( code, outNodePtr ) )
 			{
 				SPDLOG_WARN( "TryGetNode: Node '{}' not found in GMOD", code );
+				return false;
+			}
+
+			if ( outNodePtr == nullptr )
+			{
+				SPDLOG_ERROR( "TryGetNode: m_nodeMap.tryGetValue succeeded but outNodePtr is null for code '{}'", code );
 				return false;
 			}
 
@@ -321,6 +354,7 @@ namespace dnv::vista::sdk
 		catch ( const std::exception& ex )
 		{
 			SPDLOG_ERROR( "Exception in TryGetNode for '{}': {}", code, ex.what() );
+			outNodePtr = nullptr;
 			return false;
 		}
 	}
@@ -344,7 +378,7 @@ namespace dnv::vista::sdk
 		return GmodPath::parse( item, m_visVersion );
 	}
 
-	bool Gmod::tryParsePath( const std::string& item, std::optional<GmodPath>& path ) const
+	bool Gmod::tryParsePath( const std::string& item, GmodPath& path ) const
 	{
 		SPDLOG_INFO( "TryParsePath: Attempting to parse path: {}", item );
 		return GmodPath::tryParse( item, m_visVersion, path );

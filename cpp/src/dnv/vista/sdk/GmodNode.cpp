@@ -1,3 +1,8 @@
+/**
+ * @file GmodNode.cpp
+ * @brief Implementation of the GmodNode and GmodNodeMetadata classes
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/GmodNode.h"
@@ -15,6 +20,10 @@ namespace dnv::vista::sdk
 	// GmodNodeMetadata Implementation
 	//-------------------------------------------------------------------------
 
+	//-------------------------------------------------------------------------
+	// Construction / Destruction
+	//-------------------------------------------------------------------------
+
 	GmodNodeMetadata::GmodNodeMetadata(
 		const std::string& category,
 		const std::string& type,
@@ -24,11 +33,22 @@ namespace dnv::vista::sdk
 		const std::optional<std::string>& commonDefinition,
 		const std::optional<bool>& installSubstructure,
 		const std::unordered_map<std::string, std::string>& normalAssignmentNames )
-		: m_category( category ), m_type( type ), m_name( name ), m_commonName( commonName ), m_definition( definition ), m_commonDefinition( commonDefinition ), m_installSubstructure( installSubstructure ), m_normalAssignmentNames( normalAssignmentNames )
+		: m_category{ category },
+		  m_type{ type },
+		  m_name{ name },
+		  m_commonName{ commonName },
+		  m_definition{ definition },
+		  m_commonDefinition{ commonDefinition },
+		  m_installSubstructure{ installSubstructure },
+		  m_normalAssignmentNames{ normalAssignmentNames },
+		  m_fullType{ category + " " + type }
 	{
-		m_fullType = category + " " + type;
-		SPDLOG_DEBUG( "Created GmodNodeMetadata: {}", m_fullType );
+		SPDLOG_TRACE( "Created GmodNodeMetadata: {}", m_fullType );
 	}
+
+	//-------------------------------------------------------------------------
+	// Basic Property Accessors
+	//-------------------------------------------------------------------------
 
 	const std::string& GmodNodeMetadata::category() const
 	{
@@ -75,6 +95,10 @@ namespace dnv::vista::sdk
 		return m_normalAssignmentNames;
 	}
 
+	//-------------------------------------------------------------------------
+	// Operators
+	//-------------------------------------------------------------------------
+
 	bool GmodNodeMetadata::operator==( const GmodNodeMetadata& other ) const
 	{
 		return m_category == other.m_category &&
@@ -93,58 +117,71 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// GmodNode Constructors
+	// GmodNode Implementation
+	//-------------------------------------------------------------------------
+
+	//-------------------------------------------------------------------------
+	// Construction / Destruction
 	//-------------------------------------------------------------------------
 
 	GmodNode::GmodNode()
-		: m_code( "" ), m_location( std::nullopt ), m_visVersion( VisVersion::v3_8a ), m_metadata( "", "", "", std::nullopt, std::nullopt, std::nullopt, std::nullopt, {} ), m_children(), m_parents(), m_childrenSet()
+		: m_code{ "" },
+		  m_location{ std::nullopt },
+		  m_visVersion{ VisVersion::v3_8a },
+		  m_metadata{ "", "", "", std::nullopt, std::nullopt, std::nullopt, std::nullopt, {} },
+		  m_children{},
+		  m_parents{},
+		  m_childrenSet{}
 	{
-		SPDLOG_DEBUG( "Created empty GmodNode" );
+		SPDLOG_TRACE( "Created empty GmodNode" );
+	}
+
+	GmodNode::GmodNode( const GmodNode& other, bool )
+		: m_code{ other.m_code },
+		  m_location{ other.m_location },
+		  m_visVersion{ other.m_visVersion },
+		  m_metadata{ other.m_metadata },
+		  m_children{},
+		  m_parents{},
+		  m_childrenSet{}
+	{
+		SPDLOG_INFO( "Copied GmodNode {} for location modification", m_code );
 	}
 
 	GmodNode::GmodNode( VisVersion version, const GmodNodeDto& dto )
-		: m_code( dto.code() ), m_location( std::nullopt ), m_visVersion( version ), m_metadata(
-																						 dto.category(),
-																						 dto.type(),
-																						 dto.name(),
-																						 dto.commonName(),
-																						 dto.definition(),
-																						 dto.commonDefinition(),
-																						 dto.installSubstructure(),
-																						 dto.normalAssignmentNames().has_value() ? *dto.normalAssignmentNames() : std::unordered_map<std::string, std::string>() ),
-		  m_children(), m_parents(), m_childrenSet()
+		: m_code{ dto.code() },
+		  m_location{ std::nullopt },
+		  m_visVersion{ version },
+		  m_metadata{
+			  dto.category(),
+			  dto.type(),
+			  dto.name(),
+			  dto.commonName(),
+			  dto.definition(),
+			  dto.commonDefinition(),
+			  dto.installSubstructure(),
+			  dto.normalAssignmentNames().has_value() ? *dto.normalAssignmentNames() : std::unordered_map<std::string, std::string>() },
+		  m_children{},
+		  m_parents{},
+		  m_childrenSet{}
 	{
 		SPDLOG_DEBUG( "Created GmodNode with code: {}", m_code );
-	}
-
-	GmodNode::GmodNode( const GmodNode& other )
-		: m_code( other.m_code ), m_location( other.m_location ), m_visVersion( other.m_visVersion ), m_metadata( other.m_metadata ), m_childrenSet( other.m_childrenSet )
-	{
-		m_children.reserve( other.m_children.size() );
-
-		for ( auto* child : other.m_children )
-		{
-			if ( child )
-			{
-				m_children.push_back( child );
-			}
-		}
-
-		m_parents.reserve( other.m_parents.size() );
-		for ( auto* parent : other.m_parents )
-		{
-			if ( parent )
-			{
-				m_parents.push_back( parent );
-			}
-		}
-
-		SPDLOG_DEBUG( "Copied GmodNode: {}", m_code );
 	}
 
 	//-------------------------------------------------------------------------
 	// Basic Property Accessors
 	//-------------------------------------------------------------------------
+
+	GmodNode::GmodNode( GmodNode&& other ) noexcept
+		: m_code( std::move( other.m_code ) ),
+		  m_location( std::move( other.m_location ) ),
+		  m_visVersion( other.m_visVersion ),
+		  m_metadata( std::move( other.m_metadata ) ),
+		  m_children( std::move( other.m_children ) ),
+		  m_parents( std::move( other.m_parents ) ),
+		  m_childrenSet( std::move( other.m_childrenSet ) )
+	{
+	}
 
 	const std::string& GmodNode::code() const
 	{
@@ -164,6 +201,18 @@ namespace dnv::vista::sdk
 	const GmodNodeMetadata& GmodNode::metadata() const
 	{
 		return m_metadata;
+	}
+
+	size_t GmodNode::hashCode() const noexcept
+	{
+		size_t hash = std::hash<std::string>{}( m_code );
+
+		if ( m_location.has_value() )
+		{
+			hash ^= ( std::hash<std::string>{}( m_location->toString() ) + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 ) );
+		}
+
+		return hash;
 	}
 
 	//-------------------------------------------------------------------------
@@ -216,7 +265,7 @@ namespace dnv::vista::sdk
 			return nullptr;
 		}
 
-		SPDLOG_INFO( "Product type check succeeded: {}", child->m_code );
+		SPDLOG_DEBUG( "Product type check succeeded: {}", child->m_code );
 		return child;
 	}
 
@@ -254,12 +303,10 @@ namespace dnv::vista::sdk
 		{
 			SPDLOG_WARN( "Product selection check failed: expected SELECTION type, found {}",
 				child->m_metadata.type() );
-
 			return nullptr;
 		}
 
-		SPDLOG_INFO( "Product selection check succeeded: {}", child->m_code );
-
+		SPDLOG_DEBUG( "Product selection check succeeded: {}", child->m_code );
 		return child;
 	}
 
@@ -269,47 +316,50 @@ namespace dnv::vista::sdk
 
 	GmodNode GmodNode::withoutLocation() const
 	{
-		if ( !m_location.has_value() )
+		GmodNode result( *this, true );
+		if ( !result.m_location.has_value() )
 		{
-			SPDLOG_WARN( "No location to remove from node: {}", m_code );
-			return *this;
+			SPDLOG_DEBUG( "No location to remove from node: {}", m_code );
 		}
-
-		SPDLOG_INFO( "Removing location from node: {}", m_code );
-		GmodNode result = *this;
-		result.m_location = std::nullopt;
+		else
+		{
+			SPDLOG_INFO( "Removing location from node: {}", m_code );
+			result.m_location = std::nullopt;
+		}
 		return result;
 	}
 
 	GmodNode GmodNode::withLocation( const std::string& locationStr ) const
 	{
-		SPDLOG_INFO( "Adding location '{}' to node: {}", locationStr, m_code );
+		SPDLOG_DEBUG( "Adding location '{}' to node: {}", locationStr, m_code );
 		Locations locations = VIS::instance().locations( m_visVersion );
 		Location location = locations.parse( locationStr );
 
-		GmodNode result = *this;
+		GmodNode result( *this, true );
 		result.m_location = location;
+
 		return result;
 	}
 
 	GmodNode GmodNode::withLocation( const Location& location ) const
 	{
-		SPDLOG_INFO( "Adding location object to node: {}", m_code );
-		GmodNode result = *this;
+		SPDLOG_DEBUG( "Adding location object to node: {}", m_code );
+
+		GmodNode result( *this, true );
 		result.m_location = location;
 		return result;
 	}
 
 	GmodNode GmodNode::tryWithLocation( const std::string& locationStr ) const
 	{
-		SPDLOG_INFO( "Attempting to add location '{}' to node: {}", locationStr, m_code );
+		SPDLOG_DEBUG( "Attempting to add location '{}' to node: {}", locationStr, m_code );
 		Locations locations = VIS::instance().locations( m_visVersion );
 		Location location;
 
 		if ( !locations.tryParse( std::string_view( locationStr ), location ) )
 		{
 			SPDLOG_ERROR( "Location parsing failed for: {}", locationStr );
-			return *this;
+			return GmodNode( *this, true );
 		}
 
 		return withLocation( location );
@@ -317,31 +367,37 @@ namespace dnv::vista::sdk
 
 	GmodNode GmodNode::tryWithLocation( const std::string& locationStr, ParsingErrors& errors ) const
 	{
-		SPDLOG_INFO( "Attempting to add location '{}' to node: {} with error capture",
+		SPDLOG_DEBUG( "Attempting to add location '{}' to node: {} with error capture",
 			locationStr, m_code );
 
 		Locations locations = VIS::instance().locations( m_visVersion );
 		Location location;
 
+		GmodNode result( *this, true );
 		if ( !locations.tryParse( std::string_view( locationStr ), location, errors ) )
 		{
 			SPDLOG_ERROR( "Location parsing failed with {} errors",
 				std::distance( errors.begin(), errors.end() ) );
-			return *this;
 		}
-
-		return withLocation( location );
+		else
+		{
+			result.m_location = location;
+		}
+		return result;
 	}
 
 	GmodNode GmodNode::tryWithLocation( const std::optional<Location>& location ) const
 	{
+		GmodNode result( *this, true );
 		if ( !location.has_value() )
 		{
-			SPDLOG_WARN( "No location provided, returning original node: {}", m_code );
-			return *this;
+			SPDLOG_DEBUG( "No location provided, returning original node copy: {}", m_code );
 		}
-
-		return withLocation( *location );
+		else
+		{
+			result.m_location = *location;
+		}
+		return result;
 	}
 
 	//-------------------------------------------------------------------------
@@ -352,32 +408,31 @@ namespace dnv::vista::sdk
 	{
 		if ( m_metadata.type() == "GROUP" )
 		{
-			SPDLOG_WARN( "Node is a group, not individualizable: {}", m_code );
+			SPDLOG_DEBUG( "Node is a group, not individualizable: {}", m_code );
 			return false;
 		}
 		if ( m_metadata.type() == "SELECTION" )
 		{
-			SPDLOG_WARN( "Node is a selection, not individualizable: {}", m_code );
+			SPDLOG_DEBUG( "Node is a selection, not individualizable: {}", m_code );
 			return false;
 		}
 		if ( isProductType() )
 		{
-			SPDLOG_WARN( "Node is a product type, not individualizable: {}", m_code );
+			SPDLOG_DEBUG( "Node is a product type, not individualizable: {}", m_code );
 			return false;
 		}
 		if ( m_metadata.category() == "ASSET" && m_metadata.type() == "TYPE" )
 		{
-			SPDLOG_WARN( "Node is an asset type, not individualizable: {}", m_code );
+			SPDLOG_DEBUG( "Node is an asset type, not individualizable: {}", m_code );
 			return false;
 		}
 		if ( isFunctionComposition() )
 		{
-			SPDLOG_WARN( "Node is a function composition, not individualizable: {}", m_code );
+			SPDLOG_DEBUG( "Node is a function composition, checking special conditions" );
 			return m_code.back() == 'i' || isInSet || isTargetNode;
 		}
 
-		SPDLOG_INFO( "Node is individualizable: {}", m_code );
-
+		SPDLOG_DEBUG( "Node is individualizable: {}", m_code );
 		return true;
 	}
 
@@ -391,30 +446,28 @@ namespace dnv::vista::sdk
 	{
 		if ( productType() != nullptr )
 		{
-			SPDLOG_WARN( "Node is a product type, not mappable: {}", m_code );
+			SPDLOG_DEBUG( "Node is a product type, not mappable: {}", m_code );
 			return false;
 		}
 		if ( productSelection() != nullptr )
 		{
-			SPDLOG_WARN( "Node is a product selection, not mappable: {}", m_code );
+			SPDLOG_DEBUG( "Node is a product selection, not mappable: {}", m_code );
 			return false;
 		}
 		if ( isProductSelection() )
 		{
-			SPDLOG_WARN( "Node is a product selection, not mappable: {}", m_code );
+			SPDLOG_DEBUG( "Node is a product selection, not mappable: {}", m_code );
 			return false;
 		}
 		if ( isAsset() )
 		{
-			SPDLOG_WARN( "Node is an asset, not mappable: {}", m_code );
+			SPDLOG_DEBUG( "Node is an asset, not mappable: {}", m_code );
 			return false;
 		}
 
-		SPDLOG_INFO( "Node is mappable: {}", m_code );
-
+		SPDLOG_DEBUG( "Node is mappable: {}", m_code );
 		char lastChar = m_code.back();
-
-		SPDLOG_INFO( "Last character of code: {}", lastChar );
+		SPDLOG_DEBUG( "Last character of code: {}", lastChar );
 
 		return lastChar != 'a' && lastChar != 's';
 	}
@@ -455,7 +508,7 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// Node Relationship Methods
+	// Node Relationship Query Methods
 	//-------------------------------------------------------------------------
 
 	bool GmodNode::isChild( const GmodNode& node ) const
@@ -466,15 +519,107 @@ namespace dnv::vista::sdk
 	bool GmodNode::isChild( const std::string& code ) const
 	{
 		bool found = m_childrenSet.find( code ) != m_childrenSet.end();
-		SPDLOG_INFO( "Node {} isChild check for {}: {}", m_code, code, found );
+		SPDLOG_DEBUG( "Node {} isChild check for {}: {}", m_code, code, found );
 		return found;
 	}
+
+	//-------------------------------------------------------------------------
+	// Operators
+	//-------------------------------------------------------------------------
+
+	bool GmodNode::operator==( const GmodNode& other ) const
+	{
+		if ( m_code != other.m_code )
+		{
+			return false;
+		}
+
+		if ( m_location.has_value() )
+		{
+			if ( !other.m_location.has_value() )
+			{
+				return false;
+			}
+			if ( m_location.value() != other.m_location.value() )
+			{
+				return false;
+			}
+		}
+		else
+		{
+			if ( other.m_location.has_value() )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool GmodNode::equals( const GmodNode& other ) const
+	{
+		return ( *this == other );
+	}
+
+	bool GmodNode::operator!=( const GmodNode& other ) const
+	{
+		return !( *this == other );
+	}
+
+	//-------------------------------------------------------------------------
+	// Utility Methods
+	//-------------------------------------------------------------------------
+
+	std::string GmodNode::toString() const
+	{
+		if ( m_code.empty() )
+		{
+			SPDLOG_DEBUG( "GmodNode code is empty, returning empty string" );
+			return "";
+		}
+
+		if ( m_location.has_value() )
+		{
+			SPDLOG_DEBUG( "Converting GmodNode to string with location" );
+			std::string locString = m_location->toString();
+			std::string result;
+			result.reserve( m_code.length() + 1 + locString.length() );
+			result = m_code;
+			result += '-';
+			result += locString;
+			return result;
+		}
+
+		return m_code;
+	}
+
+	void GmodNode::toString( std::stringstream& builder ) const
+	{
+		builder << m_code;
+
+		if ( m_location.has_value() )
+		{
+			builder << "-" << m_location->toString();
+		}
+
+		SPDLOG_DEBUG( "GmodNode string representation: {}", builder.str() );
+	}
+
+	//-------------------------------------------------------------------------
+	// Relationship Management Methods
+	//-------------------------------------------------------------------------
 
 	void GmodNode::addChild( GmodNode* child )
 	{
 		if ( !child )
 		{
 			SPDLOG_WARN( "Attempt to add null child to node: {}", m_code );
+			return;
+		}
+
+		if ( m_childrenSet.find( child->code() ) != m_childrenSet.end() )
+		{
+			SPDLOG_DEBUG( "Child {} already exists for parent {}, skipping", child->code(), m_code );
 			return;
 		}
 
@@ -493,51 +638,6 @@ namespace dnv::vista::sdk
 
 		SPDLOG_DEBUG( "Adding parent {} to child {}", parent->code(), m_code );
 		m_parents.push_back( parent );
-	}
-
-	//-------------------------------------------------------------------------
-	// Operators
-	//-------------------------------------------------------------------------
-
-	bool GmodNode::operator==( const GmodNode& other ) const
-	{
-		return m_code == other.m_code && m_location == other.m_location;
-	}
-
-	bool GmodNode::operator!=( const GmodNode& other ) const
-	{
-		return !( *this == other );
-	}
-
-	//-------------------------------------------------------------------------
-	// Utility Methods
-	//-------------------------------------------------------------------------
-
-	std::string GmodNode::toString() const
-	{
-		if ( m_code.empty() )
-		{
-			SPDLOG_WARN( "GmodNode code is empty, returning empty string" );
-			return "";
-		}
-		if ( m_location.has_value() )
-		{
-			SPDLOG_WARN( "Converting GmodNode to string with location: {}", m_code );
-			return m_code + "-" + m_location->toString();
-		}
-		return m_code;
-	}
-
-	void GmodNode::toString( std::stringstream& builder ) const
-	{
-		builder << m_code;
-
-		if ( m_location.has_value() )
-		{
-			builder << "-" << m_location->toString();
-		}
-
-		SPDLOG_INFO( "GmodNode string representation: {}", builder.str() );
 	}
 
 	void GmodNode::trim()

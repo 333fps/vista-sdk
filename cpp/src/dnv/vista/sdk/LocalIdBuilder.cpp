@@ -34,89 +34,10 @@ namespace dnv::vista::sdk
 	// Constructors and Static Factories
 	//-------------------------------------------------------------------------
 
-	LocalIdBuilder::LocalIdBuilder()
-	{
-		SPDLOG_INFO( "Created empty LocalIdBuilder" );
-	}
-
-	LocalIdBuilder::LocalIdBuilder( const LocalIdBuilder& other )
-	{
-		m_verboseMode = other.m_verboseMode;
-		m_items = other.m_items;
-
-		if ( other.m_visVersion.has_value() )
-		{
-			m_visVersion.emplace( other.m_visVersion.value() );
-		}
-
-		if ( other.m_quantity.has_value() )
-		{
-			m_quantity.emplace( other.m_quantity.value() );
-		}
-
-		if ( other.m_content.has_value() )
-		{
-			m_content.emplace( other.m_content.value() );
-		}
-
-		if ( other.m_calculation.has_value() )
-		{
-			m_calculation.emplace( other.m_calculation.value() );
-		}
-
-		if ( other.m_state.has_value() )
-		{
-			m_state.emplace( other.m_state.value() );
-		}
-
-		if ( other.m_command.has_value() )
-		{
-			m_command.emplace( other.m_command.value() );
-		}
-
-		if ( other.m_type.has_value() )
-		{
-			m_type.emplace( other.m_type.value() );
-		}
-
-		if ( other.m_position.has_value() )
-		{
-			m_position.emplace( other.m_position.value() );
-		}
-
-		if ( other.m_detail.has_value() )
-		{
-			m_detail.emplace( other.m_detail.value() );
-		}
-
-		SPDLOG_INFO( "Created LocalIdBuilder via copy constructor" );
-	}
-
-	LocalIdBuilder& LocalIdBuilder::operator=( const LocalIdBuilder& other )
-	{
-		if ( this != &other )
-		{
-			m_visVersion = other.m_visVersion;
-			m_verboseMode = other.m_verboseMode;
-			m_items = other.m_items;
-			m_quantity = other.m_quantity;
-			m_content = other.m_content;
-			m_calculation = other.m_calculation;
-			m_state = other.m_state;
-			m_command = other.m_command;
-			m_type = other.m_type;
-			m_position = other.m_position;
-			m_detail = other.m_detail;
-		}
-		return *this;
-	}
-
 	LocalIdBuilder LocalIdBuilder::create( VisVersion version )
 	{
 		SPDLOG_INFO( "Creating LocalIdBuilder with VisVersion: {}", static_cast<int>( version ) );
-		LocalIdBuilder builder;
-		builder.m_visVersion = version;
-		return builder;
+		return LocalIdBuilder().withVisVersion( version );
 	}
 
 	LocalId LocalIdBuilder::build() const
@@ -124,7 +45,7 @@ namespace dnv::vista::sdk
 		try
 		{
 			SPDLOG_INFO( "Building LocalId from builder" );
-			return LocalId( *this );
+			return LocalId( std::move( *this ) );
 		}
 		catch ( const std::exception& ex )
 		{
@@ -153,8 +74,8 @@ namespace dnv::vista::sdk
 	bool LocalIdBuilder::isEmpty() const
 	{
 		return !m_visVersion.has_value() &&
-			   m_items.primaryItem().length() == 0 && //
-			   !m_items.secondaryItem().has_value() &&
+			   m_items.primaryItem().length() == 0 &&
+			   !m_items.secondaryItem() &&
 			   isEmptyMetadata();
 	}
 
@@ -211,7 +132,7 @@ namespace dnv::vista::sdk
 		return m_items.primaryItem();
 	}
 
-	std::optional<GmodPath> LocalIdBuilder::secondaryItem() const
+	const std::optional<GmodPath>& LocalIdBuilder::secondaryItem() const
 	{
 		SPDLOG_INFO( "Getting secondary item" );
 		return m_items.secondaryItem();
@@ -221,7 +142,7 @@ namespace dnv::vista::sdk
 	// Metadata Tag Getters
 	//-------------------------------------------------------------------------
 
-	const std::vector<MetadataTag> LocalIdBuilder::metadataTags() const
+	const std::vector<MetadataTag>& LocalIdBuilder::metadataTags() const
 	{
 		static thread_local std::vector<MetadataTag> tags;
 		tags.clear();
@@ -253,42 +174,42 @@ namespace dnv::vista::sdk
 		return tags;
 	}
 
-	std::optional<MetadataTag> LocalIdBuilder::quantity() const
+	const std::optional<MetadataTag>& LocalIdBuilder::quantity() const
 	{
 		return m_quantity;
 	}
 
-	std::optional<MetadataTag> LocalIdBuilder::content() const
+	const std::optional<MetadataTag>& LocalIdBuilder::content() const
 	{
 		return m_content;
 	}
 
-	std::optional<MetadataTag> LocalIdBuilder::calculation() const
+	const std::optional<MetadataTag>& LocalIdBuilder::calculation() const
 	{
 		return m_calculation;
 	}
 
-	std::optional<MetadataTag> LocalIdBuilder::state() const
+	const std::optional<MetadataTag>& LocalIdBuilder::state() const
 	{
 		return m_state;
 	}
 
-	std::optional<MetadataTag> LocalIdBuilder::command() const
+	const std::optional<MetadataTag>& LocalIdBuilder::command() const
 	{
 		return m_command;
 	}
 
-	std::optional<MetadataTag> LocalIdBuilder::type() const
+	const std::optional<MetadataTag>& LocalIdBuilder::type() const
 	{
 		return m_type;
 	}
 
-	std::optional<MetadataTag> LocalIdBuilder::position() const
+	const std::optional<MetadataTag>& LocalIdBuilder::position() const
 	{
 		return m_position;
 	}
 
-	std::optional<MetadataTag> LocalIdBuilder::detail() const
+	const std::optional<MetadataTag>& LocalIdBuilder::detail() const
 	{
 		return m_detail;
 	}
@@ -380,9 +301,7 @@ namespace dnv::vista::sdk
 		try
 		{
 			SPDLOG_INFO( "Setting VisVersion from string: {}", visVersion );
-
 			VisVersion version = VisVersionExtensions::parse( visVersion );
-
 			return withVisVersion( version );
 		}
 		catch ( const std::exception& ex )
@@ -395,49 +314,70 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withVisVersion( VisVersion version )
 	{
 		SPDLOG_INFO( "Setting VisVersion: {}", static_cast<int>( version ) );
-		LocalIdBuilder result( *this );
-		result.m_visVersion = version;
+		bool succeeded;
+		LocalIdBuilder result = tryWithVisVersion( version, succeeded );
+		if ( !succeeded )
+		{
+			SPDLOG_ERROR( "Failed to set VisVersion: {}", static_cast<int>( version ) );
+			throw std::invalid_argument( "Failed to set VisVersion" );
+		}
 		return result;
 	}
 
 	LocalIdBuilder LocalIdBuilder::tryWithVisVersion( const std::optional<VisVersion>& version )
 	{
-		if ( !version.has_value() )
-		{
-			SPDLOG_INFO( "Skipping VisVersion setting: value is empty" );
-			return *this;
-		}
-
-		return withVisVersion( *version );
+		bool succeeded;
+		return tryWithVisVersion( version, succeeded );
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithVisVersion( const std::optional<std::string>& visVersionStr, bool& succeeded )
+	LocalIdBuilder LocalIdBuilder::tryWithVisVersion( const std::optional<VisVersion>& version, bool& succeeded )
 	{
 		succeeded = false;
-
-		if ( !visVersionStr.has_value() || visVersionStr->empty() )
+		if ( !version.has_value() )
 		{
-			SPDLOG_INFO( "Skipping VisVersion setting: string is empty" );
+			SPDLOG_DEBUG( "tryWithVisVersion called with empty optional<VisVersion>" );
 			return *this;
 		}
 
 		try
 		{
-			auto result = withVisVersion( *visVersionStr );
+			LocalIdBuilder result = *this;
+
+			result.m_visVersion = version.value();
 			succeeded = true;
+			SPDLOG_DEBUG( "Set VisVersion to {}", static_cast<int>( result.m_visVersion ) );
 			return result;
 		}
 		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Failed to set VisVersion: {}", ex.what() );
+			SPDLOG_ERROR( "Failed during tryWithVisVersion(optional<VisVersion>): {}", ex.what() );
 			return *this;
 		}
+	}
+
+	LocalIdBuilder LocalIdBuilder::tryWithVisVersion( const std::optional<std::string>& visVersionStr, bool& succeeded )
+	{
+		if ( visVersionStr.has_value() )
+		{
+			try
+			{
+				VisVersion version = VisVersionExtensions::parse( *visVersionStr );
+				return tryWithVisVersion( version, succeeded );
+			}
+			catch ( const std::exception& )
+			{
+				succeeded = false;
+				return std::move( *this );
+			}
+		}
+		succeeded = false;
+		return std::move( *this );
 	}
 
 	LocalIdBuilder LocalIdBuilder::withoutVisVersion()
 	{
 		SPDLOG_INFO( "Removing VisVersion" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result = std::move( *this );
 		result.m_visVersion = std::nullopt;
 		return result;
 	}
@@ -445,7 +385,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withVerboseMode( bool verboseMode )
 	{
 		SPDLOG_INFO( "Setting verbose mode: {}", verboseMode );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result = std::move( *this );
 		result.m_verboseMode = verboseMode;
 		return result;
 	}
@@ -457,49 +397,42 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withPrimaryItem( const GmodPath& item )
 	{
 		SPDLOG_INFO( "Setting primary item: {}", item.toString() );
-		LocalIdBuilder result( *this );
-		result.m_items = LocalIdItems( item, m_items.secondaryItem() );
+		bool succeeded;
+		LocalIdBuilder result = tryWithPrimaryItem( item, succeeded );
+		if ( !succeeded )
+		{
+			SPDLOG_ERROR( "Failed to set primary item: {}", item.toString() );
+			throw std::invalid_argument( "Failed to set primary item" );
+		}
 		return result;
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( const std::optional<GmodPath>& item )
+	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( const GmodPath& item )
 	{
-		if ( !item.has_value() )
-		{
-			SPDLOG_INFO( "Skipping primary item: value is empty" );
-			return *this;
-		}
-
-		return withPrimaryItem( *item );
+		return withPrimaryItem( item );
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( const std::optional<GmodPath>& item, bool& succeeded )
+	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( const GmodPath& item, bool& succeeded )
 	{
 		succeeded = false;
 
-		if ( !item.has_value() )
-		{
-			SPDLOG_INFO( "Skipping primary item: value is empty" );
-			return *this;
-		}
-
 		try
 		{
-			auto result = withPrimaryItem( *item );
+			auto result = withPrimaryItem( item );
 			succeeded = true;
 			return result;
 		}
 		catch ( const std::exception& ex )
 		{
 			SPDLOG_ERROR( "Failed to set primary item: {}", ex.what() );
-			return *this;
-		}
+			return std::move( *this );
+		};
 	}
 
 	LocalIdBuilder LocalIdBuilder::withoutPrimaryItem()
 	{
 		SPDLOG_INFO( "Removing primary item - primary item will be reset to default" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 
 		result.m_items = LocalIdItems();
 
@@ -509,41 +442,38 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withSecondaryItem( const GmodPath& item )
 	{
 		SPDLOG_INFO( "Setting secondary item: {}", item.toString() );
-		LocalIdBuilder result( *this );
-		result.m_items = LocalIdItems( m_items.primaryItem(), item );
+		bool succeeded;
+		LocalIdBuilder result = tryWithSecondaryItem( item, succeeded );
+		if ( !succeeded )
+		{
+			SPDLOG_ERROR( "Failed to set secondary item: {}", item.toString() );
+			throw std::invalid_argument( "Failed to set secondary item" );
+		}
 		return result;
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( const std::optional<GmodPath>& item )
+	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( const GmodPath& item )
 	{
-		if ( !item.has_value() )
-		{
-			SPDLOG_INFO( "Skipping secondary item: value is empty" );
-			return *this;
-		}
-
-		return withSecondaryItem( *item );
+		bool succeeded;
+		return tryWithSecondaryItem( item, succeeded );
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( const std::optional<GmodPath>& item, bool& succeeded )
+	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( const GmodPath& item, bool& succeeded )
 	{
-		succeeded = false;
-
-		if ( !item.has_value() )
-		{
-			SPDLOG_INFO( "Skipping secondary item: value is empty" );
-			return *this;
-		}
-
 		try
 		{
-			auto result = withSecondaryItem( *item );
 			succeeded = true;
+			LocalIdBuilder result = *this;
+
+			result.m_items = LocalIdItems( m_items.primaryItem(), std::optional<GmodPath>( item ) );
+
 			return result;
 		}
 		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Failed to set secondary item: {}", ex.what() );
+			SPDLOG_ERROR( "Failed during tryWithSecondaryItem: {}", ex.what() );
+			succeeded = false;
+
 			return *this;
 		}
 	}
@@ -551,7 +481,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutSecondaryItem()
 	{
 		SPDLOG_INFO( "Removing secondary item" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_items = LocalIdItems( m_items.primaryItem(), std::nullopt );
 		return result;
 	}
@@ -604,7 +534,7 @@ namespace dnv::vista::sdk
 		if ( !metadataTag.has_value() )
 		{
 			SPDLOG_INFO( "Skipping metadata tag: value is empty" );
-			return *this;
+			return std::move( *this );
 		}
 
 		return withMetadataTag( *metadataTag );
@@ -617,7 +547,7 @@ namespace dnv::vista::sdk
 		if ( !metadataTag.has_value() )
 		{
 			SPDLOG_INFO( "Skipping metadata tag: value is empty" );
-			return *this;
+			return std::move( *this );
 		}
 
 		try
@@ -629,7 +559,7 @@ namespace dnv::vista::sdk
 		catch ( const std::exception& ex )
 		{
 			SPDLOG_ERROR( "Failed to set metadata tag: {}", ex.what() );
-			return *this;
+			return std::move( *this );
 		}
 	}
 
@@ -669,7 +599,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withQuantity( const MetadataTag& quantity )
 	{
 		SPDLOG_INFO( "Setting quantity tag: {}", quantity.value() );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result = std::move( *this );
 		result.m_quantity = quantity;
 		return result;
 	}
@@ -677,7 +607,9 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withContent( const MetadataTag& content )
 	{
 		SPDLOG_INFO( "Setting content tag: {}", content.value() );
-		LocalIdBuilder result( *this );
+
+		LocalIdBuilder result = std::move( *this );
+
 		result.m_content = content;
 		return result;
 	}
@@ -685,7 +617,9 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withCalculation( const MetadataTag& calculation )
 	{
 		SPDLOG_INFO( "Setting calculation tag: {}", calculation.value() );
-		LocalIdBuilder result( *this );
+
+		LocalIdBuilder result = std::move( *this );
+
 		result.m_calculation = calculation;
 		return result;
 	}
@@ -693,7 +627,9 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withState( const MetadataTag& state )
 	{
 		SPDLOG_INFO( "Setting state tag: {}", state.value() );
-		LocalIdBuilder result( *this );
+		;
+		LocalIdBuilder result = std::move( *this );
+
 		result.m_state = state;
 		return result;
 	}
@@ -701,7 +637,9 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withCommand( const MetadataTag& command )
 	{
 		SPDLOG_INFO( "Setting command tag: {}", command.value() );
-		LocalIdBuilder result( *this );
+
+		LocalIdBuilder result = std::move( *this );
+
 		result.m_command = command;
 		return result;
 	}
@@ -709,7 +647,9 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withType( const MetadataTag& type )
 	{
 		SPDLOG_INFO( "Setting type tag: {}", type.value() );
-		LocalIdBuilder result( *this );
+
+		LocalIdBuilder result = std::move( *this );
+
 		result.m_type = type;
 		return result;
 	}
@@ -717,7 +657,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withPosition( const MetadataTag& position )
 	{
 		SPDLOG_INFO( "Setting position tag: {}", position.value() );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_position = position;
 		return result;
 	}
@@ -725,7 +665,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withDetail( const MetadataTag& detail )
 	{
 		SPDLOG_INFO( "Setting detail tag: {}", detail.value() );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_detail = detail;
 		return result;
 	}
@@ -733,7 +673,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutQuantity()
 	{
 		SPDLOG_INFO( "Removing quantity tag" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_quantity = std::nullopt;
 		return result;
 	}
@@ -741,7 +681,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutContent()
 	{
 		SPDLOG_INFO( "Removing content tag" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_content = std::nullopt;
 		return result;
 	}
@@ -749,7 +689,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutCalculation()
 	{
 		SPDLOG_INFO( "Removing calculation tag" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_calculation = std::nullopt;
 		return result;
 	}
@@ -757,7 +697,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutState()
 	{
 		SPDLOG_INFO( "Removing state tag" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_state = std::nullopt;
 		return result;
 	}
@@ -765,7 +705,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutCommand()
 	{
 		SPDLOG_INFO( "Removing command tag" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_command = std::nullopt;
 		return result;
 	}
@@ -773,7 +713,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutType()
 	{
 		SPDLOG_INFO( "Removing type tag" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_type = std::nullopt;
 		return result;
 	}
@@ -781,7 +721,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutPosition()
 	{
 		SPDLOG_INFO( "Removing position tag" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_position = std::nullopt;
 		return result;
 	}
@@ -789,7 +729,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::withoutDetail()
 	{
 		SPDLOG_INFO( "Removing detail tag" );
-		LocalIdBuilder result( *this );
+		LocalIdBuilder result( std::move( *this ) );
 		result.m_detail = std::nullopt;
 		return result;
 	}
@@ -819,7 +759,7 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( errorMsg );
 		}
 
-		return *result;
+		return std::move( *result );
 	}
 
 	bool LocalIdBuilder::tryParse( const std::string& localIdStr, ParsingErrors& errors, std::optional<LocalIdBuilder>& localId )
@@ -837,6 +777,12 @@ namespace dnv::vista::sdk
 		}
 
 		return result && localId.has_value();
+	}
+
+	bool LocalIdBuilder::tryParse( const std::string& s, std::optional<LocalIdBuilder>& builder )
+	{
+		ParsingErrors dummyErrors;
+		return tryParse( s, dummyErrors, builder );
 	}
 
 	bool LocalIdBuilder::tryParseInternal( const std::string& localIdStr,
@@ -867,8 +813,8 @@ namespace dnv::vista::sdk
 		std::shared_ptr<Gmod> gmod{ nullptr };
 		std::shared_ptr<Codebooks> codebooks{ nullptr };
 
-		std::optional<GmodPath> primaryItem{};
-		std::optional<GmodPath> secondaryItem{};
+		GmodPath primaryItem{};
+		GmodPath secondaryItem{};
 
 		std::optional<MetadataTag> qty{};
 		std::optional<MetadataTag> cnt{};

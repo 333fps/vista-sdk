@@ -200,7 +200,7 @@ namespace dnv::vista::sdk
 		 * @brief Construct from vector of key-value pairs
 		 * @param items Key-value pairs to populate the dictionary
 		 */
-		explicit ChdDictionary( const std::vector<std::pair<std::string, TValue>>& items );
+		explicit ChdDictionary( std::vector<std::pair<std::string, TValue>> items );
 
 		/**
 		 * @brief Copy constructor
@@ -254,7 +254,7 @@ namespace dnv::vista::sdk
 		 * @param[out] value Pointer to store the value if found
 		 * @return true if key was found, false otherwise
 		 */
-		bool tryGetValue( std::string_view key, TValue* value ) const;
+		bool tryGetValue( std::string_view key, const TValue* outValue ) const;
 
 		/**
 		 * @brief Check if dictionary is empty
