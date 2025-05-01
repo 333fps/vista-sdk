@@ -73,12 +73,12 @@ namespace dnv::vista::sdk
 	{
 	public:
 		/**
-		 * @brief Try to convert a string prefix to a CodebookName
-		 * @param prefix The string prefix to convert (e.g., "pos", "qty", "calc")
-		 * @return An optional containing the CodebookName if the prefix is known,
-		 *         otherwise std::nullopt.
+		 * @brief Convert a string prefix to a CodebookName
+		 * @param prefix The string prefix to convert (e.g., "pos", "qty", "calc"). Must not be empty.
+		 * @return The corresponding CodebookName.
+		 * @throws std::invalid_argument If the prefix is empty or unknown.
 		 */
-		static std::optional<CodebookName> fromPrefix( const std::string_view prefix );
+		static CodebookName fromPrefix( const std::string_view prefix );
 
 		/**
 		 * @brief Convert a CodebookName to its string prefix view
