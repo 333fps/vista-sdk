@@ -731,7 +731,7 @@ namespace dnv::vista::sdk
 			zs.next_out = reinterpret_cast<::Bytef*>( outBuffer.data() );
 			zs.avail_out = chunkSize;
 
-			ret = inflate( &zs, Z_NO_FLUSH );
+			ret = ::inflate( &zs, Z_NO_FLUSH );
 
 			if ( ret != Z_OK && ret != Z_STREAM_END )
 			{

@@ -18,7 +18,10 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 	message(FATAL_ERROR "In-source builds are not allowed. Please use a separate build directory.")
 endif()
 
-set(VISTA_SDK_RESOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
+set(VISTA_SDK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include)
+set(VISTA_SDK_SOURCE_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/cpp/src)
+
+set(VISTA_SDK_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 set(VISTA_SDK_TEST_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/testdata)
 
 add_subdirectory(cpp)

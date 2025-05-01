@@ -7,8 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Define directories
-set(VISTA_SDK_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(VISTA_SDK_RESOURCE_DIR ${VISTA_SDK_SOURCE_DIR}/resources)
 set(VISTA_SDK_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin)
 
 # Define build options
@@ -22,7 +20,7 @@ if(MSVC)
 	set(BUILD_SHARED_LIBS TRUE)
 endif()
 
-# Enable ccache if available (BEFORE compilers are configured)
+# Enable ccache if available
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
 	message(STATUS "Found ccache: ${CCACHE_PROGRAM}")
@@ -31,7 +29,7 @@ if(CCACHE_PROGRAM)
 
 	# Set ccache options
 	set(ENV{CCACHE_SLOPPINESS} "pch_defines,time_macros")
-	set(ENV{CCACHE_MAXSIZE} "5G") # Set cache size to 5GB
+	set(ENV{CCACHE_MAXSIZE} "5G")
 
 	if(MSVC)
 		set(ENV{CCACHE_CPP2} "yes")
@@ -106,16 +104,19 @@ else()
 endif()
 
 # Copy resources
-if(EXISTS ${VISTA_SDK_RESOURCES_DIR})
-	add_custom_target(CopyResources ALL
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${VISTA_SDK_OUTPUT_DIR}/resources
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-			${VISTA_SDK_RESOURCES_DIR} ${VISTA_SDK_OUTPUT_DIR}/resources
-		COMMENT "Copying VISTA SDK resources to build directory"
-	)
-	message(STATUS "Resources will be copied from ${VISTA_SDK_RESOURCES_DIR} to ${VISTA_SDK_OUTPUT_DIR}/resources")
+if(EXISTS ${VISTA_SDK_RESOURCE_DIR})
+    set(VISTA_SDK_RESOURCE_OUTPUT_DIR ${VISTA_SDK_OUTPUT_DIR}/$<CONFIG>/resources)
+
+    add_custom_target(CopyResources ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${VISTA_SDK_RESOURCE_OUTPUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${VISTA_SDK_RESOURCE_DIR} ${VISTA_SDK_RESOURCE_OUTPUT_DIR}
+        COMMENT "Copying VISTA SDK resources to build directory ($<CONFIG>)"
+        VERBATIM
+    )
+    message(STATUS "Resources will be copied from ${VISTA_SDK_RESOURCE_DIR} to ${VISTA_SDK_OUTPUT_DIR}/<CONFIG>/resources at build time")
 else()
-	message(WARNING "Resources directory not found: ${VISTA_SDK_RESOURCES_DIR}. Skipping resource copy.")
+    message(WARNING "Resources directory not found: ${VISTA_SDK_RESOURCE_DIR}. Skipping resource copy.")
 endif()
 
 # Add subdirectories
