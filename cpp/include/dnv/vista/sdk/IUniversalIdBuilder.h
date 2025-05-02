@@ -10,25 +10,27 @@ namespace dnv::vista::sdk
 	class IUniversalIdBuilder
 	{
 	public:
-		/**
-		 * Default constructor
-		 */
+		//---------------------------------------------------------------------
+		// Lifecycle
+		//---------------------------------------------------------------------
+
+		/** @brief Default constructor. */
 		IUniversalIdBuilder() = default;
 
-		/**
-		 * Virtual destructor for proper cleanup of derived classes.
-		 */
+		/** @brief Virtual destructor. */
 		virtual ~IUniversalIdBuilder() = default;
 
-		/**
-		 * Delete copy constructor - interfaces shouldn't be copied
-		 */
-		IUniversalIdBuilder( const IUniversalIdBuilder& ) = delete;
+		/** @brief Delete copy constructor - interfaces shouldn't be copied. */
+		IUniversalIdBuilder( const IUniversalIdBuilder& ) = default;
 
-		/**
-		 * Delete copy assignment operator - interfaces shouldn't be assigned
-		 */
-		IUniversalIdBuilder& operator=( const IUniversalIdBuilder& ) = delete;
+		/** @brief Delete copy assignment - interfaces shouldn't be assigned. */
+		IUniversalIdBuilder& operator=( const IUniversalIdBuilder& ) = default;
+
+		/** @brief Allow move constructor. */
+		IUniversalIdBuilder( IUniversalIdBuilder&& ) noexcept = default;
+
+		/** @brief Allow move assignment. */
+		IUniversalIdBuilder& operator=( IUniversalIdBuilder&& ) noexcept = default;
 
 		//-------------------------------------------------------------------------
 		// State Validation
@@ -48,13 +50,13 @@ namespace dnv::vista::sdk
 		 * Gets the IMO number.
 		 * @return The optional IMO number.
 		 */
-		virtual std::optional<ImoNumber> imoNumber() const = 0;
+		virtual const std::optional<ImoNumber>& imoNumber() const = 0;
 
 		/**
 		 * Gets the local ID builder.
 		 * @return The optional local ID builder.
 		 */
-		virtual std::optional<LocalIdBuilder> localId() const = 0;
+		virtual const std::optional<LocalIdBuilder>& localId() const = 0;
 
 		//-------------------------------------------------------------------------
 		// LocalId Modifier Methods

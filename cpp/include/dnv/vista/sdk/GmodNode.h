@@ -196,20 +196,21 @@ namespace dnv::vista::sdk
 		GmodNode( VisVersion version, const GmodNodeDto& dto );
 
 		/**
-		 * @brief Copy constructor (deleted)
+		 * @brief Copy constructor (deleted).
 		 *
-		 * Copying GmodNodes with their raw pointers to other nodes is unsafe
-		 * and would violate the immutability guarantees of the node graph.
+		 * Copying GmodNodes is disallowed because it would lead to shallow copies
+		 * of the internal parent/child pointer vectors, causing ownership ambiguity
+		 * and potential dangling pointers or double-free issues. Nodes are managed
+		 * centrally, typically within a Gmod instance.
 		 */
-		GmodNode( const GmodNode& ) = default;
+		GmodNode( const GmodNode& ) = delete;
 
 		/**
-		 * @brief Copy assignment operator (deleted)
+		 * @brief Copy assignment operator (deleted).
 		 *
-		 * Copying GmodNodes with their raw pointers to other nodes is unsafe
-		 * and would violate the immutability guarantees of the node graph.
+		 * Copy-assigning GmodNodes is disallowed for the same reasons as copy construction.
 		 */
-		GmodNode& operator=( const GmodNode& ) = default;
+		GmodNode& operator=( const GmodNode& ) = delete;
 
 		/**
 		 * @brief Move constructor

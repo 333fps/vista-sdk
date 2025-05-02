@@ -21,11 +21,6 @@ namespace dnv::vista::sdk
 	// Result Class for Parsing Operations (Implementation)
 	//-------------------------------------------------------------------------
 
-	GmodParsePathResult::Ok::Ok( const GmodPath& path )
-		: path{ path }
-	{
-	}
-
 	GmodParsePathResult::Ok::Ok( GmodPath&& path )
 		: path{ std::move( path ) }
 	{

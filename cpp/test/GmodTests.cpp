@@ -29,12 +29,12 @@ namespace dnv::vista::sdk::tests
 		int NodeCount;
 	};
 
-	std::size_t occurrences( const std::vector<GmodNode>& parents, const GmodNode& node )
+	std::size_t occurrences( const std::vector<const GmodNode*>& parents, const GmodNode& node )
 	{
 		return static_cast<size_t>(
 			std::count_if( parents.begin(), parents.end(),
-				[&node]( const GmodNode& p ) {
-					return p.code() == node.code();
+				[&node]( const GmodNode* p ) {
+					return p != nullptr && p->code() == node.code();
 				} ) );
 	}
 
@@ -308,18 +308,18 @@ namespace dnv::vista::sdk::tests
 		size_t maxOccurrence = 0;
 
 		bool completed = gmod.traverse(
-			[&]( const std::vector<GmodNode>& parents, const GmodNode& node ) {
-				EXPECT_TRUE( parents.empty() || parents[0].isRoot() );
+			[&]( const std::vector<const GmodNode*>& parents, const GmodNode& node ) {
+				EXPECT_TRUE( parents.empty() || ( parents[0] != nullptr && parents[0]->isRoot() ) );
 
 				if ( std::any_of( parents.begin(), parents.end(),
-						 []( const auto& p ) { return p.code() == "HG3"; } ) ||
+						 []( const GmodNode* p ) { return p != nullptr && p->code() == "HG3"; } ) ||
 					 node.code() == "HG3" )
 				{
 					pathCount++;
 				}
 
 				bool skipOccurrenceCheck = Gmod::isProductSelectionAssignment(
-					parents.empty() ? nullptr : &parents.back(), &node );
+					parents.empty() ? nullptr : parents.back(), &node );
 
 				if ( skipOccurrenceCheck )
 					return Gmod::TraversalHandlerResult::Continue;
@@ -347,9 +347,9 @@ namespace dnv::vista::sdk::tests
 		options.maxTraversalOccurrence = maxExpected;
 
 		bool completed = gmod.traverse(
-			[&]( const std::vector<GmodNode>& parents, const GmodNode& node ) {
+			[&]( const std::vector<const GmodNode*>& parents, const GmodNode& node ) {
 				bool skipOccurrenceCheck = Gmod::isProductSelectionAssignment(
-					parents.empty() ? nullptr : &parents.back(), &node );
+					parents.empty() ? nullptr : parents.back(), &node );
 
 				if ( skipOccurrenceCheck )
 					return Gmod::TraversalHandlerResult::Continue;
@@ -373,8 +373,8 @@ namespace dnv::vista::sdk::tests
 		TraversalState state( 5 );
 
 		bool completed = gmod.traverse(
-			[&state]( const std::vector<GmodNode>& parents, [[maybe_unused]] const GmodNode& node ) {
-				EXPECT_TRUE( parents.empty() || parents[0].isRoot() );
+			[&state]( const std::vector<const GmodNode*>& parents, [[maybe_unused]] const GmodNode& node ) {
+				EXPECT_TRUE( parents.empty() || ( parents[0] != nullptr && parents[0]->isRoot() ) );
 				if ( ++state.NodeCount == state.StopAfter )
 					return Gmod::TraversalHandlerResult::Stop;
 				return Gmod::TraversalHandlerResult::Continue;
@@ -390,13 +390,14 @@ namespace dnv::vista::sdk::tests
 
 		TraversalState state( 0 );
 		GmodNode startNode = gmod["400a"];
+		ASSERT_FALSE( startNode.code().empty() ) << "Start node '400a' not found or invalid.";
 
 		bool completed = gmod.traverse<TraversalState>(
 			state,
 			startNode,
-			[]( TraversalState& state, const std::vector<GmodNode>& parents, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
+			[]( TraversalState& state, const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
 				(void)node;
-				EXPECT_TRUE( parents.empty() || parents[0].code() == "400a" );
+				EXPECT_TRUE( parents.empty() || ( parents[0] != nullptr && parents[0]->code() == "400a" ) );
 				++state.NodeCount;
 				return Gmod::TraversalHandlerResult::Continue;
 			} );

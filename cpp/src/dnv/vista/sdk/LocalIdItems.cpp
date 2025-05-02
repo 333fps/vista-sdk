@@ -1,6 +1,6 @@
 /**
  * @file LocalIdItems.cpp
- * @brief Implementation of LocalIdItems class for primary and secondary item handling
+ * @brief Implementation of the LocalIdItems class.
  */
 #include "pch.h"
 
@@ -10,41 +10,43 @@
 namespace dnv::vista::sdk
 {
 	//-------------------------------------------------------------------------
-	// Constructors and Assignment
+	// Constructors, Destructor, Assignment Operators
 	//-------------------------------------------------------------------------
 
-	LocalIdItems::LocalIdItems(
-		const GmodPath& primaryItem,
-		const std::optional<GmodPath>& secondaryItem )
-		: m_primaryItem( primaryItem ),
-		  m_secondaryItem( secondaryItem )
+	LocalIdItems::LocalIdItems( GmodPath&& primaryItem, std::optional<GmodPath>&& secondaryItem )
+		: m_primaryItem( std::move( primaryItem ) ),
+		  m_secondaryItem( std::move( secondaryItem ) )
 	{
-		if ( m_primaryItem.length() > 0 )
+		SPDLOG_DEBUG( "LocalIdItems created via base move constructor." );
+		if ( m_primaryItem )
 		{
-			SPDLOG_INFO( "LocalIdItems: primaryItem: {}", m_primaryItem.toString() );
+			SPDLOG_TRACE( "  Primary Item: {}", m_primaryItem->toString() );
 		}
-		else
-		{
-			SPDLOG_WARN( "LocalIdItems: primaryItem is empty" );
-		}
-
 		if ( m_secondaryItem )
 		{
-			SPDLOG_INFO( "LocalIdItems: secondaryItem: {}", m_secondaryItem->toString() );
+			SPDLOG_TRACE( "  Secondary Item: {}", m_secondaryItem->toString() );
 		}
-		else
-		{
-			SPDLOG_DEBUG( "LocalIdItems: no secondary item provided" );
-		}
+	}
 
-		SPDLOG_INFO( "LocalIdItems: Created successfully" );
+	LocalIdItems::LocalIdItems( LocalIdItems&& other, GmodPath&& newPrimaryItem )
+		: m_primaryItem( std::move( newPrimaryItem ) ),
+		  m_secondaryItem( std::move( other.m_secondaryItem ) )
+	{
+		SPDLOG_TRACE( "LocalIdItems created by replacing primary via move." );
+	}
+
+	LocalIdItems::LocalIdItems( LocalIdItems&& other, std::optional<GmodPath>&& newSecondaryItem )
+		: m_primaryItem( std::move( other.m_primaryItem ) ),
+		  m_secondaryItem( std::move( newSecondaryItem ) )
+	{
+		SPDLOG_TRACE( "LocalIdItems created by replacing secondary via move." );
 	}
 
 	//-------------------------------------------------------------------------
-	// Core Properties
+	// Public Accessors (Read-only)
 	//-------------------------------------------------------------------------
 
-	const GmodPath& LocalIdItems::primaryItem() const noexcept
+	const std::optional<GmodPath>& LocalIdItems::primaryItem() const noexcept
 	{
 		return m_primaryItem;
 	}
@@ -56,23 +58,18 @@ namespace dnv::vista::sdk
 
 	bool LocalIdItems::isEmpty() const noexcept
 	{
-		return m_primaryItem.length() == 0 && !m_secondaryItem;
+		return !m_primaryItem.has_value() && !m_secondaryItem.has_value();
 	}
 
 	//-------------------------------------------------------------------------
-	// String Generation
+	// Public Methods
 	//-------------------------------------------------------------------------
 
 	void LocalIdItems::append( std::stringstream& builder, bool verboseMode ) const
 	{
-		if ( m_primaryItem.length() == 0 && !m_secondaryItem )
+		if ( m_primaryItem && m_primaryItem->length() > 0 )
 		{
-			return;
-		}
-
-		if ( m_primaryItem.length() > 0 )
-		{
-			m_primaryItem.toString( builder );
+			m_primaryItem->toString( builder );
 			builder << '/';
 		}
 
@@ -85,18 +82,19 @@ namespace dnv::vista::sdk
 
 		if ( verboseMode )
 		{
-			SPDLOG_INFO( "Appending verbose information for LocalIdItems" );
+			SPDLOG_TRACE( "Appending verbose information for LocalIdItems" );
 
-			if ( m_primaryItem.length() > 0 )
+			if ( m_primaryItem && m_primaryItem->length() > 0 )
 			{
-				for ( const auto& [depth, name] : m_primaryItem.commonNames() )
+				for ( const auto& [depth, name] : m_primaryItem.value().commonNames() )
 				{
 					builder << '~';
 					std::optional<std::string> location;
-
-					if ( m_primaryItem[depth].location().has_value() )
-						location = m_primaryItem[depth].location()->toString();
-
+					const auto& node = m_primaryItem.value()[depth];
+					if ( node.location().has_value() )
+					{
+						location = node.location()->toString();
+					}
 					appendCommonName( builder, name, location );
 					builder << '/';
 				}
@@ -105,17 +103,18 @@ namespace dnv::vista::sdk
 			if ( m_secondaryItem )
 			{
 				std::string prefix = "~for.";
-				for ( const auto& [depth, name] : m_secondaryItem->commonNames() )
+				for ( const auto& [depth, name] : m_secondaryItem.value().commonNames() )
 				{
 					builder << prefix;
 					if ( prefix != "~" )
 						prefix = "~";
 
 					std::optional<std::string> location;
-
-					if ( ( *m_secondaryItem )[depth].location().has_value() )
-						location = ( *m_secondaryItem )[depth].location()->toString();
-
+					const auto& node = m_secondaryItem.value()[depth];
+					if ( node.location().has_value() )
+					{
+						location = node.location()->toString();
+					}
 					appendCommonName( builder, name, location );
 					builder << '/';
 				}
@@ -127,7 +126,13 @@ namespace dnv::vista::sdk
 	{
 		std::stringstream builder;
 		append( builder, verboseMode );
-		return builder.str();
+		std::string result = builder.str();
+
+		if ( !result.empty() && result.back() == '/' && result.length() > 1 )
+		{
+			result.pop_back();
+		}
+		return result;
 	}
 
 	//-------------------------------------------------------------------------
@@ -136,23 +141,7 @@ namespace dnv::vista::sdk
 
 	bool LocalIdItems::operator==( const LocalIdItems& other ) const noexcept
 	{
-		if ( m_primaryItem != other.m_primaryItem )
-		{
-			return false;
-		}
-
-		if ( m_secondaryItem && other.m_secondaryItem )
-		{
-			return *m_secondaryItem == *other.m_secondaryItem;
-		}
-		else if ( !m_secondaryItem && !other.m_secondaryItem )
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		return m_primaryItem == other.m_primaryItem && m_secondaryItem == other.m_secondaryItem;
 	}
 
 	bool LocalIdItems::operator!=( const LocalIdItems& other ) const noexcept
@@ -175,6 +164,7 @@ namespace dnv::vista::sdk
 		{
 			if ( ch == '/' )
 				continue;
+
 			if ( prev == ' ' && ch == ' ' )
 				continue;
 
@@ -185,13 +175,14 @@ namespace dnv::vista::sdk
 					current = '.';
 					break;
 				default:
-					bool match = VIS::isISOString( ch );
-					if ( !match )
+					if ( !VIS::isISOString( ch ) )
 					{
 						current = '.';
-						break;
 					}
-					current = static_cast<char>( std::tolower( ch ) );
+					else
+					{
+						current = static_cast<char>( std::tolower( static_cast<unsigned char>( ch ) ) );
+					}
 					break;
 			}
 

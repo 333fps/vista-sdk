@@ -63,7 +63,7 @@ namespace dnv::vista::sdk
 		if ( !m_visVersion.has_value() )
 			return false;
 
-		if ( m_items.primaryItem().length() == 0 )
+		if ( m_items.primaryItem()->length() == 0 )
 		{
 			return false;
 		}
@@ -74,7 +74,7 @@ namespace dnv::vista::sdk
 	bool LocalIdBuilder::isEmpty() const
 	{
 		return !m_visVersion.has_value() &&
-			   m_items.primaryItem().length() == 0 &&
+			   m_items.primaryItem()->length() == 0 &&
 			   !m_items.secondaryItem() &&
 			   isEmptyMetadata();
 	}
@@ -129,7 +129,7 @@ namespace dnv::vista::sdk
 	const GmodPath& LocalIdBuilder::primaryItem() const
 	{
 		SPDLOG_INFO( "Getting primary item" );
-		return m_items.primaryItem();
+		return m_items.primaryItem().value();
 	}
 
 	const std::optional<GmodPath>& LocalIdBuilder::secondaryItem() const
@@ -336,12 +336,12 @@ namespace dnv::vista::sdk
 		if ( !version.has_value() )
 		{
 			SPDLOG_DEBUG( "tryWithVisVersion called with empty optional<VisVersion>" );
-			return *this;
+			return std::move( *this );
 		}
 
 		try
 		{
-			LocalIdBuilder result = *this;
+			LocalIdBuilder result = std::move( *this );
 
 			result.m_visVersion = version.value();
 			succeeded = true;
@@ -351,7 +351,7 @@ namespace dnv::vista::sdk
 		catch ( const std::exception& ex )
 		{
 			SPDLOG_ERROR( "Failed during tryWithVisVersion(optional<VisVersion>): {}", ex.what() );
-			return *this;
+			return std::move( *this );
 		}
 	}
 
@@ -391,42 +391,63 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// Builder Methods - Items
+	// Primary Item Builder Methods (ILocalIdBuilder Implementation)
 	//-------------------------------------------------------------------------
 
-	LocalIdBuilder LocalIdBuilder::withPrimaryItem( const GmodPath& item )
+	LocalIdBuilder LocalIdBuilder::withPrimaryItem( GmodPath&& item )
 	{
-		SPDLOG_INFO( "Setting primary item: {}", item.toString() );
+		SPDLOG_INFO( "Setting primary item..." );
 		bool succeeded;
-		LocalIdBuilder result = tryWithPrimaryItem( item, succeeded );
+		LocalIdBuilder result = tryWithPrimaryItem( std::move( item ), succeeded );
 		if ( !succeeded )
 		{
-			SPDLOG_ERROR( "Failed to set primary item: {}", item.toString() );
+			SPDLOG_ERROR( "Failed to set primary item" );
 			throw std::invalid_argument( "Failed to set primary item" );
 		}
 		return result;
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( const GmodPath& item )
+	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( GmodPath&& item )
 	{
-		return withPrimaryItem( item );
+		bool succeeded;
+		return tryWithPrimaryItem( std::move( item ), succeeded );
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( const GmodPath& item, bool& succeeded )
+	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( GmodPath&& item, bool& succeeded )
 	{
 		succeeded = false;
-
 		try
 		{
-			auto result = withPrimaryItem( item );
+			LocalIdBuilder result = std::move( *this );
+
+			result.m_items = LocalIdItems( std::move( result.m_items ), std::move( item ) );
+
 			succeeded = true;
+			SPDLOG_DEBUG( "Successfully set primary item." );
 			return result;
 		}
 		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Failed to set primary item: {}", ex.what() );
+			SPDLOG_ERROR( "Failed during tryWithPrimaryItem: {}", ex.what() );
 			return std::move( *this );
-		};
+		}
+	}
+
+	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( std::optional<GmodPath>&& item )
+	{
+		bool succeeded;
+		return tryWithPrimaryItem( std::move( item ), succeeded );
+	}
+
+	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( std::optional<GmodPath>&& item, bool& succeeded )
+	{
+		if ( !item.has_value() )
+		{
+			SPDLOG_DEBUG( "tryWithPrimaryItem(optional): Optional has no value, returning original builder." );
+			succeeded = false;
+			return std::move( *this );
+		}
+		return tryWithPrimaryItem( std::move( *item ), succeeded );
 	}
 
 	LocalIdBuilder LocalIdBuilder::withoutPrimaryItem()
@@ -434,47 +455,67 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Removing primary item - primary item will be reset to default" );
 		LocalIdBuilder result( std::move( *this ) );
 
-		result.m_items = LocalIdItems();
+		result.m_items = LocalIdItems( std::move( result.m_items ), GmodPath{} );
 
 		return result;
 	}
 
-	LocalIdBuilder LocalIdBuilder::withSecondaryItem( const GmodPath& item )
+	//-------------------------------------------------------------------------
+	// Secondary Item Builder Methods (ILocalIdBuilder Implementation)
+	//-------------------------------------------------------------------------
+
+	LocalIdBuilder LocalIdBuilder::withSecondaryItem( GmodPath&& item )
 	{
-		SPDLOG_INFO( "Setting secondary item: {}", item.toString() );
+		SPDLOG_INFO( "Setting secondary item..." );
 		bool succeeded;
-		LocalIdBuilder result = tryWithSecondaryItem( item, succeeded );
+		LocalIdBuilder result = tryWithSecondaryItem( std::move( item ), succeeded );
 		if ( !succeeded )
 		{
-			SPDLOG_ERROR( "Failed to set secondary item: {}", item.toString() );
+			SPDLOG_ERROR( "Failed to set secondary item (exception likely)" );
 			throw std::invalid_argument( "Failed to set secondary item" );
 		}
 		return result;
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( const GmodPath& item )
+	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( GmodPath&& item )
 	{
 		bool succeeded;
-		return tryWithSecondaryItem( item, succeeded );
+		return tryWithSecondaryItem( std::move( item ), succeeded );
 	}
 
-	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( const GmodPath& item, bool& succeeded )
+	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( std::optional<GmodPath>&& item, bool& succeeded )
 	{
+		if ( !item.has_value() )
+		{
+			SPDLOG_DEBUG( "tryWithSecondaryItem(optional): Optional has no value, returning original builder." );
+			succeeded = false;
+			return std::move( *this );
+		}
+		return tryWithSecondaryItem( std::move( *item ), succeeded );
+	}
+
+	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( std::optional<GmodPath>&& item )
+	{
+		bool succeeded;
+		return tryWithSecondaryItem( std::move( item ), succeeded );
+	}
+
+	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( GmodPath&& item, bool& succeeded )
+	{
+		succeeded = false;
 		try
 		{
+			LocalIdBuilder result = std::move( *this );
+			result.m_items = LocalIdItems( std::move( result.m_items ), std::make_optional( std::move( item ) ) );
+
 			succeeded = true;
-			LocalIdBuilder result = *this;
-
-			result.m_items = LocalIdItems( m_items.primaryItem(), std::optional<GmodPath>( item ) );
-
+			SPDLOG_DEBUG( "Successfully set secondary item." );
 			return result;
 		}
 		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Failed during tryWithSecondaryItem: {}", ex.what() );
-			succeeded = false;
-
-			return *this;
+			SPDLOG_ERROR( "Failed during tryWithSecondaryItem(GmodPath&&): {}", ex.what() );
+			return std::move( *this );
 		}
 	}
 
@@ -482,7 +523,9 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_INFO( "Removing secondary item" );
 		LocalIdBuilder result( std::move( *this ) );
-		result.m_items = LocalIdItems( m_items.primaryItem(), std::nullopt );
+
+		result.m_items = LocalIdItems( std::move( result.m_items ), std::nullopt );
+
 		return result;
 	}
 
@@ -813,8 +856,8 @@ namespace dnv::vista::sdk
 		std::shared_ptr<Gmod> gmod{ nullptr };
 		std::shared_ptr<Codebooks> codebooks{ nullptr };
 
-		GmodPath primaryItem{};
-		GmodPath secondaryItem{};
+		std::optional<GmodPath> primaryItem{};
+		std::optional<GmodPath> secondaryItem{};
 
 		std::optional<MetadataTag> qty{};
 		std::optional<MetadataTag> cnt{};
@@ -922,7 +965,7 @@ namespace dnv::vista::sdk
 							std::string_view pathView{ localIdView.substr( primaryItemStart,
 								i - 1 - primaryItemStart ) };
 							std::string path{ pathView };
-							if ( !gmod->tryParsePath( path, primaryItem ) )
+							if ( !gmod->tryParsePath( path, primaryItem.value() ) )
 							{
 								SPDLOG_WARN( "Invalid GmodPath in Primary item: {}", path );
 								addError( errorBuilder, state, "Invalid GmodPath in Primary item: " + path );
@@ -981,7 +1024,7 @@ namespace dnv::vista::sdk
 							std::string_view pathView{ localIdView.substr( primaryItemStart,
 								i - 1 - primaryItemStart ) };
 							std::string path{ pathView };
-							if ( !gmod->tryParsePath( path, primaryItem ) )
+							if ( !gmod->tryParsePath( path, primaryItem.value() ) )
 							{
 								SPDLOG_WARN( "Invalid GmodPath in Primary item: {}", path );
 								addError( errorBuilder, state, "Invalid GmodPath in Primary item: " + path );
@@ -1101,7 +1144,7 @@ namespace dnv::vista::sdk
 								i - 1 - secondaryItemStart );
 							std::string path( pathView );
 
-							if ( !gmod->tryParsePath( path, secondaryItem ) )
+							if ( !gmod->tryParsePath( path, secondaryItem.value() ) )
 							{
 								SPDLOG_WARN( "Invalid GmodPath in Secondary item: {}", path );
 								addError( errorBuilder, state,
@@ -1332,8 +1375,8 @@ namespace dnv::vista::sdk
 		}
 
 		localIdBuilder = create( visVersion.value_or( VisVersion::Unknown ) )
-							 .tryWithPrimaryItem( primaryItem )
-							 .tryWithSecondaryItem( secondaryItem )
+							 .tryWithPrimaryItem( std::move( primaryItem ) )
+							 .tryWithSecondaryItem( std::move( secondaryItem ) )
 							 .withVerboseMode( verbose )
 							 .tryWithMetadataTag( qty )
 							 .tryWithMetadataTag( cnt )
@@ -1394,8 +1437,8 @@ namespace dnv::vista::sdk
 
 		size_t hash = 17;
 
-		if ( m_items.primaryItem().length() > 0 )
-			hash = hash * 31 + m_items.primaryItem().hashCode();
+		if ( m_items.primaryItem()->length() > 0 )
+			hash = hash * 31 + m_items.primaryItem()->hashCode();
 
 		if ( m_items.secondaryItem().has_value() )
 			hash = hash * 31 + m_items.secondaryItem()->hashCode();

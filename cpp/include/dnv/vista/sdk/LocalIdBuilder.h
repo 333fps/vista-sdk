@@ -59,10 +59,10 @@ namespace dnv::vista::sdk
 		static LocalIdBuilder create( VisVersion version );
 
 		/** @brief Deleted copy constructor. */
-		LocalIdBuilder( const LocalIdBuilder& ) = default;
+		LocalIdBuilder( const LocalIdBuilder& ) = delete;
 
 		/** @brief Deleted copy assignment operator. */
-		LocalIdBuilder& operator=( const LocalIdBuilder& ) = default;
+		LocalIdBuilder& operator=( const LocalIdBuilder& ) = delete;
 
 		/** @brief Allow move constructor. */
 		LocalIdBuilder( LocalIdBuilder&& ) noexcept = default;
@@ -259,31 +259,48 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
-		 * @brief Set the primary item
-		 * @param item The primary item path
-		 * @return New builder instance with the updated primary item
+		 * @brief Sets the primary item by moving the provided GmodPath.
+		 * @param item The GmodPath to set as primary (moved).
+		 * @return A new LocalIdBuilder instance with the updated primary item.
+		 * @throws std::invalid_argument if setting fails.
 		 */
-		[[nodiscard]] LocalIdBuilder withPrimaryItem( const GmodPath& item ) override;
+		[[nodiscard]] LocalIdBuilder withPrimaryItem( GmodPath&& item ) override;
 
 		/**
-		 * @brief Try to set the primary item
-		 * @param item The optional primary item path
-		 * @return New builder instance with the updated primary item if provided
+		 * @brief Tries to set the primary item by moving the provided GmodPath.
+		 * @param item The GmodPath to set as primary (moved).
+		 * @return A new LocalIdBuilder instance with the updated primary item.
 		 */
-		[[nodiscard]] LocalIdBuilder tryWithPrimaryItem( const GmodPath& item ) override;
+		[[nodiscard]] LocalIdBuilder tryWithPrimaryItem( GmodPath&& item ) override;
 
 		/**
-		 * @brief Try to set the primary item
-		 * @param item The optional primary item path
-		 * @param succeeded Output parameter indicating success
-		 * @return New builder instance with the updated primary item if successful
+		 * @brief Tries to set the primary item by moving the provided GmodPath.
+		 * @param item The GmodPath to set as primary (moved).
+		 * @param[out] succeeded True if setting was successful, false otherwise.
+		 * @return A new LocalIdBuilder instance with the updated primary item, or the original if failed.
 		 */
-		[[nodiscard]] LocalIdBuilder tryWithPrimaryItem(
-			const GmodPath& item, bool& succeeded ) override;
+		[[nodiscard]] LocalIdBuilder tryWithPrimaryItem( GmodPath&& item, bool& succeeded ) override;
 
 		/**
-		 * @brief Remove the primary item
-		 * @return New builder instance without a primary item
+		 * @brief Tries to set the primary item by moving the provided optional GmodPath.
+		 * If the optional does not contain a value, the builder is returned unchanged.
+		 * @param item An optional containing the GmodPath to set as primary (moved if present).
+		 * @return A new LocalIdBuilder instance with the updated primary item if the optional had a value, otherwise the original builder.
+		 */
+		[[nodiscard]] LocalIdBuilder tryWithPrimaryItem( std::optional<GmodPath>&& item );
+
+		/**
+		 * @brief Tries to set the primary item by moving the provided optional GmodPath.
+		 * If the optional does not contain a value, succeeded is set to false and the builder is returned unchanged.
+		 * @param item An optional containing the GmodPath to set as primary (moved if present).
+		 * @param[out] succeeded True if setting was successful (optional had value), false otherwise.
+		 * @return A new LocalIdBuilder instance with the updated primary item if successful, otherwise the original builder.
+		 */
+		[[nodiscard]] LocalIdBuilder tryWithPrimaryItem( std::optional<GmodPath>&& item, bool& succeeded );
+
+		/**
+		 * @brief Removes the primary item, resetting it to an empty GmodPath.
+		 * @return A new LocalIdBuilder instance without the primary item.
 		 */
 		[[nodiscard]] LocalIdBuilder withoutPrimaryItem() override;
 
@@ -292,31 +309,43 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
-		 * @brief Set the secondary item
-		 * @param item The secondary item path
-		 * @return New builder instance with the updated secondary item
+		 * @brief Sets the secondary item by moving the provided GmodPath.
+		 * @param item The GmodPath to set as secondary (moved).
+		 * @return A new LocalIdBuilder instance with the updated secondary item.
+		 * @throws std::invalid_argument if setting fails.
 		 */
-		[[nodiscard]] LocalIdBuilder withSecondaryItem( const GmodPath& item ) override;
+		[[nodiscard]] LocalIdBuilder withSecondaryItem( GmodPath&& item ) override;
 
 		/**
-		 * @brief Try to set the secondary item
-		 * @param item The optional secondary item path
-		 * @return New builder instance with the updated secondary item if provided
+		 * @brief Tries to set the secondary item by moving the provided optional GmodPath.
+		 * If the optional does not contain a value, the builder is returned unchanged.
+		 * @param item An optional containing the GmodPath to set as secondary (moved if present).
+		 * @return A new LocalIdBuilder instance with the updated secondary item if the optional had a value, otherwise the original builder.
 		 */
-		[[nodiscard]] LocalIdBuilder tryWithSecondaryItem( const GmodPath& item ) override;
+		[[nodiscard]] LocalIdBuilder tryWithSecondaryItem( GmodPath&& item ) override;
 
 		/**
-		 * @brief Try to set the secondary item
-		 * @param item The optional secondary item path
-		 * @param succeeded Output parameter indicating success
-		 * @return New builder instance with the updated secondary item if successful
+		 * @brief Tries to set the secondary item by moving the provided optional GmodPath.
+		 * If the optional does not contain a value, succeeded is set to false and the builder is returned unchanged.
+		 * @param item An optional containing the GmodPath to set as secondary (moved if present).
+		 * @param[out] succeeded True if setting was successful (optional had value), false otherwise.
+		 * @return A new LocalIdBuilder instance with the updated secondary item if successful, otherwise the original builder.
 		 */
-		[[nodiscard]] LocalIdBuilder tryWithSecondaryItem(
-			const GmodPath& item, bool& succeeded ) override;
+		[[nodiscard]] LocalIdBuilder tryWithSecondaryItem( std::optional<GmodPath>&& item, bool& succeeded ) override;
+		[[nodiscard]] LocalIdBuilder tryWithSecondaryItem( std::optional<GmodPath>&& item ) override;
 
 		/**
-		 * @brief Remove the secondary item
-		 * @return New builder instance without a secondary item
+		 * @brief Tries to set the secondary item by moving the provided GmodPath.
+		 * Internal helper method.
+		 * @param item The GmodPath to set as secondary (moved).
+		 * @param[out] succeeded True if setting was successful, false otherwise.
+		 * @return A new LocalIdBuilder instance with the updated secondary item, or the original if failed.
+		 */
+		[[nodiscard]] LocalIdBuilder tryWithSecondaryItem( GmodPath&& item, bool& succeeded ) override;
+
+		/**
+		 * @brief Removes the secondary item.
+		 * @return A new LocalIdBuilder instance without the secondary item.
 		 */
 		[[nodiscard]] LocalIdBuilder withoutSecondaryItem() override;
 

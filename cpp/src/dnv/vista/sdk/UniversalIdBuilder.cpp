@@ -19,24 +19,6 @@ namespace dnv::vista::sdk
 	// Factory Methods
 	//-------------------------------------------------------------------------
 
-	UniversalIdBuilder::UniversalIdBuilder( const UniversalIdBuilder& other )
-		: IUniversalIdBuilder(),
-		  m_localId( other.m_localId ),
-		  m_imoNumber( other.m_imoNumber )
-
-	{
-	}
-
-	UniversalIdBuilder& UniversalIdBuilder::operator=( const UniversalIdBuilder& other )
-	{
-		if ( this != &other )
-		{
-			m_localId = other.m_localId;
-			m_imoNumber = other.m_imoNumber;
-		}
-		return *this;
-	}
-
 	UniversalIdBuilder UniversalIdBuilder::create( VisVersion version )
 	{
 		SPDLOG_INFO( "Creating UniversalIdBuilder for VIS version {}", static_cast<int>( version ) );
@@ -58,13 +40,13 @@ namespace dnv::vista::sdk
 	// Interface Implementation - State/Getters
 	//-------------------------------------------------------------------------
 
-	std::optional<ImoNumber> UniversalIdBuilder::imoNumber() const
+	const std::optional<ImoNumber>& UniversalIdBuilder::imoNumber() const
 	{
 		SPDLOG_INFO( "Getting IMO number from builder" );
 		return m_imoNumber;
 	}
 
-	std::optional<LocalIdBuilder> UniversalIdBuilder::localId() const
+	const std::optional<LocalIdBuilder>& UniversalIdBuilder::localId() const
 	{
 		SPDLOG_INFO( "Getting local ID from builder" );
 		return m_localId;
@@ -91,7 +73,7 @@ namespace dnv::vista::sdk
 	UniversalIdBuilder UniversalIdBuilder::withoutLocalId()
 	{
 		SPDLOG_INFO( "Removing local ID from builder" );
-		UniversalIdBuilder copy( *this );
+		UniversalIdBuilder copy( std::move( *this ) );
 		copy.m_localId.reset();
 		return copy;
 	}

@@ -57,6 +57,8 @@ namespace dnv::vista::sdk
 
 		/**
 		 * @brief Convert parent pointers to vector of actual nodes
+		 * @details Creates copies of the nodes. Can be expensive if called frequently.
+		 *          Consider using nodePointers() for direct access if copies are not needed.
 		 * @return Vector of node copies
 		 */
 		std::vector<GmodNode> nodes() const;
@@ -131,8 +133,13 @@ namespace dnv::vista::sdk
 			explicit TraversalOptions( int maxTraversalOccurrence );
 		};
 
-		/** @brief Handler function type for traversal without state */
-		using TraverseHandler = std::function<TraversalHandlerResult( const std::vector<GmodNode>&, const GmodNode& )>;
+		/**
+		 * @brief Handler function type for traversal without state
+		 * @param parents Vector of pointers to parent nodes in the current path
+		 * @param node The current node being visited
+		 * @return Result indicating how to continue traversal
+		 */
+		using TraverseHandler = std::function<TraversalHandlerResult( const std::vector<const GmodNode*>& parents, const GmodNode& node )>;
 
 		/**
 		 * @brief Iterator for traversing nodes in the GMOD
@@ -321,18 +328,18 @@ namespace dnv::vista::sdk
 
 		/**
 		 * @brief Traverse the GMOD hierarchy from root node
-		 * @param handler Function called for each node visited
+		 * @param handler Function called for each node visited. Receives parent pointers and current node.
 		 * @param options Traversal configuration options
-		 * @return true if traversal completed successfully
+		 * @return true if traversal completed without being stopped by the handler
 		 */
 		bool traverse( const TraverseHandler& handler, const TraversalOptions& options = {} ) const;
 
 		/**
 		 * @brief Traverse the GMOD hierarchy from a specific starting node
 		 * @param rootNode Node to start traversal from
-		 * @param handler Function called for each node visited
+		 * @param handler Function called for each node visited. Receives parent pointers and current node.
 		 * @param options Traversal configuration options
-		 * @return true if traversal completed successfully
+		 * @return true if traversal completed without being stopped by the handler
 		 */
 		bool traverse( const GmodNode& rootNode, const TraverseHandler& handler, const TraversalOptions& options = {} ) const;
 
@@ -340,14 +347,14 @@ namespace dnv::vista::sdk
 		 * @brief Stateful traversal of GMOD from root node
 		 * @tparam TState Type of state object to maintain during traversal
 		 * @param state State object passed to handler for context preservation
-		 * @param handler Function called for each node visited
+		 * @param handler Function called for each node visited. Receives state, parent pointers, and current node.
 		 * @param options Traversal configuration options
-		 * @return true if traversal completed successfully
+		 * @return true if traversal completed without being stopped by the handler
 		 */
 		template <typename TState>
 		bool traverse(
 			TState& state,
-			const std::function<TraversalHandlerResult( TState&, const std::vector<GmodNode>&, const GmodNode& )>& handler,
+			const std::function<TraversalHandlerResult( TState& state, const std::vector<const GmodNode*>& parents, const GmodNode& node )>& handler,
 			const TraversalOptions& options = {} ) const;
 
 		/**
@@ -355,32 +362,33 @@ namespace dnv::vista::sdk
 		 * @tparam TState Type of state object to maintain during traversal
 		 * @param state State object passed to handler for context preservation
 		 * @param rootNode Node to start traversal from
-		 * @param handler Function called for each node visited
+		 * @param handler Function called for each node visited. Receives state, parent pointers, and current node.
 		 * @param options Traversal configuration options
-		 * @return true if traversal completed successfully
+		 * @return true if traversal completed without being stopped by the handler
 		 */
 		template <typename TState>
 		bool traverse(
 			TState& state,
 			const GmodNode& rootNode,
-			const std::function<TraversalHandlerResult( TState&, const std::vector<GmodNode>&, const GmodNode& )>& handler,
+			const std::function<TraversalHandlerResult( TState& state, const std::vector<const GmodNode*>& parents, const GmodNode& node )>& handler,
 			const TraversalOptions& options = {} ) const;
 
 		/**
-		 * @brief Check if a path exists between a sequence of parent nodes and a target node
+		 * @brief Check if a path exists between a sequence of parent nodes and a target node.
 		 *
-		 * This method determines if there's a valid path from the last node in the
-		 * provided parent path to the target node. If found, it provides the intermediate
-		 * nodes required to complete the path.
+		 * This method determines if there's a valid path from the root node ('VE')
+		 * to the target `to` node, such that the beginning of this path matches the
+		 * provided `fromPath`. If such a path exists, it populates `remainingParents`
+		 * with the nodes in the path *after* the `fromPath` prefix, up to and including
+		 * the `to` node itself. The path is determined by walking up the unique parent
+		 * chain from the `to` node back to the root.
 		 *
-		 * @param fromPath The starting path of parent nodes
-		 * @param to The target node to find a path to
-		 * @param[out] remainingParents The nodes required to complete the path, if successful
-		 * @return true if a path exists, false otherwise
+		 * @param fromPath The required prefix path that must match the beginning of the path to the `to` node.
+		 * @param to The target node to find a path to.
+		 * @param[out] remainingParents Populated with the nodes required to complete the path after the `fromPath` prefix, if found. Cleared otherwise.
+		 * @return true if a path exists with the matching prefix and `remainingParents` is populated, false otherwise.
 		 */
-		bool pathExistsBetween(
-			const std::vector<GmodNode>& fromPath,
-			const GmodNode& to,
+		bool pathExistsBetween( const std::vector<GmodNode>& fromPath, const GmodNode& to,
 			std::vector<GmodNode>& remainingParents ) const;
 
 		//-------------------------------------------------------------------
@@ -509,10 +517,7 @@ namespace dnv::vista::sdk
 		{
 			Parents parents;
 			TState& state;
-			const std::function<TraversalHandlerResult(
-				TState&,
-				const std::vector<GmodNode>&,
-				const GmodNode& )>& handler;
+			const std::function<TraversalHandlerResult( TState&, const std::vector<const GmodNode*>&, const GmodNode& )>& handler;
 			int maxTraversalOccurrence;
 			size_t nodesVisited = 0;
 			size_t maxNodes;
@@ -526,7 +531,7 @@ namespace dnv::vista::sdk
 			 */
 			StatefulTraversalContext(
 				TState& s,
-				const std::function<TraversalHandlerResult( TState&, const std::vector<GmodNode>&, const GmodNode& )>& h,
+				const std::function<TraversalHandlerResult( TState&, const std::vector<const GmodNode*>&, const GmodNode& )>& h,
 				int maxOcc,
 				size_t maxN )
 				: state( s ), handler( h ), maxTraversalOccurrence( maxOcc ), maxNodes( maxN ) {}
@@ -570,10 +575,10 @@ namespace dnv::vista::sdk
 		ChdDictionary<GmodNode> m_nodeMap;
 
 		/** @brief List of node types classified as leaf nodes */
-		static const inline std::unordered_set<std::string> s_leafTypesSet = { "ASSET FUNCTION LEAF", "PRODUCT FUNCTION LEAF" };
+		static const std::unordered_set<std::string> s_leafTypesSet;
 
 		/** @brief List of node types classified as function nodes */
-		static const inline std::unordered_set<std::string> s_potentialParentScopeTypes = { "SELECTION", "GROUP", "LEAF" };
+		static const std::unordered_set<std::string> s_potentialParentScopeTypes;
 	};
 
 	//-------------------------------------------------------------------
@@ -586,7 +591,7 @@ namespace dnv::vista::sdk
 	template <typename TState>
 	bool Gmod::traverse(
 		TState& state,
-		const std::function<Gmod::TraversalHandlerResult( TState&, const std::vector<GmodNode>&, const GmodNode& )>& handler,
+		const std::function<Gmod::TraversalHandlerResult( TState&, const std::vector<const GmodNode*>&, const GmodNode& )>& handler,
 		const Gmod::TraversalOptions& options ) const
 	{
 		return traverse( state, rootNode(), handler, options );
@@ -599,13 +604,15 @@ namespace dnv::vista::sdk
 	bool Gmod::traverse(
 		TState& state,
 		const GmodNode& rootNode,
-		const std::function<Gmod::TraversalHandlerResult( TState&, const std::vector<GmodNode>&, const GmodNode& )>& handler,
+		const std::function<Gmod::TraversalHandlerResult( TState&, const std::vector<const GmodNode*>&, const GmodNode& )>& handler,
 		const Gmod::TraversalOptions& options ) const
 	{
 		StatefulTraversalContext<TState> context(
 			state, handler, options.maxTraversalOccurrence, options.maxNodes );
 
+		SPDLOG_DEBUG( "Starting stateful traversal from node: {}", rootNode.code() );
 		TraversalHandlerResult result = traverseNode( context, rootNode );
+		SPDLOG_DEBUG( "Stateful traversal finished with result: {}", static_cast<int>( result ) );
 
 		return result != TraversalHandlerResult::Stop;
 	}
@@ -618,39 +625,93 @@ namespace dnv::vista::sdk
 	{
 		if ( context.nodesVisited >= context.maxNodes )
 		{
+			SPDLOG_WARN( "Traversal stopped: Maximum node visit limit ({}) reached.", context.maxNodes );
 			return TraversalHandlerResult::Stop;
+		}
+		context.nodesVisited++;
+
+		if ( node.metadata().installSubstructure().has_value() && !node.metadata().installSubstructure().value() )
+		{
+			SPDLOG_TRACE( "Skipping node '{}' and its subtree due to InstallSubstructure=false", node.code() );
+			return TraversalHandlerResult::Continue;
 		}
 
 		try
 		{
-			const std::string code = node.code();
+			const std::string& code = node.code();
 			const int occurrences = context.parents.occurrences( node );
 
-			if ( occurrences < 0 )
+			bool skipOccurrenceCheck = isProductSelectionAssignment( context.parents.lastOrDefault(), &node );
+
+			if ( !skipOccurrenceCheck )
 			{
-				SPDLOG_ERROR( "Negative occurrences for node {}", code );
-				return TraversalHandlerResult::Stop;
+				if ( occurrences == context.maxTraversalOccurrence )
+				{
+					SPDLOG_DEBUG( "Skipping subtree for node '{}': Occurrence limit ({}) met.", code, occurrences );
+					return TraversalHandlerResult::SkipSubtree;
+				}
+				else if ( occurrences > context.maxTraversalOccurrence )
+				{
+					SPDLOG_ERROR( "Traversal stopped: Occurrence limit ({}) exceeded for node '{}' ({} occurrences). Potential cycle or logic error.", context.maxTraversalOccurrence, code, occurrences );
+
+					return TraversalHandlerResult::Stop;
+				}
 			}
-			else if ( occurrences >= context.maxTraversalOccurrence )
+			else
 			{
-				SPDLOG_INFO( "Maximum occurrences reached for node {}: {}", code, occurrences );
-				return TraversalHandlerResult::SkipSubtree;
+				SPDLOG_TRACE( "Skipping occurrence check for node '{}' due to ProductSelectionAssignment.", code );
 			}
 
-			SPDLOG_INFO( "Node: {} - Occurrences: {}", code, occurrences );
+			SPDLOG_TRACE( "Visiting node: '{}' (Occurrence: {})", code, occurrences + 1 );
 
 			context.parents.push( &node );
-			context.nodesVisited++;
 
-			TraversalHandlerResult result = context.handler( context.state, context.parents.nodes(), node );
+			TraversalHandlerResult result = context.handler( context.state, context.parents.nodePointers(), node );
+
+			if ( result == TraversalHandlerResult::Continue )
+			{
+				for ( const GmodNode* childPtr : node.children() )
+				{
+					if ( childPtr != nullptr )
+					{
+						result = traverseNode( context, *childPtr );
+						if ( result == TraversalHandlerResult::Stop )
+						{
+							break;
+						}
+					}
+					else
+					{
+						SPDLOG_WARN( "Null child pointer encountered for parent '{}' during traversal.", node.code() );
+					}
+				}
+			}
 
 			context.parents.pop();
+
+			if ( result == TraversalHandlerResult::SkipSubtree )
+			{
+				return TraversalHandlerResult::Continue;
+			}
 
 			return result;
 		}
 		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Exception during node traversal: {}", ex.what() );
+			SPDLOG_ERROR( "Exception during stateful node traversal for node '{}': {}", node.code(), ex.what() );
+			if ( !context.parents.nodePointers().empty() && context.parents.lastOrDefault() == &node )
+			{
+				context.parents.pop();
+			}
+			return TraversalHandlerResult::Stop;
+		}
+		catch ( ... )
+		{
+			SPDLOG_ERROR( "Unknown exception during stateful node traversal for node '{}'", node.code() );
+			if ( !context.parents.nodePointers().empty() && context.parents.lastOrDefault() == &node )
+			{
+				context.parents.pop();
+			}
 			return TraversalHandlerResult::Stop;
 		}
 	}

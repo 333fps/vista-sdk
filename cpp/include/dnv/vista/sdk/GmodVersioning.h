@@ -31,27 +31,30 @@ namespace dnv::vista::sdk
 		 * @brief Convert a GmodNode from one version to a higher version
 		 * @throws std::invalid_argument If targetVersion is not higher than sourceVersion
 		 */
-		std::optional<GmodNode> convertNode( VisVersion sourceVersion, const GmodNode& sourceNode,
-			VisVersion targetVersion ) const;
+		[[nodiscard]] std::optional<GmodNode> convertNode(
+			VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) const;
 
 		/**
-		 * @brief Convert a GmodPath from one version to a higher version
-		 * @throws std::invalid_argument If targetVersion is not higher than sourceVersion
+		 * @brief Converts a GmodPath from a source VIS version to a target VIS version.
+		 * @param sourceVersion The VIS version of the sourcePath.
+		 * @param sourcePath The GmodPath to convert (passed by const reference).
+		 * @param targetVersion The target VIS version.
+		 * @return An optional containing the converted GmodPath if successful, otherwise std::nullopt.
+		 * @throws std::invalid_argument if source or target versions are invalid or source >= target.
 		 */
-		GmodPath convertPath( VisVersion sourceVersion, const GmodPath& sourcePath,
-			VisVersion targetVersion ) const;
+		// CHANGE return type from GmodPath to std::optional<GmodPath>
+		[[nodiscard]] std::optional<GmodPath> convertPath(
+			VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const;
 
 		/**
 		 * @brief Convert a LocalIdBuilder from one version to a higher version
 		 */
-		std::optional<LocalIdBuilder> convertLocalId( const LocalIdBuilder& sourceLocalId,
-			VisVersion targetVersion ) const;
+		std::optional<LocalIdBuilder> convertLocalId( const LocalIdBuilder& sourceLocalId, VisVersion targetVersion ) const;
 
 		/**
 		 * @brief Convert a LocalId from one version to a higher version
 		 */
-		std::optional<LocalId> convertLocalId( const LocalId& sourceLocalId,
-			VisVersion targetVersion ) const;
+		std::optional<LocalId> convertLocalId( const LocalId& sourceLocalId, VisVersion targetVersion ) const;
 
 	private:
 		//-------------------------------------------------------------------------
@@ -129,7 +132,7 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Try to get a versioning node for a specific VIS version
 		 */
-		bool tryGetVersioningNode( VisVersion visVersion, GmodVersioningNode& versioningNode ) const;
+		[[nodiscard]] const GmodVersioningNode* tryGetVersioningNode( VisVersion visVersion ) const;
 
 		//-------------------------------------------------------------------------
 		// Private Validation Methods

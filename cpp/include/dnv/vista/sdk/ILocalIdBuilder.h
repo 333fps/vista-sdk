@@ -234,14 +234,14 @@ namespace dnv::vista::sdk
 		 * @param item The primary item path.
 		 * @return Builder instance for method chaining.
 		 */
-		[[nodiscard]] virtual TBuilder withPrimaryItem( const GmodPath& item ) = 0;
+		[[nodiscard]] virtual TBuilder withPrimaryItem( GmodPath&& item ) = 0;
 
 		/**
 		 * @brief Tries to set the primary item.
 		 * @param item The optional primary item path.
 		 * @return Builder instance for method chaining.
 		 */
-		[[nodiscard]] virtual TBuilder tryWithPrimaryItem( const GmodPath& item ) = 0;
+		[[nodiscard]] virtual TBuilder tryWithPrimaryItem( GmodPath&& item ) = 0;
 
 		/**
 		 * @brief Tries to set the primary item.
@@ -249,9 +249,7 @@ namespace dnv::vista::sdk
 		 * @param succeeded Output parameter indicating success.
 		 * @return Builder instance for method chaining.
 		 */
-		[[nodiscard]] virtual TBuilder tryWithPrimaryItem(
-			const GmodPath& item,
-			bool& succeeded ) = 0;
+		[[nodiscard]] virtual TBuilder tryWithPrimaryItem( GmodPath&& item, bool& succeeded ) = 0;
 
 		/**
 		 * @brief Removes the primary item.
@@ -268,14 +266,17 @@ namespace dnv::vista::sdk
 		 * @param item The secondary item path.
 		 * @return Builder instance for method chaining.
 		 */
-		[[nodiscard]] virtual TBuilder withSecondaryItem( const GmodPath& item ) = 0;
+		[[nodiscard]] virtual TBuilder withSecondaryItem( GmodPath&& item ) = 0;
 
 		/**
 		 * @brief Tries to set the secondary item.
 		 * @param item The optional secondary item path.
 		 * @return Builder instance for method chaining.
 		 */
-		[[nodiscard]] virtual TBuilder tryWithSecondaryItem( const GmodPath& item ) = 0;
+		[[nodiscard]] virtual TBuilder tryWithSecondaryItem( GmodPath&& item ) = 0;
+
+		[[nodiscard]] virtual TBuilder tryWithSecondaryItem( std::optional<GmodPath>&& item, bool& succeeded ) = 0;
+		[[nodiscard]] virtual TBuilder tryWithSecondaryItem( std::optional<GmodPath>&& item ) = 0;
 
 		/**
 		 * @brief Tries to set the secondary item.
@@ -283,9 +284,7 @@ namespace dnv::vista::sdk
 		 * @param succeeded Output parameter indicating success.
 		 * @return Builder instance for method chaining.
 		 */
-		[[nodiscard]] virtual TBuilder tryWithSecondaryItem(
-			const GmodPath& item,
-			bool& succeeded ) = 0;
+		[[nodiscard]] virtual TBuilder tryWithSecondaryItem( GmodPath&& item, bool& succeeded ) = 0;
 
 		/**
 		 * @brief Removes the secondary item.
@@ -317,9 +316,7 @@ namespace dnv::vista::sdk
 		 * @param succeeded Output parameter indicating success.
 		 * @return Builder instance for method chaining.
 		 */
-		[[nodiscard]] virtual TBuilder tryWithMetadataTag(
-			const std::optional<MetadataTag>& metadataTag,
-			bool& succeeded ) = 0;
+		[[nodiscard]] virtual TBuilder tryWithMetadataTag( const std::optional<MetadataTag>& metadataTag, bool& succeeded ) = 0;
 
 		/**
 		 * @brief Removes a metadata tag by codebook name.

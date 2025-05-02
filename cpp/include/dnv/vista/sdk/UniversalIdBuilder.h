@@ -32,14 +32,14 @@ namespace dnv::vista::sdk
 		/** Default constructor. */
 		UniversalIdBuilder() = default;
 
-		UniversalIdBuilder( const UniversalIdBuilder& other );
+		UniversalIdBuilder( const UniversalIdBuilder& other ) = delete;
 
 		/**
 		 * Copy assignment operator.
 		 * @param other The other UniversalIdBuilder to copy from.
 		 * @return Reference to this object after assignment.
 		 */
-		UniversalIdBuilder& operator=( const UniversalIdBuilder& other );
+		UniversalIdBuilder& operator=( const UniversalIdBuilder& other ) = delete;
 
 		/**
 		 * Creates a new UniversalIdBuilder for the specified VIS version.
@@ -69,13 +69,13 @@ namespace dnv::vista::sdk
 		 * Gets the IMO number.
 		 * @return The optional IMO number.
 		 */
-		virtual std::optional<ImoNumber> imoNumber() const override;
+		virtual const std::optional<ImoNumber>& imoNumber() const override;
 
 		/**
 		 * Gets the local ID builder.
 		 * @return The optional local ID builder.
 		 */
-		virtual std::optional<LocalIdBuilder> localId() const override;
+		virtual const std::optional<LocalIdBuilder>& localId() const override;
 
 		//-------------------------------------------------------------------------
 		// Interface Implementation - LocalId Modifiers

@@ -118,10 +118,10 @@ namespace dnv::vista::sdk
 		GmodPath( const std::vector<GmodNode>& parents, GmodNode node, VisVersion visVersion, bool skipVerify = true );
 
 		/** @brief Default copy constructor (if appropriate). */
-		GmodPath( const GmodPath& ) = default;
+		GmodPath( const GmodPath& ) = delete;
 
 		/** @brief Default copy assignment operator (if appropriate). */
-		GmodPath& operator=( const GmodPath& ) = default;
+		GmodPath& operator=( const GmodPath& ) = delete;
 
 		/** @brief Default move constructor. */
 		GmodPath( GmodPath&& other ) noexcept = default;
@@ -852,7 +852,7 @@ namespace dnv::vista::sdk
 		 * @brief Construct a successful result
 		 * @param path The parsed path
 		 */
-		explicit Ok( const GmodPath& path );
+		explicit Ok( const GmodPath& path ) = delete;
 
 		/**
 		 * @brief Construct a successful result by moving
@@ -921,8 +921,8 @@ namespace dnv::vista::sdk
 		 */
 		explicit ParseContext( std::queue<PathNode> initialParts );
 
-		ParseContext( const ParseContext& ) = default;
-		ParseContext& operator=( const ParseContext& ) = default;
+		ParseContext( const ParseContext& ) = delete;
+		ParseContext& operator=( const ParseContext& ) = delete;
 
 		ParseContext( ParseContext&& ) noexcept = default;
 		ParseContext& operator=( ParseContext&& ) noexcept = default;
