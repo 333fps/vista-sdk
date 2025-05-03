@@ -9,7 +9,7 @@ namespace dnv::vista::sdk
 	ParsingErrors::ParsingErrors( const std::vector<ErrorEntry>& errors )
 		: m_errors( errors )
 	{
-		SPDLOG_INFO( "ParsingErrors constructed with {} errors", m_errors.size() );
+		SPDLOG_TRACE( "ParsingErrors constructed with {} errors", m_errors.size() );
 	}
 
 	void ParsingErrors::addError( const std::string& type, const std::string& message )

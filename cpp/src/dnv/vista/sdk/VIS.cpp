@@ -49,7 +49,7 @@ namespace dnv::vista::sdk
 	// IVIS Interface Implementation
 	//-------------------------------------------------------------------------
 
-	Gmod VIS::gmod( VisVersion visVersion ) const
+	const Gmod& VIS::gmod( VisVersion visVersion ) const
 	{
 		if ( !VisVersionExtensions::isValid( visVersion ) )
 		{
@@ -71,11 +71,11 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "Created Gmod with {} nodes in dictionary",
 				!gmod.isEmpty() ? "non-empty" : "EMPTY" );
 
-			return gmod;
+			return std::move( gmod );
 		} );
 	}
 
-	Codebooks VIS::codebooks( VisVersion visVersion )
+	const Codebooks& VIS::codebooks( VisVersion visVersion )
 	{
 		if ( !VisVersionExtensions::isValid( visVersion ) )
 		{
@@ -94,7 +94,7 @@ namespace dnv::vista::sdk
 		} );
 	}
 
-	Locations VIS::locations( VisVersion visVersion )
+	const Locations& VIS::locations( VisVersion visVersion )
 	{
 		if ( !VisVersionExtensions::isValid( visVersion ) )
 		{
@@ -113,17 +113,20 @@ namespace dnv::vista::sdk
 		} );
 	}
 
-	std::unordered_map<VisVersion, Codebooks> VIS::codebooksMap(
+	std::unordered_map<VisVersion, const Codebooks*> VIS::codebooksMap(
 		const std::vector<VisVersion>& visVersions )
 	{
 		SPDLOG_INFO( "Getting codebooks map for {} versions", visVersions.size() );
 
-		std::unordered_map<VisVersion, Codebooks> result;
+		// Change map type to store const pointers
+		std::unordered_map<VisVersion, const Codebooks*> result;
+		result.reserve( visVersions.size() ); // Reserve space
 		for ( auto version : visVersions )
 		{
 			try
 			{
-				result.insert_or_assign( version, codebooks( version ) );
+				// Get const reference from cache and store its address using emplace
+				result.emplace( version, &codebooks( version ) );
 			}
 			catch ( const std::exception& e )
 			{
@@ -131,20 +134,24 @@ namespace dnv::vista::sdk
 					VisVersionExtensions::toVersionString( version ), e.what() );
 			}
 		}
-		return result;
+		return result; // NRVO
 	}
 
-	std::unordered_map<VisVersion, Gmod> VIS::gmodsMap(
-		const std::vector<VisVersion>& visVersions )
+	// Change return type to map of const pointers
+	std::unordered_map<VisVersion, const Gmod*> VIS::gmodsMap(
+		const std::vector<VisVersion>& visVersions ) const // Add const qualifier back
 	{
 		SPDLOG_INFO( "Getting GMOD map for {} versions", visVersions.size() );
 
-		std::unordered_map<VisVersion, Gmod> result;
+		// Change map type to store const pointers
+		std::unordered_map<VisVersion, const Gmod*> result;
+		result.reserve( visVersions.size() ); // Reserve space
 		for ( auto version : visVersions )
 		{
 			try
 			{
-				result.insert_or_assign( version, gmod( version ) );
+				// Get const reference from cache and store its address using emplace
+				result.emplace( version, &gmod( version ) );
 			}
 			catch ( const std::exception& e )
 			{
@@ -152,20 +159,24 @@ namespace dnv::vista::sdk
 					VisVersionExtensions::toVersionString( version ), e.what() );
 			}
 		}
-		return result;
+		return result; // NRVO
 	}
 
-	std::unordered_map<VisVersion, Locations> VIS::locationsMap(
+	// Change return type to map of const pointers
+	std::unordered_map<VisVersion, const Locations*> VIS::locationsMap(
 		const std::vector<VisVersion>& visVersions )
 	{
 		SPDLOG_INFO( "Getting locations map for {} versions", visVersions.size() );
 
-		std::unordered_map<VisVersion, Locations> result;
+		// Change map type to store const pointers
+		std::unordered_map<VisVersion, const Locations*> result;
+		result.reserve( visVersions.size() ); // Reserve space
 		for ( auto version : visVersions )
 		{
 			try
 			{
-				result.insert_or_assign( version, locations( version ) );
+				// Get const reference from cache and store its address using emplace
+				result.emplace( version, &locations( version ) );
 			}
 			catch ( const std::exception& e )
 			{
@@ -173,7 +184,7 @@ namespace dnv::vista::sdk
 					VisVersionExtensions::toVersionString( version ), e.what() );
 			}
 		}
-		return result;
+		return result; // NRVO
 	}
 
 	std::vector<VisVersion> VIS::visVersions()

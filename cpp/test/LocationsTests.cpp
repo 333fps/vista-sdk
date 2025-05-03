@@ -188,7 +188,7 @@ namespace dnv::vista::sdk::tests
 
 	TEST_F( LocationsTests, Test_Locations_Equality )
 	{
-		auto gmod = m_vis->gmod( VisVersion::v3_4a );
+		const auto& gmod = m_vis->gmod( VisVersion::v3_4a );
 
 		auto node1 = gmod["C101.663"].withLocation( "FIPU" );
 		auto node2 = gmod["C101.663"].withLocation( "FIPU" );

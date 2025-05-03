@@ -6,7 +6,7 @@
  * for vessel information structure, along with utility functions to convert between
  * enum values and their string prefix representations.
  *
- * @see ISO 19848:2018 - Ships and marine technology — Standard data for shipboard machinery and equipment
+ * @see ISO 19848 - Ships and marine technology — Standard data for shipboard machinery and equipment
  */
 
 #pragma once
@@ -86,6 +86,6 @@ namespace dnv::vista::sdk
 		 * @return The corresponding string prefix view (e.g., "pos" for Position)
 		 * @throws std::invalid_argument If the name is unknown
 		 */
-		static std::string_view toPrefix( CodebookName name );
+		[[nodiscard]] static std::string_view toPrefix( CodebookName name );
 	};
 }

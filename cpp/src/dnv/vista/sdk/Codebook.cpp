@@ -21,6 +21,8 @@ namespace dnv::vista::sdk
 		constexpr const char* NUMBER_GROUP = "<number>";
 		constexpr const char* DEFAULT_GROUP_NAME = "DEFAULT_GROUP";
 		constexpr const char* UNKNOWN_GROUP = "UNKNOWN";
+
+		constexpr const char* WHITESPACE = " \t\n\r\f\v";
 	}
 
 	//-------------------------------------------------------------------
@@ -156,6 +158,11 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------
 
 	Codebook::Codebook( const CodebookDto& dto )
+		: m_name{},
+		  m_groupMap{},
+		  m_standardValues{},
+		  m_groups{},
+		  m_rawData{}
 	{
 		static const std::unordered_map<std::string, CodebookName> nameMap{
 			{ "positions", CodebookName::Position },
@@ -173,43 +180,83 @@ namespace dnv::vista::sdk
 		auto it{ nameMap.find( dto.name() ) };
 		if ( it == nameMap.end() )
 		{
-			SPDLOG_ERROR( "Unknown metadata tag: {}", dto.name() );
-			throw std::invalid_argument( "Unknown metadata tag: " + dto.name() );
+			const std::string errorMsg = "Unknown codebook name: " + dto.name();
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
 		}
 		m_name = it->second;
 
-		m_rawData = dto.values();
+		SPDLOG_INFO( "Constructing Codebook '{}'", dto.name() );
 
-		std::vector<std::pair<std::string, std::string>> data{};
 		std::unordered_set<std::string> valueSet{};
 		std::unordered_set<std::string> groupSet{};
 
-		for ( const auto& [group, values] : dto.values() )
+		m_rawData.reserve( dto.values().size() );
+
+		size_t totalValueCount = std::accumulate(
+			dto.values().begin(), dto.values().end(), static_cast<size_t>( 0 ),
+			[]( size_t sum, const auto& pair ) {
+				return sum + std::count_if( pair.second.begin(), pair.second.end(),
+								 []( const std::string& v ) { return v != NUMBER_GROUP; } );
+			} );
+		m_groupMap.reserve( totalValueCount );
+
+		valueSet.reserve( totalValueCount );
+		groupSet.reserve( dto.values().size() );
+
+		for ( const auto& [groupKey, values] : dto.values() )
 		{
-			std::string trimmedGroup{ group };
-			trimmedGroup.erase( 0, trimmedGroup.find_first_not_of( " \t\n\r\f\v" ) );
-			trimmedGroup.erase( trimmedGroup.find_last_not_of( " \t\n\r\f\v" ) + 1 );
+			std::string_view groupKeyView( groupKey );
+			const auto groupFirst = groupKeyView.find_first_not_of( WHITESPACE );
+			std::string trimmedGroup;
+			if ( groupFirst != std::string_view::npos )
+			{
+				const auto groupLast = groupKeyView.find_last_not_of( WHITESPACE );
+				trimmedGroup = std::string( groupKeyView.substr( groupFirst, groupLast - groupFirst + 1 ) );
+			}
+
+			std::vector<std::string> trimmedValues;
+			trimmedValues.reserve( values.size() );
+			bool groupHasValidValue = false;
 
 			for ( const auto& value : values )
 			{
-				std::string trimmedValue{ value };
-				trimmedValue.erase( 0, trimmedValue.find_first_not_of( " \t\n\r\f\v" ) );
-				trimmedValue.erase( trimmedValue.find_last_not_of( " \t\n\r\f\v" ) + 1 );
+				std::string_view valueView( value );
+				const auto valueFirst = valueView.find_first_not_of( WHITESPACE );
+				std::string trimmedValue;
+				if ( valueFirst != std::string_view::npos )
+				{
+					const auto valueLast = valueView.find_last_not_of( WHITESPACE );
+					trimmedValue = std::string( valueView.substr( valueFirst, valueLast - valueFirst + 1 ) );
+				}
+
+				trimmedValues.push_back( trimmedValue );
 
 				if ( trimmedValue != NUMBER_GROUP )
 				{
-					data.push_back( { trimmedGroup, trimmedValue } );
-					m_groupMap[trimmedValue] = trimmedGroup;
+					groupHasValidValue = true;
+					if ( auto [mapIt, inserted] = m_groupMap.try_emplace( trimmedValue, trimmedGroup ); !inserted )
+					{
+						SPDLOG_WARN( "Duplicate value '{}' found. Keeping group '{}', ignoring group '{}'.", trimmedValue,
+							mapIt->second, trimmedGroup );
+					}
 					valueSet.insert( trimmedValue );
-					groupSet.insert( trimmedGroup );
 				}
+			}
+
+			m_rawData.emplace( trimmedGroup, std::move( trimmedValues ) );
+
+			if ( groupHasValidValue )
+			{
+				groupSet.insert( trimmedGroup );
 			}
 		}
 
 		m_standardValues = CodebookStandardValues{ m_name, valueSet };
 		m_groups = CodebookGroups{ groupSet };
 
-		SPDLOG_INFO( "Codebook created with {} standard values across {} groups", valueSet.size(), groupSet.size() );
+		SPDLOG_INFO( "Codebook '{}' constructed. Groups: {}, Standard Values: {}, Raw Entries: {}", dto.name(),
+			m_groups.count(), m_standardValues.count(), m_rawData.size() );
 	}
 
 	//-------------------------------------------------------------------
@@ -491,7 +538,7 @@ namespace dnv::vista::sdk
 			}
 		}
 
-		SPDLOG_CRITICAL( "validatePosition('{}'): Passed all checks, returning worst recursive result: {}", currentPositionStr, static_cast<int>( worstResult ) );
+		SPDLOG_DEBUG( "validatePosition('{}'): Passed all checks, returning worst recursive result: {}", currentPositionStr, static_cast<int>( worstResult ) );
 		return worstResult;
 	}
 }

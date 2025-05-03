@@ -1,152 +1,196 @@
 /**
  * @file ILocalId.h
- * @brief Interface for Local ID objects in the VIS system
- *
- * Defines the core interface for Local ID objects which represent unique
- * identifiers within the Vessel Information Structure (VIS) system according
- * to ISO 19848 standards.
+ * @brief Interface for Local ID objects in the VIS system.
+ * @details Defines the core interface for Local ID objects which represent unique
+ *          identifiers within the Vessel Information Structure (VIS) system according
+ *          to ISO 19848 standards, using the Curiously Recurring Template Pattern (CRTP).
  */
 
 #pragma once
 
 #include "ParsingErrors.h"
-#include "VisVersion.h"
-#include "GmodPath.h"
-#include "MetadataTag.h"
+
+namespace dnv::vista::sdk
+{
+	//=====================================================================
+	// Forward declarations
+	//=====================================================================
+
+	class GmodPath;
+	class MetadataTag;
+	enum class VisVersion;
+}
 
 namespace dnv::vista::sdk
 {
 	/**
-	 * @brief Interface for Local ID
+	 * @interface ILocalId
+	 * @brief Base interface for Local IDs using the CRTP pattern.
 	 *
-	 * Provides the core properties and methods for working with Local IDs
-	 * in the VIS (Vessel Information Structure) system.
+	 * @details Provides the core properties and methods required for all Local ID implementations
+	 * within the VIS (Vessel Information Structure) system. Derived classes must
+	 * provide implementations for the pure virtual functions and static methods.
 	 *
-	 * @tparam T The derived class type (CRTP pattern)
+	 * This interface uses the Curiously Recurring Template Pattern (CRTP) where `T` is the
+	 * concrete derived class type. This allows static methods like `parse` and `tryParse`
+	 * to be defined within the interface scope while operating on and returning the
+	 * concrete type `T`.
+	 *
+	 * @tparam T The concrete derived class type (e.g., `LocalId`).
 	 */
 	template <typename T>
 	class ILocalId
 	{
-	public:
-		//-------------------------------------------------------------------------
-		// Lifecycle
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Construction / Destruction
+		//=====================================================================
 
-		/** @brief Default constructor */
+	protected:
+		/** @brief Default constructor. */
 		ILocalId() = default;
 
-		/** @brief Virtual destructor */
+	public:
+		/** @brief Copy constructor */
+		ILocalId( const ILocalId& ) = delete;
+
+		/** @brief Move constructor */
+		ILocalId( ILocalId&& ) noexcept = default;
+
+		/** @brief Destructor */
 		virtual ~ILocalId() = default;
 
-		/** @brief Delete copy constructor - interfaces shouldn't be copied */
-		ILocalId( const ILocalId& ) = default;
+		//=====================================================================
+		// Special Member Functions
+		//=====================================================================
 
-		/** @brief Delete copy assignment - interfaces shouldn't be assigned */
-		ILocalId& operator=( const ILocalId& ) = default;
+		/** @brief Copy assignment operator */
+		ILocalId& operator=( const ILocalId& ) = delete;
 
-		/** @brief Default move constructor */
-		ILocalId( ILocalId&& ) = default;
+		/** @brief Move assignment operator */
+		ILocalId& operator=( ILocalId&& ) noexcept = default;
 
-		/** @brief Default move assignment */
-		ILocalId& operator=( ILocalId&& ) = default;
+		//=====================================================================
+		// Operators
+		//=====================================================================
 
-		//-------------------------------------------------------------------------
+		/**
+		 * @brief Equality comparison operator.
+		 * @details Delegates to the virtual `equals` method for state comparison.
+		 * @param[in] other The Local ID object (of concrete type T) to compare against.
+		 * @return True if the Local IDs represent the same state, false otherwise.
+		 * @see equals
+		 */
+		[[nodiscard]] bool operator==( const T& other ) const;
+
+		/**
+		 * @brief Inequality comparison operator.
+		 * @details Returns the negation of the `equals` method result.
+		 * @param[in] other The Local ID object (of concrete type T) to compare against.
+		 * @return True if the Local IDs represent different states, false otherwise.
+		 * @see equals
+		 */
+		[[nodiscard]] bool operator!=( const T& other ) const;
+
+		//=====================================================================
 		// Core Properties
-		//-------------------------------------------------------------------------
+		//=====================================================================
 
 		/**
-		 * @brief Get the VIS version
-		 * @return The VIS version
+		 * @brief Gets the VIS version associated with this Local ID.
+		 * @details The VIS version indicates the specific standard version the Local ID conforms to.
+		 * @return The `VisVersion` enum value.
 		 */
-		virtual VisVersion visVersion() const = 0;
+		[[nodiscard]] virtual VisVersion visVersion() const = 0;
 
 		/**
-		 * @brief Check if verbose mode is enabled
-		 * @return True if verbose mode is enabled
+		 * @brief Checks if the Local ID was parsed or generated in verbose mode.
+		 * @details Verbose mode typically affects the `toString()` representation.
+		 * @return True if verbose mode is indicated, false otherwise.
 		 */
-		virtual bool isVerboseMode() const = 0;
+		[[nodiscard]] virtual bool isVerboseMode() const = 0;
 
 		/**
-		 * @brief Get the primary item
-		 * @return Reference to the primary item
-		 * @throws std::runtime_error if primary item is not set
+		 * @brief Gets the primary GMOD path item of the Local ID.
+		 * @details The primary item is mandatory for a valid Local ID.
+		 * @return A constant reference to the primary `GmodPath`.
+		 * @throws std::runtime_error (or derived) if the primary item is unexpectedly absent
+		 *         (though this should typically be guaranteed by valid construction).
 		 */
-		virtual const GmodPath& primaryItem() const = 0;
+		[[nodiscard]] virtual const GmodPath& primaryItem() const = 0;
 
 		/**
-		 * @brief Get the secondary item
-		 * @return The secondary item, if present
+		 * @brief Gets the optional secondary GMOD path item.
+		 * @details The secondary item provides additional context or relationship information.
+		 * @return A constant reference to an `std::optional<GmodPath>` containing the secondary
+		 *         item path if present, or `std::nullopt` otherwise.
 		 */
-		virtual const std::optional<GmodPath>& secondaryItem() const = 0;
-
-		//-------------------------------------------------------------------------
-		// Metadata Access
-		//-------------------------------------------------------------------------
+		[[nodiscard]] virtual const std::optional<GmodPath>& secondaryItem() const = 0;
 
 		/**
-		 * @brief Check if the Local ID has any custom tags
-		 * @return True if custom tags exist
+		 * @brief Checks if the Local ID includes any custom (non-standard) metadata tags.
+		 * @details Custom tags are typically prefixed with '~' in the string representation.
+		 * @return True if at least one custom tag exists, false otherwise.
 		 */
-		virtual bool hasCustomTag() const = 0;
+		[[nodiscard]] virtual bool hasCustomTag() const = 0;
 
 		/**
-		 * @brief Get all metadata tags
-		 * @return A constant reference to the vector of metadata tags
+		 * @brief Gets all metadata tags associated with the Local ID.
+		 * @details Returns a collection of the `MetadataTag` objects. The order typically
+		 *          corresponds to the standard Local ID format (Quantity, Content, etc.).
+		 * @return A vector containing copies of the `MetadataTag` objects.
 		 */
-		virtual const std::vector<MetadataTag>& metadataTags() const = 0;
+		[[nodiscard]] virtual std::vector<MetadataTag> metadataTags() const = 0;
 
-		//-------------------------------------------------------------------------
+		//=====================================================================
 		// Conversion and Comparison
-		//-------------------------------------------------------------------------
+		//=====================================================================
 
 		/**
-		 * @brief Convert the Local ID to a string representation
-		 * @return The string representation of the Local ID
+		 * @brief Converts the Local ID to its canonical string representation.
+		 * @details The format follows the VIS standard (ISO 19848). The output may be
+		 *          affected by the `isVerboseMode()` setting.
+		 * @return The `std::string` representation of the Local ID.
 		 */
-		virtual std::string toString() const = 0;
+		[[nodiscard]] virtual std::string toString() const = 0;
 
 		/**
-		 * @brief Check if this Local ID equals another Local ID
-		 * @param other The Local ID to compare with
-		 * @return True if equal, false otherwise
+		 * @brief Performs a deep equality comparison with another Local ID.
+		 * @details Compares all components (VIS version, items, tags, modes) for equality.
+		 * @param[in] other The Local ID object (of concrete type T) to compare against.
+		 * @return True if all components of the Local IDs are equal, false otherwise.
+		 * @throws Can throw exceptions, e.g., `std::invalid_argument` if comparing objects
+		 *         with different VIS versions (implementation-defined behavior).
 		 */
-		virtual bool equals( const T& other ) const = 0;
+		[[nodiscard]] virtual bool equals( const T& other ) const = 0;
+
+		//=====================================================================
+		// Static Parsing Methods
+		//=====================================================================
 
 		/**
-		 * @brief Equality operator
-		 * @param other The Local ID to compare with
-		 * @return True if equal, false otherwise
+		 * @brief Parses a string representation into a concrete Local ID object.
+		 * @details Creates an instance of the concrete type `T` from the `localIdStr`.
+		 *          Delegates parsing logic to the concrete `T` implementation.
+		 * @param[in] localIdStr The Local ID string to parse (e.g., "/dnv-v2/vis-3.0/1000/10/meta/qty-mass").
+		 * @return An instance of the concrete Local ID type `T`.
+		 * @throws std::invalid_argument or derived exception if parsing fails due to invalid format or content.
 		 */
-		bool operator==( const T& other ) const noexcept;
+		[[nodiscard]] static T parse( const std::string& localIdStr );
 
 		/**
-		 * @brief Inequality operator
-		 * @param other The Local ID to compare with
-		 * @return True if not equal, false otherwise
+		 * @brief Attempts to parse a string representation into a concrete Local ID object.
+		 * @details Tries to create an instance of `T` from `localIdStr`. If successful, the result
+		 *          is placed in the `localId` output parameter. If parsing fails, error information
+		 *          is added to the `errors` output parameter. Does not throw on parsing failure.
+		 *          Delegates parsing logic to the concrete `T` implementation.
+		 * @param[in] localIdStr The Local ID string to parse.
+		 * @param[out] errors A `ParsingErrors` object to collect detailed error information if parsing fails.
+		 * @param[out] localId An `std::optional<T>` that will contain the resulting Local ID
+		 *                     if parsing succeeds, or `std::nullopt` otherwise.
+		 * @return True if parsing was successful, false otherwise.
 		 */
-		bool operator!=( const T& other ) const noexcept;
-
-		//-------------------------------------------------------------------------
-		// Static Parser Methods
-		//-------------------------------------------------------------------------
-
-		/**
-		 * @brief Parse a string into a Local ID
-		 * @param localIdStr The string to parse
-		 * @return The parsed Local ID
-		 * @throws std::invalid_argument If parsing fails
-		 */
-		static T parse( const std::string& localIdStr );
-
-		/**
-		 * @brief Try to parse a string into a Local ID
-		 * @param localIdStr The string to parse
-		 * @param errors Output parameter for parsing errors
-		 * @param localId Output parameter for the parsed Local ID
-		 * @return True if parsing succeeded, false otherwise
-		 */
-		static bool tryParse( const std::string& localIdStr, ParsingErrors& errors, std::optional<T>& localId );
+		[[nodiscard]] static bool tryParse( const std::string& localIdStr, ParsingErrors& errors, std::optional<T>& localId );
 	};
 }
 
-#include "ILocalId.hpp"
+#include "ILocalId.inl"

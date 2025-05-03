@@ -1,8 +1,8 @@
 /**
  * @file ChdDictionary.h
- * @brief Perfect hashing dictionary using the CHD algorithm
+ * @brief Perfect hashing dictionary using the CHD algorithm.
  *
- * This file defines the ChdDictionary class, a core data structure in the VISTA SDK
+ * @details This file defines the ChdDictionary class, a core data structure in the VISTA SDK
  * that provides fast, memory-efficient lookups using the Compress, Hash, and Displace
  * (CHD) algorithm for perfect hashing. This implementation optimizes for read-heavy
  * operations with minimal memory overhead.
@@ -16,347 +16,413 @@ namespace dnv::vista::sdk
 {
 	namespace internal
 	{
-		//-------------------------------------------------------------------
-		// Constants
-		//-------------------------------------------------------------------
+		//=====================================================================
+		// Internal Implementation Details
+		//=====================================================================
 
-		/** @brief FNV offset basis constant for hash calculations */
+		//----------------------------------------------
+		// Constants
+		//----------------------------------------------
+
+		/** @brief FNV offset basis constant for hash calculations. */
 		constexpr uint32_t FNV_OFFSET_BASIS{ 0x811C9DC5 };
 
-		/** @brief FNV prime constant for hash calculations */
+		/** @brief FNV prime constant for hash calculations. */
 		constexpr uint32_t FNV_PRIME{ 0x01000193 };
 
-		/** @brief Number of entries in the thread-local hash lookup cache */
+		/** @brief Number of entries in the thread-local hash lookup cache. */
 		static inline constexpr size_t HASH_CACHE_SIZE = 128;
 
-		//-------------------------------------------------------------------
+		//----------------------------------------------
 		// CPU Feature Detection
-		//-------------------------------------------------------------------
+		//----------------------------------------------
 
 		/**
-		 * @brief Get the cached SSE4.2 support status
-		 * @return true if SSE4.2 is supported, false otherwise
+		 * @brief Gets the cached SSE4.2 support status.
+		 * @details Checks CPU capabilities to determine if SSE4.2 instructions are available,
+		 *          which can accelerate CRC32 hashing. The result is cached for efficiency.
+		 * @return `true` if SSE4.2 is supported, `false` otherwise.
 		 */
 		bool hasSSE42Support();
 
-		//-------------------------------------------------------------------
+		//----------------------------------------------
 		// Exception Handling
-		//-------------------------------------------------------------------
+		//----------------------------------------------
 
 		/**
-		 * @brief Helper class for throwing standardized exceptions
+		 * @class ThrowHelper
+		 * @brief Helper class for throwing standardized exceptions within ChdDictionary.
 		 */
 		class ThrowHelper final
 		{
 		public:
 			/**
-			 * @brief Throw an exception for key not found
-			 * @param key The key that was not found
-			 * @throws std::out_of_range Always
+			 * @brief Throws a `std::out_of_range` exception indicating a key was not found.
+			 * @param[in] key The key that was not found in the dictionary.
+			 * @throws std::out_of_range Always.
 			 */
 			[[noreturn]] static void throwKeyNotFoundException( std::string_view key );
 
 			/**
-			 * @brief Throw an exception for invalid operation
-			 * @throws std::invalid_argument Always
+			 * @brief Throws a `std::invalid_argument` exception indicating an invalid operation.
+			 * @details Typically used when attempting operations on an uninitialized or invalid dictionary state.
+			 * @throws std::invalid_argument Always.
 			 */
 			[[noreturn]] static void throwInvalidOperationException();
 		};
 
-		//-------------------------------------------------------------------
+		//----------------------------------------------
 		// Hashing
-		//-------------------------------------------------------------------
+		//----------------------------------------------
 
 		/**
-		 * @brief Hash function utilities for the CHD algorithm
+		 * @class Hashing
+		 * @brief Provides hashing function utilities required for the CHD algorithm.
 		 */
 		class Hashing final
 		{
 		public:
 			/**
-			 * @brief FNV-1a hash function
-			 * @param hash The current hash value
-			 * @param ch The character to hash
-			 * @return The updated hash value
+			 * @brief Computes one step of the FNV-1a hash function.
+			 * @param[in] hash The current hash value.
+			 * @param[in] ch The character (byte) to incorporate into the hash.
+			 * @return The updated hash value.
 			 * @see https://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function
 			 */
 			static uint32_t fnv1a( uint32_t hash, uint8_t ch );
 
 			/**
-			 * @brief CRC32 hash function using SSE4.2 instructions
-			 * @param hash The current hash value
-			 * @param ch The character to hash
-			 * @return The updated hash value
+			 * @brief Computes one step of the CRC32 hash function using SSE4.2 instructions if available.
+			 * @param[in] hash The current hash value.
+			 * @param[in] ch The character (byte) to incorporate into the hash.
+			 * @return The updated hash value.
 			 * @see https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 			 */
 			static uint32_t crc32( uint32_t hash, uint8_t ch );
 
 			/**
-			 * @brief Seed mixing function for CHD algorithm
-			 * @param seed The seed value
-			 * @param hash The hash value
-			 * @param size The table size
-			 * @return The final table index
+			 * @brief Computes the final table index using the seed mixing function for the CHD algorithm.
+			 * @param[in] seed The seed value associated with the hash bucket.
+			 * @param[in] hash The hash value of the key.
+			 * @param[in] size The size of the dictionary's main table.
+			 * @return The final table index for the key.
 			 * @see https://en.wikipedia.org/wiki/Perfect_hash_function#CHD_algorithm
 			 */
 			static uint32_t seed( uint32_t seed, uint32_t hash, uint64_t size );
 		};
 	}
+}
 
+namespace dnv::vista::sdk
+{
 	/**
-	 * @brief Perfect hashing dictionary using CHD algorithm
+	 * @class ChdDictionary
+	 * @brief A read-optimized dictionary using the Compress, Hash, and Displace (CHD) perfect hashing algorithm.
 	 *
-	 * Provides O(1) lookup time with minimal memory overhead for read-only
-	 * dictionaries. Uses a two-level perfect hashing scheme with no collisions.
-	 * Implementation is based on the Compress, Hash, and Displace (CHD) algorithm
-	 * by Botelho, Pagh, and Ziviani.
+	 * @details Provides O(1) expected lookup time with minimal memory overhead for essentially read-only
+	 * dictionaries. It uses a two-level perfect hashing scheme based on the CHD algorithm
+	 * by Botelho, Pagh, and Ziviani, ensuring no collisions for the stored keys.
+	 * This implementation is suitable for scenarios where a fixed set of key-value pairs
+	 * needs to be queried frequently and efficiently. It includes optimizations like
+	 * optional SSE4.2 hashing and thread-local caching.
 	 *
-	 * @tparam TValue The type of values stored in the dictionary
+	 * @tparam TValue The type of values stored in the dictionary.
 	 * @see https://en.wikipedia.org/wiki/Perfect_hash_function#CHD_algorithm
 	 */
 	template <typename TValue>
 	class ChdDictionary
 	{
 	public:
-		//-------------------------------------------------------------------
-		// Public Types Definitions
-		//-------------------------------------------------------------------
+		//=====================================================================
+		// Iterator Definition
+		//=====================================================================
 
 		/**
-		 * @brief Iterator for ChdDictionary key-value pairs
+		 * @class Iterator
+		 * @brief Provides forward iteration capabilities over the key-value pairs in the ChdDictionary.
+		 *
+		 * @details Conforms to the requirements of a C++ forward iterator, allowing range-based for loops
+		 *          and standard algorithms to be used with the dictionary.
 		 */
 		class Iterator final
 		{
 		public:
-			/** @brief STL iterator category */
+			//----------------------------------------------
+			// Standard Iterator Traits
+			//----------------------------------------------
+
 			using iterator_category = std::forward_iterator_tag;
-
-			/** @brief Type of values returned by the iterator */
 			using value_type = std::pair<std::string, TValue>;
-
-			/** @brief Type representing differences between iterators */
 			using difference_type = std::ptrdiff_t;
-
-			/** @brief Type for pointers to values */
 			using pointer = const value_type*;
-
-			/** @brief Type for references to values */
 			using reference = const value_type&;
 
-			/** @brief Default constructor */
+			//----------------------------------------------
+			// Construction
+			//----------------------------------------------
+
+			/** @brief Default constructor. Creates an uninitialized iterator. */
 			Iterator() = default;
 
 			/**
-			 * @brief Constructor from table and position
-			 * @param table The dictionary table to iterate
-			 * @param index The starting index position
+			 * @brief Constructs an iterator pointing to a specific element in the dictionary's table.
+			 * @param[in] table Pointer to the dictionary's internal storage vector.
+			 * @param[in] index The index within the table this iterator should point to.
 			 */
 			explicit Iterator( const std::vector<std::pair<std::string, TValue>>* table, size_t index );
 
-			/** @brief Dereference operator */
-			reference operator*() const;
-
-			/** @brief Arrow operator */
-			pointer operator->() const;
-
-			/** @brief Pre-increment operator */
-			Iterator& operator++();
-
-			/** @brief Post-increment operator */
-			Iterator operator++( int );
-
-			/** @brief Equality operator */
-			bool operator==( const Iterator& other ) const;
-
-			/** @brief Inequality operator */
-			bool operator!=( const Iterator& other ) const;
+			//----------------------------------------------
+			// Iterator Operations
+			//----------------------------------------------
 
 			/**
-			 * @brief Reset the iterator
+			 * @brief Dereferences the iterator to access the current key-value pair.
+			 * @return A constant reference to the `std::pair<std::string, TValue>` at the current position.
+			 */
+			reference operator*() const;
+
+			/**
+			 * @brief Provides member access to the current key-value pair.
+			 * @return A constant pointer to the `std::pair<std::string, TValue>` at the current position.
+			 */
+			pointer operator->() const;
+
+			/**
+			 * @brief Advances the iterator to the next element (pre-increment).
+			 * @return A reference to this iterator after advancing.
+			 */
+			Iterator& operator++();
+
+			/**
+			 * @brief Advances the iterator to the next element (post-increment).
+			 * @return A copy of the iterator *before* it was advanced.
+			 */
+			Iterator operator++( int );
+
+			//----------------------------------------------
+			// Comparison Operators
+			//----------------------------------------------
+
+			/**
+			 * @brief Checks if this iterator is equal to another iterator.
+			 * @param[in] other The iterator to compare against.
+			 * @return `true` if both iterators point to the same element or are both end iterators for the same container, `false` otherwise.
+			 */
+			bool operator==( const Iterator& other ) const;
+
+			/**
+			 * @brief Checks if this iterator is not equal to another iterator.
+			 * @param[in] other The iterator to compare against.
+			 * @return `true` if the iterators point to different elements, `false` otherwise.
+			 */
+			bool operator!=( const Iterator& other ) const;
+
+			//----------------------------------------------
+			// Utility
+			//----------------------------------------------
+
+			/**
+			 * @brief Resets the iterator to an invalid state (index set beyond bounds).
+			 * @details After reset, the iterator is typically not equal to begin() or end() unless
+			 *          the dictionary is empty, and it should not be dereferenced.
 			 */
 			void reset();
 
 		private:
-			/** @brief Reference to dictionary table */
-			const std::vector<std::pair<std::string, TValue>>* m_table;
+			/** @brief Pointer to the dictionary's internal data table. Null for default-constructed iterators. */
+			const std::vector<std::pair<std::string, TValue>>* m_table = nullptr;
 
-			/** @brief Current position in table */
-			size_t m_index;
+			/** @brief Current index within the `m_table`. */
+			size_t m_index = 0;
 		};
 
-		/** @brief Alias for Iterator to support legacy code */
+		/** @brief Alias for Iterator, potentially for compatibility or clearer semantics in some contexts. */
 		using Enumerator = Iterator;
 
-		//-------------------------------------------------------------------
-		// Constructors & Assignment Operators
-		//-------------------------------------------------------------------
+		//=====================================================================
+		// Construction / Destruction
+		//=====================================================================
 
-		/**
-		 * @brief Default constructor creates an empty dictionary
-		 */
+		/** @brief Default constructor. Creates an empty dictionary. */
 		ChdDictionary();
 
 		/**
-		 * @brief Construct from vector of key-value pairs
-		 * @param items Key-value pairs to populate the dictionary
+		 * @brief Constructs the dictionary from a vector of key-value pairs.
+		 * @details Builds the perfect hash function based on the provided `items`.
+		 *          The input `items` vector is moved into the dictionary.
+		 * @param[in] items A `std::vector` of `std::pair<std::string, TValue>` used to populate the dictionary.
+		 *                  The keys within this vector must be unique.
 		 */
 		explicit ChdDictionary( std::vector<std::pair<std::string, TValue>> items );
 
-		/**
-		 * @brief Copy constructor
-		 * @param other Source dictionary to copy
-		 */
+		/** @brief Copy constructor */
 		ChdDictionary( const ChdDictionary& other );
 
-		/**
-		 * @brief Move constructor for efficient transfer of dictionary contents
-		 * @param other Dictionary to move from (will be left in valid but empty state)
-		 */
+		/** @brief Move constructor */
 		ChdDictionary( ChdDictionary&& other ) noexcept;
 
-		/**
-		 * @brief Copy assignment operator
-		 * @param other Source dictionary to copy
-		 * @return Reference to this dictionary
-		 */
+		/** @brief Destructor */
+		~ChdDictionary() = default;
+
+		//=====================================================================
+		// Special Member Functions
+		//=====================================================================
+
+		/** @brief Copy assignment operator */
 		ChdDictionary& operator=( const ChdDictionary& other );
 
-		/**
-		 * @brief Move assignment operator
-		 * @param other Source dictionary to move from
-		 * @return Reference to this dictionary
-		 */
+		/** @brief Move assignment operator */
 		ChdDictionary& operator=( ChdDictionary&& other ) noexcept;
 
-		//-------------------------------------------------------------------
-		// Public Methods
-		//-------------------------------------------------------------------
+		//=====================================================================
+		// Lookup Operators
+		//=====================================================================
 
 		/**
-		 * @brief Access value by key with validation
-		 * @param key The key to look up
-		 * @return Reference to the associated value
-		 * @throws std::out_of_range if key not found or dictionary is empty
+		 * @brief Non-const access operator (deleted).
+		 * @details This dictionary is designed for read-optimized access. Modifying values
+		 *          through this operator is disallowed to maintain consistency with the
+		 *          immutable nature intended after construction.
 		 */
-		TValue& operator[]( std::string_view key );
+		TValue& operator[]( std::string_view key ) = delete;
 
 		/**
-		 * @brief Access value by key with validation (const version)
-		 * @param key The key to look up
-		 * @return Const reference to the associated value
-		 * @throws std::out_of_range if key not found or dictionary is empty
+		 * @brief Accesses the value associated with the specified key (const version).
+		 * @details Provides read-only access to the value. Performs a lookup using the perfect hash function.
+		 * @param[in] key The key whose associated value is to be retrieved.
+		 * @return A constant reference to the value associated with `key`.
+		 * @throws std::out_of_range if the `key` is not found in the dictionary or if the dictionary is empty.
 		 */
-		const TValue& operator[]( std::string_view key ) const;
+		[[nodiscard]] const TValue& operator[]( std::string_view key ) const;
+
+		//=====================================================================
+		// Lookup Methods
+		//=====================================================================
 
 		/**
-		 * @brief Try to get a value by key without exceptions
-		 * @param key The key to look up
-		 * @param[out] value Pointer to store the value if found
-		 * @return true if key was found, false otherwise
+		 * @brief Attempts to retrieve the value associated with the specified key without throwing exceptions.
+		 * @details Performs a lookup using the perfect hash function. If the key is found, the output
+		 *          parameter `outValue` is updated to point to the associated value within the dictionary's
+		 *          internal storage.
+		 * @param[in] key The key whose associated value is to be retrieved.
+		 * @param[out] outValue A reference to a pointer-to-const TValue. On success, this pointer will be
+		 *                      set to the address of the found value. On failure, it will be set to `nullptr`.
+		 * @return `true` if the `key` was found and `outValue` was updated, `false` otherwise.
 		 */
-		bool tryGetValue( std::string_view key, const TValue* outValue ) const;
+		[[nodiscard]] bool tryGetValue( std::string_view key, const TValue*& outValue ) const;
+
+		//=====================================================================
+		// Iteration Support
+		//=====================================================================
 
 		/**
-		 * @brief Check if dictionary is empty
-		 * @return true if dictionary contains no elements, false otherwise
+		 * @brief Gets an iterator pointing to the first element of the dictionary.
+		 * @return An `Iterator` positioned at the beginning of the dictionary's data.
+		 *         If the dictionary is empty, this will be equal to `end()`.
 		 */
-		bool isEmpty() const;
+		[[nodiscard]] Iterator begin() const;
 
 		/**
-		 * @brief Get iterator to the first element
-		 * @return Iterator positioned at the first element
+		 * @brief Gets an iterator pointing past the last element of the dictionary.
+		 * @return An `Iterator` representing the position after the last element.
+		 *         This iterator should not be dereferenced.
 		 */
-		Iterator begin() const;
+		[[nodiscard]] Iterator end() const;
 
 		/**
-		 * @brief Get iterator to the end position
-		 * @return Iterator positioned after the last element
+		 * @brief Gets an enumerator (iterator) for the dictionary.
+		 * @details Provided potentially for compatibility or alternative semantics. Equivalent to `begin()`.
+		 * @return An `Enumerator` (which is an `Iterator`) positioned at the beginning of the dictionary's data.
 		 */
-		Iterator end() const;
-
-		/**
-		 * @brief Get enumerator for the dictionary
-		 * @return Enumerator for iterating dictionary contents
-		 */
-		Enumerator enumerator() const;
+		[[nodiscard]] Enumerator enumerator() const;
 
 	private:
-		//-------------------------------------------------------------------
-		// Private Methods
-		//-------------------------------------------------------------------
+		//=====================================================================
+		// Private Helper Methods
+		//=====================================================================
 
 		/**
-		 * @brief Process a single byte through the hash function
-		 * @param hash Current hash value
-		 * @param byte Byte to process
-		 * @return Updated hash value
+		 * @brief Processes a single byte using the selected hash function (FNV1a or CRC32).
+		 * @param[in] hash The current hash value.
+		 * @param[in] byte The byte to incorporate into the hash.
+		 * @return The updated hash value.
 		 */
 		static uint32_t processHashByte( uint32_t hash, uint8_t byte );
 
 		/**
-		 * @brief Calculate hash value for a string key
-		 * @param key The string key to hash
-		 * @return The calculated hash value
+		 * @brief Calculates the hash value for a given string key using the selected hash function.
+		 * @details May utilize a thread-local cache for frequently accessed keys.
+		 * @param[in] key The string key to hash.
+		 * @return The calculated 32-bit hash value.
 		 */
 		static uint32_t hash( std::string_view key );
 
 		/**
-		 * @brief Compare two strings for equality
-		 * @param a First string (as string_view)
-		 * @param b Second string
-		 * @return true if strings are equal, false otherwise
+		 * @brief Performs a no-exception comparison between a `std::string_view` and a `std::string`.
+		 * @param[in] a The first string view to compare.
+		 * @param[in] b The second string to compare.
+		 * @return `true` if the contents of `a` and `b` are identical, `false` otherwise.
 		 */
 		[[nodiscard]] static bool stringsEqual( std::string_view a, const std::string& b ) noexcept;
 
 		/**
-		 * @brief Compare two character spans for equality
-		 * @param a First character span
-		 * @param b Second character span
-		 * @return true if spans contain identical characters, false otherwise
-		 * @note This overload is useful for comparing raw character arrays
-		 *       or memory buffers without constructing string objects
+		 * @brief Performs a no-exception comparison between two character spans.
+		 * @details Useful for comparing raw character arrays or memory buffers efficiently.
+		 * @param[in] a The first character span to compare.
+		 * @param[in] b The second character span to compare.
+		 * @return `true` if the spans have the same size and identical character sequences, `false` otherwise.
 		 */
 		[[nodiscard]] static bool stringsEqual( std::span<const char> a, std::span<const char> b ) noexcept;
 
-		//-------------------------------------------------------------------
+		//=====================================================================
 		// Private Member Variables
-		//-------------------------------------------------------------------
+		//=====================================================================
 
-		/** @brief The primary storage table for key-value pairs */
+		/** @brief The primary storage table containing the key-value pairs. Order determined during construction. */
 		std::vector<std::pair<std::string, TValue>> m_table;
 
-		/** @brief Seeds for the perfect hash function */
+		/** @brief The seed values used by the CHD perfect hash function to resolve hash collisions. Size matches `m_table`. */
 		std::vector<int> m_seeds;
 
-		//-------------------------------------------------------------------
-		// Caching and Performance Monitoring
-		//-------------------------------------------------------------------
+		//=====================================================================
+		// Caching and Performance Monitoring (Thread-Local)
+		//=====================================================================
 
-		/**  @brief Cache structure for faster hash lookups */
+		/** @brief Structure defining an entry in the thread-local hash cache. */
 		struct HashCacheEntry
 		{
+			/** @brief View of the key (points into s_hashCacheStorage). */
 			std::string_view key;
+
+			/** @brief Cached hash result. */
 			uint32_t hash;
 		};
 
-		/** @brief Thread-local cache for faster hash lookups */
+		/**
+		 * @brief Thread-local cache storing recent hash results to speed up repeated lookups of the same keys.
+		 * @details Aligned to 64 bytes to potentially avoid false sharing on multi-core systems.
+		 */
 		alignas( 64 ) static thread_local std::array<HashCacheEntry, internal::HASH_CACHE_SIZE> s_hashCache;
 
-		/** @brief Storage for string keys to ensure string_views remain valid */
+		/**
+		 * @brief Thread-local storage for the actual string keys corresponding to the `string_view`s in `s_hashCache`.
+		 * @details Ensures the `string_view`s in the cache remain valid.
+		 * @details Aligned to 64 bytes.
+		 */
 		alignas( 64 ) static thread_local std::array<std::string, internal::HASH_CACHE_SIZE> s_hashCacheStorage;
 
-		/** @brief Counter for cache hits (for performance monitoring) */
+		/** @brief Thread-local counter for hash cache hits (for performance analysis). */
 		static thread_local size_t s_cacheHits;
 
-		/** @brief Counter for cache misses (for performance monitoring) */
+		/** @brief Thread-local counter for hash cache misses (for performance analysis). */
 		static thread_local size_t s_cacheMisses;
 
-		/** @brief Counter for total lookups (for performance monitoring) */
+		/** @brief Thread-local counter for total dictionary lookups performed (for performance analysis). */
 		static thread_local size_t s_lookupCount;
 
-		/** @brief Counter for successful lookups (for performance monitoring) */
+		/** @brief Thread-local counter for successful dictionary lookups (key found) (for performance analysis). */
 		static thread_local size_t s_lookupHits;
 	};
 }
 
-#include "ChdDictionary.hpp"
+#include "ChdDictionary.inl"

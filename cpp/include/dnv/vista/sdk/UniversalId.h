@@ -1,3 +1,10 @@
+/**
+ * @file UniversalId.h
+ * @brief
+ * @details
+
+ */
+
 #pragma once
 
 #include "IUniversalId.h"
@@ -7,44 +14,68 @@ namespace dnv::vista::sdk
 	class IUniversalIdBuilder;
 	class LocalId;
 	class ParsingErrors;
+}
 
-	/**
-	 * Represents a Universal Identifier.
-	 */
+namespace dnv::vista::sdk
+{
 	class UniversalId final : public IUniversalId
 	{
 	public:
-		//-------------------------------------------------------------------------
+		//=====================================================================
 		// Construction / Destruction
-		//-------------------------------------------------------------------------
+		//=====================================================================
 
-		/**
-		 * Constructs a UniversalId from a builder.
-		 * @param builder The builder used to construct the UniversalId.
-		 * @throws std::invalid_argument If the builder is in an invalid state.
-		 */
-		explicit UniversalId( const std::shared_ptr<IUniversalIdBuilder>& builder );
+		//	explicit UniversalId( const std::shared_ptr<IUniversalIdBuilder>& builder );
 
-		/**
-		 * Copy constructor (deleted)
-		 * @details UniversalId objects shouldn't be copied since they contain non-copyable members
-		 */
+		/** @brief Default constructor. */
+		UniversalId() = delete;
+
+		/** @brief Copy constructor */
 		UniversalId( const UniversalId& ) = delete;
 
-		/**
-		 * Copy assignment operator (deleted)
-		 * @details UniversalId objects shouldn't be assigned since they contain non-copyable members
-		 */
-		UniversalId& operator=( const UniversalId& ) = delete;
+		/** @brief Move constructor */
+		UniversalId( UniversalId&& ) noexcept = default;
 
-		/**
-		 * Default virtual destructor.
-		 */
+		/** @brief Destructor */
 		virtual ~UniversalId() = default;
 
-		//-------------------------------------------------------------------------
-		// Interface Implementation
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Special Member Functions
+		//=====================================================================
+
+		/** @brief Copy assignment operator */
+		UniversalId& operator=( const UniversalId& ) = delete;
+
+		/** @brief Move assignment operator */
+		UniversalId& operator=( UniversalId&& ) noexcept = default;
+
+		//=====================================================================
+		// Operators
+		//=====================================================================
+
+		/**
+		 * Equality operator.
+		 * @param other The other UniversalId to compare.
+		 * @return True if equal, false otherwise.
+		 */
+		bool operator==( const UniversalId& other ) const;
+
+		/**
+		 * Inequality operator.
+		 * @param other The other UniversalId to compare.
+		 * @return True if not equal, false otherwise.
+		 */
+		virtual bool operator!=( const UniversalId& other ) const;
+
+		//=====================================================================
+		// Hashing
+		//=====================================================================
+
+		size_t hashCode() const;
+
+		//=====================================================================
+		// Core Properties
+		//=====================================================================
 
 		/**
 		 * Gets the IMO number.
@@ -59,9 +90,26 @@ namespace dnv::vista::sdk
 		 */
 		virtual const LocalId& localId() const override;
 
-		//-------------------------------------------------------------------------
-		// Static Methods - Parsing
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Conversion and Comparison
+		//=====================================================================
+
+		/**
+		 * Converts the UniversalId to a string representation.
+		 * @return The string representation.
+		 */
+		[[nodiscard]] virtual std::string toString() const override;
+
+		/**
+		 * Checks equality with another UniversalId.
+		 * @param other The other UniversalId to compare.
+		 * @return True if equal, false otherwise.
+		 */
+		virtual bool equals( const UniversalId& other ) const;
+
+		//=====================================================================
+		// Static Parsing
+		//=====================================================================
 
 		/**
 		 * Parses a UniversalId from a string.
@@ -78,53 +126,12 @@ namespace dnv::vista::sdk
 		 * @param universalId The parsed UniversalId if successful.
 		 * @return True if parsing succeeded, false otherwise.
 		 */
-		static bool tryParse( const std::string& universalIdStr, ParsingErrors& errors, std::unique_ptr<UniversalId>& universalId );
-
-		//-------------------------------------------------------------------------
-		// Instance Methods - Comparison
-		//-------------------------------------------------------------------------
-
-		/**
-		 * Checks equality with another UniversalId.
-		 * @param other The other UniversalId to compare.
-		 * @return True if equal, false otherwise.
-		 */
-		bool equals( const UniversalId& other ) const;
-
-		/**
-		 * Equality operator.
-		 * @param other The other UniversalId to compare.
-		 * @return True if equal, false otherwise.
-		 */
-		bool operator==( const UniversalId& other ) const;
-
-		/**
-		 * Inequality operator.
-		 * @param other The other UniversalId to compare.
-		 * @return True if not equal, false otherwise.
-		 */
-		bool operator!=( const UniversalId& other ) const;
-
-		//-------------------------------------------------------------------------
-		// Instance Methods - Conversion
-		//-------------------------------------------------------------------------
-
-		/**
-		 * Converts the UniversalId to a string representation.
-		 * @return The string representation.
-		 */
-		std::string toString() const;
-
-		/**
-		 * Gets the hash code of the UniversalId.
-		 * @return The hash code.
-		 */
-		size_t hashCode() const;
+		static bool tryParse( const std::string& universalIdStr, ParsingErrors& errors, std::optional<UniversalId>& universalId );
 
 	private:
-		//-------------------------------------------------------------------------
-		// Member Variables
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Private Member Variables
+		//=====================================================================
 
 		std::shared_ptr<IUniversalIdBuilder> m_builder;
 		LocalId m_localId;

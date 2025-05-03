@@ -41,10 +41,10 @@ namespace dnv::vista::sdk::tests
 	class GmodTests : public ::testing::TestWithParam<VisVersion>
 	{
 	protected:
-		static std::pair<VIS&, Gmod> visAndGmod( VisVersion visVersion )
+		static std::pair<VIS&, const Gmod&> visAndGmod( VisVersion visVersion )
 		{
 			VIS& vis = VIS::instance();
-			Gmod gmod = vis.gmod( visVersion );
+			const auto& gmod = vis.gmod( visVersion );
 			return { vis, gmod };
 		}
 	};
@@ -54,8 +54,9 @@ namespace dnv::vista::sdk::tests
 		auto visVersion = GetParam();
 		auto [vis, gmod] = visAndGmod( visVersion );
 
-		GmodNode tempNode;
-		ASSERT_TRUE( gmod.tryGetNode( std::string( "400a" ), tempNode ) ) << "Node '400a' not found in GMOD.";
+		const GmodNode* tempNodePtr = nullptr;
+		ASSERT_TRUE( gmod.tryGetNode( std::string( "400a" ), tempNodePtr ) ) << "Node '400a' not found in GMOD.";
+		ASSERT_NE( tempNodePtr, nullptr ) << "tryGetNode succeeded but pointer is null.";
 	}
 
 	TEST_P( GmodTests, Test_Gmod_Properties )
@@ -134,9 +135,10 @@ namespace dnv::vista::sdk::tests
 				auto insertResult = seen.insert( item.code() );
 				EXPECT_TRUE( insertResult.second ) << "Code: " << item.code();
 
-				GmodNode foundNode;
-				ASSERT_TRUE( gmod.tryGetNode( item.code(), foundNode ) );
-				EXPECT_EQ( item.code(), foundNode.code() );
+				const GmodNode* foundNodePtr = nullptr;
+				ASSERT_TRUE( gmod.tryGetNode( item.code(), foundNodePtr ) );
+				ASSERT_NE( foundNodePtr, nullptr );
+				EXPECT_EQ( item.code(), foundNodePtr->code() );
 				counter++;
 			}
 		}
@@ -151,23 +153,24 @@ namespace dnv::vista::sdk::tests
 				auto insertResult = seen.insert( node.code() );
 				EXPECT_TRUE( insertResult.second ) << "Code: " << node.code();
 
-				GmodNode foundNode;
-				ASSERT_TRUE( gmod.tryGetNode( node.code(), foundNode ) );
-				EXPECT_EQ( node.code(), foundNode.code() );
+				const GmodNode* foundNodePtr = nullptr;
+				ASSERT_TRUE( gmod.tryGetNode( node.code(), foundNodePtr ) );
+				ASSERT_NE( foundNodePtr, nullptr );
+				EXPECT_EQ( node.code(), foundNodePtr->code() );
 				counter++;
 			}
 		}
 
-		GmodNode notFoundNode;
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "ABC" ), notFoundNode ) );
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "" ), notFoundNode ) );
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "SDFASDFSDAFb" ), notFoundNode ) );
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "✅" ), notFoundNode ) );
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "a✅b" ), notFoundNode ) );
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "ac✅bc" ), notFoundNode ) );
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "✅bc" ), notFoundNode ) );
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "a✅" ), notFoundNode ) );
-		EXPECT_FALSE( gmod.tryGetNode( std::string( "ag✅" ), notFoundNode ) );
+		const GmodNode* notFoundNodePtr = nullptr;
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "ABC" ), notFoundNodePtr ) );
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "" ), notFoundNodePtr ) );
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "SDFASDFSDAFb" ), notFoundNodePtr ) );
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "✅" ), notFoundNodePtr ) );
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "a✅b" ), notFoundNodePtr ) );
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "ac✅bc" ), notFoundNodePtr ) );
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "✅bc" ), notFoundNodePtr ) );
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "a✅" ), notFoundNodePtr ) );
+		EXPECT_FALSE( gmod.tryGetNode( std::string( "ag✅" ), notFoundNodePtr ) );
 	}
 
 	TEST_F( GmodTests, Test_Gmod_Node_Equality )
@@ -212,31 +215,31 @@ namespace dnv::vista::sdk::tests
 	{
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
-		auto node = gmod["411.3"];
-		EXPECT_TRUE( node.productType() != nullptr );
-		EXPECT_TRUE( node.productSelection() == nullptr );
+		const auto& node1 = gmod["411.3"];
+		EXPECT_TRUE( node1.productType() != nullptr );
+		EXPECT_TRUE( node1.productSelection() == nullptr );
 
-		node = gmod["H601"];
-		EXPECT_TRUE( node.productType() == nullptr );
+		const auto& node2 = gmod["H601"];
+		EXPECT_TRUE( node2.productType() == nullptr );
 	}
 
 	TEST_F( GmodTests, Test_Node_With_Product_Selection )
 	{
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
-		auto node = gmod["411.2"];
-		EXPECT_TRUE( node.productSelection() != nullptr );
-		EXPECT_TRUE( node.productType() == nullptr );
+		const auto& node1 = gmod["411.2"];
+		EXPECT_TRUE( node1.productSelection() != nullptr );
+		EXPECT_TRUE( node1.productType() == nullptr );
 
-		node = gmod["H601"];
-		EXPECT_TRUE( node.productSelection() == nullptr );
+		const auto& node2 = gmod["H601"];
+		EXPECT_TRUE( node2.productSelection() == nullptr );
 	}
 
 	TEST_F( GmodTests, Test_Product_Selection )
 	{
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
-		auto node = gmod["CS1"];
+		const auto& node = gmod["CS1"];
 		EXPECT_TRUE( node.isProductSelection() );
 	}
 
@@ -257,16 +260,17 @@ namespace dnv::vista::sdk::tests
 			const auto& testCase = GetParam();
 
 			auto& vis = VIS::instance();
-			auto gmod = vis.gmod( VisVersion::v3_4a );
+			const auto& gmod = vis.gmod( VisVersion::v3_4a );
 
-			GmodNode node;
-			if ( !gmod.tryGetNode( testCase.Code, node ) )
+			const GmodNode* nodePtr = nullptr;
+			if ( !gmod.tryGetNode( testCase.Code, nodePtr ) )
 			{
 				FAIL() << "Node '" << testCase.Code << "' not found.";
 				return;
 			}
+			ASSERT_NE( nodePtr, nullptr );
 
-			EXPECT_EQ( node.isMappable(), testCase.Mappable )
+			EXPECT_EQ( nodePtr->isMappable(), testCase.Mappable )
 				<< "Mappability mismatch for node '" << testCase.Code << "'.";
 		}
 		catch ( const std::exception& ex )
@@ -389,12 +393,12 @@ namespace dnv::vista::sdk::tests
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		TraversalState state( 0 );
-		GmodNode startNode = gmod["400a"];
+		const auto& startNode = gmod["400a"];
 		ASSERT_FALSE( startNode.code().empty() ) << "Start node '400a' not found or invalid.";
 
 		bool completed = gmod.traverse<TraversalState>(
 			state,
-			startNode,
+			startNode, // Pass the const GmodNode&
 			[]( TraversalState& state, const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
 				(void)node;
 				EXPECT_TRUE( parents.empty() || ( parents[0] != nullptr && parents[0]->code() == "400a" ) );

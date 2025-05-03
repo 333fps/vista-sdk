@@ -65,30 +65,47 @@ namespace dnv::vista::sdk
 	class CodebookStandardValues final
 	{
 	public:
-		//-------------------------------------------------------------------
+		//=====================================================================
 		// Types
-		//-------------------------------------------------------------------
+		//=====================================================================
 
 		/**
 		 * @brief Iterator type for traversing standard values
 		 */
 		using iterator = std::unordered_set<std::string>::const_iterator;
 
-		//-------------------------------------------------------------------
+		//=====================================================================
 		// Construction / Destruction
-		//-------------------------------------------------------------------
-
-		/**
-		 * @brief Default constructor
-		 */
-		CodebookStandardValues() = default;
+		//=====================================================================
 
 		/**
 		 * @brief Construct with name and values
 		 * @param name The codebook name
 		 * @param standardValues The set of standard values
 		 */
-		CodebookStandardValues( CodebookName name, const std::unordered_set<std::string>& standardValues );
+		explicit CodebookStandardValues( CodebookName name, const std::unordered_set<std::string>& standardValues );
+
+		/** @brief Default constructor. */
+		CodebookStandardValues() = default;
+
+		/** @brief Copy constructor */
+		CodebookStandardValues( const CodebookStandardValues& ) = default;
+
+		/** @brief Move constructor */
+		CodebookStandardValues( CodebookStandardValues&& ) noexcept = default;
+
+		/** @brief Destructor */
+		~CodebookStandardValues() = default;
+
+		//=====================================================================
+		// Special Member Functions
+		//=====================================================================
+
+		/** @brief Copy assignment operator */
+		CodebookStandardValues& operator=( const CodebookStandardValues& ) = default;
+
+		/** @brief Move assignment operator */
+		CodebookStandardValues& operator=( CodebookStandardValues&& ) noexcept = default;
 
 		//-------------------------------------------------------------------
 		// Capacity
@@ -98,7 +115,7 @@ namespace dnv::vista::sdk
 		 * @brief Get the number of standard values
 		 * @return The count of standard values
 		 */
-		size_t count() const;
+		[[nodiscard]] size_t count() const;
 
 		//-------------------------------------------------------------------
 		// Element Access
@@ -119,13 +136,13 @@ namespace dnv::vista::sdk
 		 * @brief Get iterator to the beginning
 		 * @return Iterator to the first standard value
 		 */
-		iterator begin() const;
+		[[nodiscard]] iterator begin() const;
 
 		/**
 		 * @brief Get iterator to the end
 		 * @return Iterator past the last standard value
 		 */
-		iterator end() const;
+		[[nodiscard]] iterator end() const;
 
 	private:
 		//-------------------------------------------------------------------
@@ -158,20 +175,37 @@ namespace dnv::vista::sdk
 		 */
 		using Iterator = std::unordered_set<std::string>::const_iterator;
 
-		//-------------------------------------------------------------------
+		//=====================================================================
 		// Construction / Destruction
-		//-------------------------------------------------------------------
-
-		/**
-		 * @brief Default constructor
-		 */
-		CodebookGroups() = default;
+		//=====================================================================
 
 		/**
 		 * @brief Construct with groups
 		 * @param groups The set of groups
 		 */
-		CodebookGroups( const std::unordered_set<std::string>& groups );
+		explicit CodebookGroups( const std::unordered_set<std::string>& groups );
+
+		/** @brief Default constructor. */
+		CodebookGroups() = default;
+
+		/** @brief Copy constructor */
+		CodebookGroups( const CodebookGroups& ) = default;
+
+		/** @brief Move constructor */
+		CodebookGroups( CodebookGroups&& ) noexcept = default;
+
+		/** @brief Destructor */
+		~CodebookGroups() = default;
+
+		//=====================================================================
+		// Special Member Functions
+		//=====================================================================
+
+		/** @brief Copy assignment operator */
+		CodebookGroups& operator=( const CodebookGroups& ) = default;
+
+		/** @brief Move assignment operator */
+		CodebookGroups& operator=( CodebookGroups&& ) noexcept = default;
 
 		//-------------------------------------------------------------------
 		// Capacity
@@ -181,7 +215,7 @@ namespace dnv::vista::sdk
 		 * @brief Get the number of groups
 		 * @return The count of groups
 		 */
-		size_t count() const;
+		[[nodiscard]] size_t count() const;
 
 		//-------------------------------------------------------------------
 		// Element Access
@@ -202,13 +236,13 @@ namespace dnv::vista::sdk
 		 * @brief Get iterator to the beginning
 		 * @return Iterator to the first group
 		 */
-		Iterator begin() const;
+		[[nodiscard]] Iterator begin() const;
 
 		/**
 		 * @brief Get iterator to the end
 		 * @return Iterator past the last group
 		 */
-		Iterator end() const;
+		[[nodiscard]] Iterator end() const;
 
 	private:
 		//-------------------------------------------------------------------
@@ -253,25 +287,25 @@ namespace dnv::vista::sdk
 		 * @brief Get the codebook name
 		 * @return The codebook name
 		 */
-		CodebookName name() const;
+		[[nodiscard]] CodebookName name() const;
 
 		/**
 		 * @brief Get the groups
 		 * @return Reference to the groups container
 		 */
-		const CodebookGroups& groups() const;
+		[[nodiscard]] const CodebookGroups& groups() const;
 
 		/**
 		 * @brief Get the standard values
 		 * @return Reference to the standard values container
 		 */
-		const CodebookStandardValues& standardValues() const;
+		[[nodiscard]] const CodebookStandardValues& standardValues() const;
 
 		/**
 		 * @brief Get the raw data
 		 * @return Map of groups to their values
 		 */
-		const std::unordered_map<std::string, std::vector<std::string>>& rawData() const;
+		[[nodiscard]] const std::unordered_map<std::string, std::vector<std::string>>& rawData() const;
 
 		//-------------------------------------------------------------------
 		// Queries
@@ -282,14 +316,14 @@ namespace dnv::vista::sdk
 		 * @param group The group to check
 		 * @return True if the group exists
 		 */
-		bool hasGroup( const std::string& group ) const;
+		[[nodiscard]] bool hasGroup( const std::string& group ) const;
 
 		/**
 		 * @brief Check if a value is a standard value
 		 * @param value The value to check
 		 * @return True if the value is standard
 		 */
-		bool hasStandardValue( const std::string& value ) const;
+		[[nodiscard]] bool hasStandardValue( const std::string& value ) const;
 
 		//-------------------------------------------------------------------
 		// Operations
@@ -300,7 +334,7 @@ namespace dnv::vista::sdk
 		 * @param value The tag value
 		 * @return The metadata tag, or none if invalid
 		 */
-		std::optional<MetadataTag> tryCreateTag( const std::string_view valueView ) const;
+		[[nodiscard]] std::optional<MetadataTag> tryCreateTag( const std::string_view valueView ) const;
 
 		/**
 		 * @brief Create a metadata tag

@@ -4,42 +4,75 @@
 
 namespace dnv::vista::sdk
 {
+	//=====================================================================
+	// Forward declarations
+	//=====================================================================
+
 	class ImoNumber;
 	class LocalIdBuilder;
 	class ParsingErrors;
 	class UniversalId;
 	class LocalIdParsingErrorBuilder;
 	enum class LocalIdParsingState;
+}
 
-	/**
-	 * Builder class for creating UniversalId instances.
-	 * Implements the IUniversalIdBuilder interface.
-	 */
+namespace dnv::vista::sdk
+{
 	class UniversalIdBuilder final : public IUniversalIdBuilder
 	{
 	public:
-		//-------------------------------------------------------------------------
+		//=====================================================================
 		// Constants
-		//-------------------------------------------------------------------------
+		//=====================================================================
 
 		/** @brief Naming entity constant for universal IDs.*/
 		static const std::string namingEntity;
 
-		//-------------------------------------------------------------------------
-		// Construction / Factory Methods
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Construction / Destruction
+		//=====================================================================
 
-		/** Default constructor. */
+	protected:
+		/** @brief Default constructor. */
 		UniversalIdBuilder() = default;
 
-		UniversalIdBuilder( const UniversalIdBuilder& other ) = delete;
+	public:
+		/** @brief Copy constructor */
+		UniversalIdBuilder( const UniversalIdBuilder& ) = delete;
+
+		/** @brief Move constructor */
+		UniversalIdBuilder( UniversalIdBuilder&& ) noexcept = default;
+
+		/** @brief Destructor */
+		virtual ~UniversalIdBuilder() = default;
+
+		//=====================================================================
+		// Special Member Functions
+		//=====================================================================
+
+		/** @brief Copy assignment operator */
+		UniversalIdBuilder& operator=( const UniversalIdBuilder& ) = delete;
+
+		/** @brief Move assignment operator */
+		UniversalIdBuilder& operator=( UniversalIdBuilder&& ) noexcept = default;
+
+		//=====================================================================
+		// Operators
+		//=====================================================================
+
+		//=====================================================================
+		// Hashing
+		//=====================================================================
 
 		/**
-		 * Copy assignment operator.
-		 * @param other The other UniversalIdBuilder to copy from.
-		 * @return Reference to this object after assignment.
+		 * Gets the hash code for this builder.
+		 * @return The hash code.
 		 */
-		UniversalIdBuilder& operator=( const UniversalIdBuilder& other ) = delete;
+		size_t hashCode() const;
+
+		//=====================================================================
+		// !!!! CREATE !!!!!
+		//=====================================================================
 
 		/**
 		 * Creates a new UniversalIdBuilder for the specified VIS version.
@@ -48,6 +81,10 @@ namespace dnv::vista::sdk
 		 */
 		static UniversalIdBuilder create( VisVersion version );
 
+		//=====================================================================
+		// Core Build Method
+		//=====================================================================
+
 		/**
 		 * Builds a UniversalId from this builder.
 		 * @return The constructed UniversalId.
@@ -55,15 +92,9 @@ namespace dnv::vista::sdk
 		 */
 		UniversalId build() const;
 
-		//-------------------------------------------------------------------------
-		// Interface Implementation - State/Getters
-		//-------------------------------------------------------------------------
-
-		/**
-		 * Checks if the builder is in a valid state.
-		 * @return True if valid, false otherwise.
-		 */
-		virtual bool isValid() const override;
+		//=====================================================================
+		// Assessors
+		//=====================================================================
 
 		/**
 		 * Gets the IMO number.
@@ -77,29 +108,37 @@ namespace dnv::vista::sdk
 		 */
 		virtual const std::optional<LocalIdBuilder>& localId() const override;
 
-		//-------------------------------------------------------------------------
-		// Interface Implementation - LocalId Modifiers
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// State Inspection Methods
+		//=====================================================================
+
+		/**
+		 * Checks if the builder is in a valid state.
+		 * @return True if valid, false otherwise.
+		 */
+		virtual bool isValid() const override;
+
+		//=====================================================================
+		// Builder Methods (Immutable Fluent Interface)
+		//=====================================================================
+
+		//----------------------------------------------
+		// Local id
+		//----------------------------------------------
 
 		/**
 		 * Sets the local ID.
 		 * @param localId The local ID builder.
 		 * @return A new UniversalIdBuilder instance with the updated local ID.
 		 */
-		virtual UniversalIdBuilder withLocalId( const LocalIdBuilder& localId ) override;
-
-		/**
-		 * Removes the local ID.
-		 * @return A new UniversalIdBuilder instance without the local ID.
-		 */
-		virtual UniversalIdBuilder withoutLocalId() override;
+		virtual UniversalIdBuilder withLocalId( const LocalIdBuilder& localId ) const override;
 
 		/**
 		 * Tries to set the local ID.
 		 * @param localId The optional local ID builder.
 		 * @return A new UniversalIdBuilder instance with the updated local ID.
 		 */
-		virtual UniversalIdBuilder tryWithLocalId( const std::optional<LocalIdBuilder>& localId ) override;
+		virtual UniversalIdBuilder tryWithLocalId( const std::optional<LocalIdBuilder>& localId ) const override;
 
 		/**
 		 * Tries to set the local ID.
@@ -107,31 +146,37 @@ namespace dnv::vista::sdk
 		 * @param succeeded Output parameter indicating success.
 		 * @return A new UniversalIdBuilder instance with the updated local ID.
 		 */
-		virtual UniversalIdBuilder tryWithLocalId( const std::optional<LocalIdBuilder>& localId, bool& succeeded ) override;
+		virtual UniversalIdBuilder tryWithLocalId( const std::optional<LocalIdBuilder>& localId, bool& succeeded ) const override;
 
-		//-------------------------------------------------------------------------
-		// Interface Implementation - IMO Number Modifiers
-		//-------------------------------------------------------------------------
+		/**
+		 * Removes the local ID.
+		 * @return A new UniversalIdBuilder instance without the local ID.
+		 */
+		virtual UniversalIdBuilder withoutLocalId() const override;
+
+		//----------------------------------------------
+		// IMO Number
+		//----------------------------------------------
 
 		/**
 		 * Sets the IMO number.
 		 * @param imoNumber The IMO number.
 		 * @return A new UniversalIdBuilder instance with the updated IMO number.
 		 */
-		virtual UniversalIdBuilder withImoNumber( const ImoNumber& imoNumber ) override;
+		virtual UniversalIdBuilder withImoNumber( const ImoNumber& imoNumber ) const override;
 
 		/**
 		 * Removes the IMO number.
 		 * @return A new UniversalIdBuilder instance without the IMO number.
 		 */
-		virtual UniversalIdBuilder withoutImoNumber() override;
+		virtual UniversalIdBuilder withoutImoNumber() const override;
 
 		/**
 		 * Tries to set the IMO number.
 		 * @param imoNumber The optional IMO number.
 		 * @return A new UniversalIdBuilder instance with the updated IMO number.
 		 */
-		virtual UniversalIdBuilder tryWithImoNumber( const std::optional<ImoNumber>& imoNumber ) override;
+		virtual UniversalIdBuilder tryWithImoNumber( const std::optional<ImoNumber>& imoNumber ) const override;
 
 		/**
 		 * Tries to set the IMO number.
@@ -139,21 +184,17 @@ namespace dnv::vista::sdk
 		 * @param succeeded Output parameter indicating success.
 		 * @return A new UniversalIdBuilder instance with the updated IMO number.
 		 */
-		virtual UniversalIdBuilder tryWithImoNumber( const std::optional<ImoNumber>& imoNumber, bool& succeeded ) override;
+		virtual UniversalIdBuilder tryWithImoNumber( const std::optional<ImoNumber>& imoNumber, bool& succeeded ) const override;
 
-		//-------------------------------------------------------------------------
-		// Interface Implementation - Conversion
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Conversion and Comparison
+		//=====================================================================
 
 		/**
 		 * Converts the builder to a string representation.
 		 * @return The string representation.
 		 */
 		virtual std::string toString() const override;
-
-		//-------------------------------------------------------------------------
-		// Comparison Methods
-		//-------------------------------------------------------------------------
 
 		/**
 		 * Checks equality with another UniversalIdBuilder.
@@ -162,15 +203,9 @@ namespace dnv::vista::sdk
 		 */
 		bool equals( const UniversalIdBuilder& other ) const;
 
-		/**
-		 * Gets the hash code for this builder.
-		 * @return The hash code.
-		 */
-		size_t hashCode() const;
-
-		//-------------------------------------------------------------------------
+		//=====================================================================
 		// Static Parsing Methods
-		//-------------------------------------------------------------------------
+		//=====================================================================
 
 		/**
 		 * Parses a UniversalIdBuilder from a string.
@@ -190,23 +225,11 @@ namespace dnv::vista::sdk
 		static bool tryParse( const std::string& universalIdStr, ParsingErrors& errors, std::shared_ptr<UniversalIdBuilder>& builder );
 
 	private:
-		//-------------------------------------------------------------------------
-		// Private Helper Methods
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Private Member Variables
+		//=====================================================================
 
-		/**
-		 * Adds an error to the error builder.
-		 * @param errorBuilder The error builder.
-		 * @param state The parsing state.
-		 * @param message The error message.
-		 */
-		static void addError( LocalIdParsingErrorBuilder& errorBuilder, LocalIdParsingState state, const std::string& message );
-
-		//-------------------------------------------------------------------------
-		// Member Variables
-		//-------------------------------------------------------------------------
-
-		std::optional<LocalIdBuilder> m_localId;
+		std::optional<LocalIdBuilder> m_localIdBuilder;
 		std::optional<ImoNumber> m_imoNumber;
 	};
 }

@@ -89,13 +89,14 @@ namespace dnv::vista::sdk
 				for ( const auto& [depth, name] : m_primaryItem.value().commonNames() )
 				{
 					builder << '~';
-					std::optional<std::string> location;
-					const auto& node = m_primaryItem.value()[depth];
-					if ( node.location().has_value() )
+					std::optional<std::string> locationStr;
+					const GmodNode* nodePtr = m_primaryItem.value()[depth];
+
+					if ( nodePtr && nodePtr->location().has_value() )
 					{
-						location = node.location()->toString();
+						locationStr = nodePtr->location()->toString();
 					}
-					appendCommonName( builder, name, location );
+					appendCommonName( builder, name, locationStr );
 					builder << '/';
 				}
 			}
@@ -109,13 +110,14 @@ namespace dnv::vista::sdk
 					if ( prefix != "~" )
 						prefix = "~";
 
-					std::optional<std::string> location;
-					const auto& node = m_secondaryItem.value()[depth];
-					if ( node.location().has_value() )
+					std::optional<std::string> locationStr;
+					const GmodNode* nodePtr = m_secondaryItem.value()[depth];
+
+					if ( nodePtr && nodePtr->location().has_value() )
 					{
-						location = node.location()->toString();
+						locationStr = nodePtr->location()->toString();
 					}
-					appendCommonName( builder, name, location );
+					appendCommonName( builder, name, locationStr );
 					builder << '/';
 				}
 			}

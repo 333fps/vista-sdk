@@ -36,11 +36,13 @@ namespace dnv::vista::sdk::tests
 					SPDLOG_WARN( "Using empty versioning data for tests" );
 				}
 
-				m_gmod_v3_4a = m_vis->gmod( VisVersion::v3_4a );
-				m_gmod_v3_6a = m_vis->gmod( VisVersion::v3_6a );
+				m_gmod_v3_4a = &m_vis->gmod( VisVersion::v3_4a );
+				m_gmod_v3_6a = &m_vis->gmod( VisVersion::v3_6a );
 
 				SPDLOG_INFO( "GmodVersioningTest setup complete" );
 
+				ASSERT_NE( m_gmod_v3_4a, nullptr );
+				ASSERT_NE( m_gmod_v3_6a, nullptr );
 				ASSERT_FALSE( m_gmod_v3_4a->isEmpty() ) << "Dictionary is empty for GMOD 3-4a";
 				ASSERT_FALSE( m_gmod_v3_6a->isEmpty() ) << "Dictionary is empty for GMOD 3-6a";
 
@@ -59,8 +61,8 @@ namespace dnv::vista::sdk::tests
 
 		VIS* m_vis = nullptr;
 		std::unique_ptr<GmodVersioning> m_gmodVersioning;
-		std::optional<Gmod> m_gmod_v3_4a;
-		std::optional<Gmod> m_gmod_v3_6a;
+		const Gmod* m_gmod_v3_4a = nullptr;
+		const Gmod* m_gmod_v3_6a = nullptr;
 		bool m_setupSuccess = false;
 	};
 
@@ -161,11 +163,11 @@ namespace dnv::vista::sdk::tests
 	{
 		auto testData = GetParam();
 		auto& vis = VIS::instance();
-		auto targetGmod = vis.gmod( testData.targetVersion );
+		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
+		const auto& targetGmod = vis.gmod( testData.targetVersion );
 
 		GmodPath sourcePath;
-		ASSERT_TRUE( vis.gmod( testData.sourceVersion ).tryParsePath( testData.inputPath, sourcePath ) );
-		// ASSERT_TRUE( sourcePath.has_value() );
+		ASSERT_TRUE( sourceGmod.tryParsePath( testData.inputPath, sourcePath ) );
 
 		GmodPath parsedTargetPath;
 		bool parsedPath = targetGmod.tryParsePath( testData.expectedPath, parsedTargetPath );
@@ -173,14 +175,12 @@ namespace dnv::vista::sdk::tests
 		auto targetPath = vis.convertPath( testData.sourceVersion, sourcePath, testData.targetVersion );
 
 		SPDLOG_INFO( "Source path: {}", sourcePath.toString() );
-		// ASSERT_TRUE( sourcePath.has_value() );
 		EXPECT_EQ( testData.inputPath, sourcePath.toString() );
 
 		EXPECT_TRUE( parsedPath );
-		// ASSERT_TRUE( parsedTargetPath.has_value() );
 		EXPECT_EQ( testData.expectedPath, parsedTargetPath.toString() );
 
-		// ASSERT_TRUE( targetPath.has_value() );
+		ASSERT_TRUE( targetPath.has_value() );
 		EXPECT_EQ( testData.expectedPath, targetPath->toString() );
 	}
 
@@ -192,24 +192,24 @@ namespace dnv::vista::sdk::tests
 	{
 		auto testData = GetParam();
 		auto& vis = VIS::instance();
-		auto targetGmod = vis.gmod( testData.targetVersion );
+		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
+		const auto& targetGmod = vis.gmod( testData.targetVersion );
 
-		std::optional<GmodPath> sourcePath;
-		ASSERT_TRUE( vis.gmod( testData.sourceVersion ).tryParseFromFullPath( testData.inputPath, sourcePath ) );
-		ASSERT_TRUE( sourcePath.has_value() );
+		std::optional<GmodPath> sourcePathOpt;
+		ASSERT_TRUE( sourceGmod.tryParseFromFullPath( testData.inputPath, sourcePathOpt ) );
+		ASSERT_TRUE( sourcePathOpt.has_value() );
 
-		std::optional<GmodPath> parsedTargetPath;
-		bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPath );
+		std::optional<GmodPath> parsedTargetPathOpt;
+		bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPathOpt );
 
-		auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePath, testData.targetVersion );
+		auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
 
-		SPDLOG_INFO( "Source full path: {}", sourcePath->toFullPathString() );
-		ASSERT_TRUE( sourcePath.has_value() );
-		EXPECT_EQ( testData.inputPath, sourcePath->toFullPathString() );
+		SPDLOG_INFO( "Source full path: {}", sourcePathOpt->toFullPathString() );
+		EXPECT_EQ( testData.inputPath, sourcePathOpt->toFullPathString() );
 
 		EXPECT_TRUE( parsedPath );
-		ASSERT_TRUE( parsedTargetPath.has_value() );
-		EXPECT_EQ( testData.expectedPath, parsedTargetPath->toFullPathString() );
+		ASSERT_TRUE( parsedTargetPathOpt.has_value() );
+		EXPECT_EQ( testData.expectedPath, parsedTargetPathOpt->toFullPathString() );
 
 		ASSERT_TRUE( targetPath.has_value() );
 		EXPECT_EQ( testData.expectedPath, targetPath->toFullPathString() );
@@ -225,17 +225,9 @@ namespace dnv::vista::sdk::tests
 				if ( parents.empty() )
 					return Gmod::TraversalHandlerResult::Continue;
 
-				std::vector<GmodNode> parentCopies;
-				parentCopies.reserve( parents.size() );
-				for ( const GmodNode* p : parents )
-				{
-					if ( p != nullptr )
-					{
-						parentCopies.push_back( *p );
-					}
-				}
+				GmodNode targetNodeCopy( node, true );
 
-				GmodPath path( parentCopies, node, m_gmod_v3_4a->visVersion() );
+				GmodPath path( parents, std::move( targetNodeCopy ), m_gmod_v3_4a->visVersion() );
 
 				if ( path.toString() == "1012.22/S201.1/C151.2/S110.2/C101.61/S203.2/S101" )
 					return Gmod::TraversalHandlerResult::Stop;
@@ -251,12 +243,13 @@ namespace dnv::vista::sdk::tests
 		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
 
 		std::function<bool( const GmodNode& )> onePathToRoot = [&onePathToRoot]( const GmodNode& node ) -> bool {
-			return node.isRoot() || ( node.parents().size() == 1 && node.parents().at( 0 ) != nullptr && onePathToRoot( *node.parents().at( 0 ) ) );
+			const auto& nodeParents = node.parents();
+			return node.isRoot() || ( nodeParents.size() == 1 && nodeParents.at( 0 ) != nullptr && onePathToRoot( *nodeParents.at( 0 ) ) );
 		};
 
 		for ( VisVersion version : VisVersionExtensions::allVersions() )
 		{
-			auto gmod = m_vis->gmod( version );
+			const auto& gmod = m_vis->gmod( version );
 
 			if ( gmod.isEmpty() )
 				continue;
@@ -281,39 +274,43 @@ namespace dnv::vista::sdk::tests
 		auto testData = GetParam();
 		auto& vis = VIS::instance();
 
-		auto gmod = vis.gmod( VisVersion::v3_4a );
-		auto targetGmod = vis.gmod( VisVersion::v3_6a );
+		const auto& gmod = vis.gmod( VisVersion::v3_4a );
+		const auto& targetGmod = vis.gmod( VisVersion::v3_6a );
 
-		GmodNode tempSourceNode;
-		bool foundSource = gmod.tryGetNode( testData.inputCode, tempSourceNode );
+		const GmodNode* sourceNodePtr = nullptr;
+		bool foundSource = gmod.tryGetNode( testData.inputCode, sourceNodePtr );
 		ASSERT_TRUE( foundSource );
+		ASSERT_NE( sourceNodePtr, nullptr );
 
-		std::optional<GmodNode> sourceNode = tempSourceNode;
+		GmodNode sourceNode( *sourceNodePtr, true );
 
 		if ( testData.location.has_value() )
 		{
 			Location location( testData.location.value() );
-			sourceNode = sourceNode->withLocation( location );
+			sourceNode = sourceNode.withLocation( location );
 		}
 
-		GmodNode tempExpectedNode;
-		bool foundExpected = targetGmod.tryGetNode( testData.expectedCode, tempExpectedNode );
+		const GmodNode* expectedNodePtr = nullptr;
+		bool foundExpected = targetGmod.tryGetNode( testData.expectedCode, expectedNodePtr );
 		ASSERT_TRUE( foundExpected );
+		ASSERT_NE( expectedNodePtr, nullptr );
 
-		std::optional<GmodNode> expectedNode = tempExpectedNode;
+		GmodNode expectedNode( *expectedNodePtr, true );
 
 		if ( testData.location.has_value() )
 		{
 			Location location( testData.location.value() );
-			expectedNode = expectedNode->withLocation( location );
+			expectedNode = expectedNode.withLocation( location );
 		}
 
-		auto targetNode = vis.convertNode( VisVersion::v3_4a, *sourceNode, VisVersion::v3_6a );
+		auto targetNodeOpt = vis.convertNode( VisVersion::v3_4a, sourceNode, VisVersion::v3_6a );
 
-		ASSERT_TRUE( targetNode.has_value() );
-		EXPECT_EQ( expectedNode->code(), targetNode->code() );
-		EXPECT_EQ( expectedNode->location(), targetNode->location() );
-		EXPECT_TRUE( *expectedNode == *targetNode );
+		ASSERT_TRUE( targetNodeOpt.has_value() );
+		const auto& targetNode = *targetNodeOpt;
+
+		EXPECT_EQ( expectedNode.code(), targetNode.code() );
+		EXPECT_EQ( expectedNode.location(), targetNode.location() );
+		EXPECT_EQ( expectedNode, targetNode );
 	}
 
 	TEST_F( GmodVersioningTest, ConvertLocalId )
@@ -347,7 +344,7 @@ namespace dnv::vista::sdk::tests
 
 		for ( VisVersion version : visVersions )
 		{
-			auto gmod = m_vis->gmod( version );
+			const auto& gmod = m_vis->gmod( version );
 
 			if ( gmod.isEmpty() )
 				continue;
@@ -357,8 +354,7 @@ namespace dnv::vista::sdk::tests
 			auto& errs = errored[version];
 
 			gmod.traverse(
-				[this, version, &errs]( const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
-					(void)parents;
+				[this, version, &errs]( const std::vector<const GmodNode*>& /*parents*/, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
 					auto targetNode = m_vis->convertNode( version, node, VisVersionExtensions::latestVersion() );
 					if ( !targetNode.has_value() )
 					{

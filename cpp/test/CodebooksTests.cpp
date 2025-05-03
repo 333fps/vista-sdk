@@ -9,10 +9,10 @@
 
 namespace dnv::vista::sdk::tests
 {
-	inline std::pair<VIS&, Gmod> visAndGmod()
+	inline std::pair<VIS&, const Gmod&> visAndGmod()
 	{
 		VIS& vis = VIS::instance();
-		Gmod gmod = vis.gmod( VisVersion::v3_4a );
+		const Gmod& gmod = vis.gmod( VisVersion::v3_4a );
 		return { vis, gmod };
 	}
 

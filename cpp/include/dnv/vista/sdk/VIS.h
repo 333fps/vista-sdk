@@ -54,7 +54,7 @@ namespace dnv::vista::sdk
 		 * @throws std::invalid_argument If the VIS version is invalid
 		 * @note This method is const as it only provides read access to data
 		 */
-		virtual Gmod gmod( VisVersion visVersion ) const = 0;
+		virtual const Gmod& gmod( VisVersion visVersion ) const = 0;
 
 		/**
 		 * @brief Get the codebooks for a specific VIS version
@@ -63,7 +63,7 @@ namespace dnv::vista::sdk
 		 * @throws std::invalid_argument If the VIS version is invalid
 		 * @note This method is non-const because it may update the internal cache
 		 */
-		virtual Codebooks codebooks( VisVersion visVersion ) = 0;
+		virtual const Codebooks& codebooks( VisVersion visVersion ) = 0;
 
 		/**
 		 * @brief Get the locations for a specific VIS version
@@ -72,38 +72,17 @@ namespace dnv::vista::sdk
 		 * @throws std::invalid_argument If the VIS version is invalid
 		 * @note This method is non-const because it may update the internal cache
 		 */
-		virtual Locations locations( VisVersion visVersion ) = 0;
+		virtual const Locations& locations( VisVersion visVersion ) = 0;
 
 		//-------------------------------------------------------------------------
 		// Batch Data Access Methods
 		//-------------------------------------------------------------------------
 
-		/**
-		 * @brief Get a map of codebooks for multiple VIS versions
-		 * @param visVersions The VIS versions to retrieve codebooks for
-		 * @return Map of VIS versions to their corresponding codebooks
-		 * @throws std::invalid_argument If any VIS version is invalid
-		 * @note This method is non-const because it may update the internal cache
-		 */
-		virtual std::unordered_map<VisVersion, Codebooks> codebooksMap( const std::vector<VisVersion>& visVersions ) = 0;
+		virtual std::unordered_map<VisVersion, const Codebooks*> codebooksMap( const std::vector<VisVersion>& visVersions ) = 0;
 
-		/**
-		 * @brief Get a map of GMODs for multiple VIS versions
-		 * @param visVersions The VIS versions to retrieve GMODs for
-		 * @return Map of VIS versions to their corresponding GMODs
-		 * @throws std::invalid_argument If any VIS version is invalid
-		 * @note This method is non-const because it may update the internal cache
-		 */
-		virtual std::unordered_map<VisVersion, Gmod> gmodsMap( const std::vector<VisVersion>& visVersions ) = 0;
+		virtual std::unordered_map<VisVersion, const Gmod*> gmodsMap( const std::vector<VisVersion>& visVersions ) const = 0;
 
-		/**
-		 * @brief Get a map of locations for multiple VIS versions
-		 * @param visVersions The VIS versions to retrieve locations for
-		 * @return Map of VIS versions to their corresponding locations
-		 * @throws std::invalid_argument If any VIS version is invalid
-		 * @note This method is non-const because it may update the internal cache
-		 */
-		virtual std::unordered_map<VisVersion, Locations> locationsMap( const std::vector<VisVersion>& visVersions ) = 0;
+		virtual std::unordered_map<VisVersion, const Locations*> locationsMap( const std::vector<VisVersion>& visVersions ) = 0;
 
 		/**
 		 * @brief Get all available VIS versions
@@ -176,7 +155,7 @@ namespace dnv::vista::sdk
 		 * @return The GMOD for the specified version
 		 * @throws std::invalid_argument If the VIS version is invalid
 		 */
-		Gmod gmod( VisVersion visVersion ) const override;
+		virtual const Gmod& gmod( VisVersion visVersion ) const override;
 
 		/**
 		 * @brief Get the codebooks for a specific VIS version
@@ -184,7 +163,7 @@ namespace dnv::vista::sdk
 		 * @return The codebooks for the specified version
 		 * @throws std::invalid_argument If the VIS version is invalid
 		 */
-		Codebooks codebooks( VisVersion visVersion ) override;
+		virtual const Codebooks& codebooks( VisVersion visVersion ) override;
 
 		/**
 		 * @brief Get the locations for a specific VIS version
@@ -192,37 +171,19 @@ namespace dnv::vista::sdk
 		 * @return The locations for the specified version
 		 * @throws std::invalid_argument If the VIS version is invalid
 		 */
-		Locations locations( VisVersion visVersion ) override;
+		virtual const Locations& locations( VisVersion visVersion ) override;
 
-		/**
-		 * @brief Get a map of codebooks for multiple VIS versions
-		 * @param visVersions The VIS versions to retrieve codebooks for
-		 * @return Map of VIS versions to their corresponding codebooks
-		 * @throws std::invalid_argument If any VIS version is invalid
-		 */
-		std::unordered_map<VisVersion, Codebooks> codebooksMap( const std::vector<VisVersion>& visVersions ) override;
+		virtual std::unordered_map<VisVersion, const Codebooks*> codebooksMap( const std::vector<VisVersion>& visVersions ) override;
 
-		/**
-		 * @brief Get a map of GMODs for multiple VIS versions
-		 * @param visVersions The VIS versions to retrieve GMODs for
-		 * @return Map of VIS versions to their corresponding GMODs
-		 * @throws std::invalid_argument If any VIS version is invalid
-		 */
-		std::unordered_map<VisVersion, Gmod> gmodsMap( const std::vector<VisVersion>& visVersions ) override;
+		virtual std::unordered_map<VisVersion, const Gmod*> gmodsMap( const std::vector<VisVersion>& visVersions ) const override;
 
-		/**
-		 * @brief Get a map of locations for multiple VIS versions
-		 * @param visVersions The VIS versions to retrieve locations for
-		 * @return Map of VIS versions to their corresponding locations
-		 * @throws std::invalid_argument If any VIS version is invalid
-		 */
-		std::unordered_map<VisVersion, Locations> locationsMap( const std::vector<VisVersion>& visVersions ) override;
+		virtual std::unordered_map<VisVersion, const Locations*> locationsMap( const std::vector<VisVersion>& visVersions ) override;
 
 		/**
 		 * @brief Get all available VIS versions
 		 * @return Vector of all supported VIS versions
 		 */
-		std::vector<VisVersion> visVersions() override;
+		virtual std::vector<VisVersion> visVersions() override;
 
 		/**
 		 * @brief Convert a GMOD node from one VIS version to another
@@ -231,7 +192,7 @@ namespace dnv::vista::sdk
 		 * @param targetVersion The target VIS version
 		 * @return The converted node, or none if conversion is not possible
 		 */
-		std::optional<GmodNode> convertNode( VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) override;
+		virtual std::optional<GmodNode> convertNode( VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) override;
 
 		/**
 		 * @brief Convert a GMOD path from one VIS version to another
@@ -240,7 +201,7 @@ namespace dnv::vista::sdk
 		 * @param targetVersion The target VIS version
 		 * @return The converted path, or none if conversion is not possible
 		 */
-		std::optional<GmodPath> convertPath( VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) override;
+		virtual std::optional<GmodPath> convertPath( VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) override;
 
 		//-------------------------------------------------------------------------
 		// Extended Conversion Methods

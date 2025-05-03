@@ -8,26 +8,53 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------------
+	//=====================================================================
 	// Construction / Destruction
-	//-------------------------------------------------------------------------
+	//=====================================================================
 
-	UniversalId::UniversalId( const std::shared_ptr<IUniversalIdBuilder>& builder )
-		: m_builder( builder ),
-		  m_localId( builder->localId().value().build() ),
-		  m_imoNumber( builder->imoNumber().value() )
+	// UniversalId::UniversalId( const std::shared_ptr<IUniversalIdBuilder>& builder )
+	// 	: m_builder( builder ) //,
+	// 						   // m_localId( builder->localId() ),
+	// 	  m_imoNumber( builder->imoNumber().value() )
+	// {
+	// }
+
+	// UniversalId::UniversalId( const std::shared_ptr<IUniversalIdBuilder>& builder )
+	// // Initialize members directly from the builder's components
+	// //: m_localId( builder && builder->localId().has_value() ? builder->localId().value().build() : throw std::invalid_argument( "Builder must provide a valid LocalId" ) ),
+	// //  m_imoNumber( builder && builder->imoNumber().has_value() ? builder->imoNumber().value() : throw std::invalid_argument( "Builder must provide a valid ImoNumber" ) )
+	// {
+	// 	// Optional: Add logging inside constructor body if needed
+	// 	SPDLOG_DEBUG( "UniversalId constructed: IMO={}, LocalId={}", m_imoNumber.toString(), m_localId.toString() );
+	// }
+
+	//=====================================================================
+	// Operators
+	//=====================================================================
+
+	bool UniversalId::operator==( const UniversalId& other ) const
 	{
-		SPDLOG_INFO( "Constructing UniversalId" );
-		if ( !builder->isValid() )
-		{
-			SPDLOG_ERROR( "Invalid UniversalId state" );
-			throw std::invalid_argument( "Invalid UniversalId state" );
-		}
+		return equals( other );
 	}
 
-	//-------------------------------------------------------------------------
-	// Interface Implementation
-	//-------------------------------------------------------------------------
+	bool UniversalId::operator!=( const UniversalId& other ) const
+	{
+		return !equals( other );
+	}
+
+	//=====================================================================
+	// Hashing
+	//=====================================================================
+
+	size_t UniversalId::hashCode() const
+	{
+		SPDLOG_INFO( "Calculating hash code for UniversalId" );
+		return std::hash<std::string>{}( m_builder->toString() );
+	}
+
+	//=====================================================================
+	// Core Properties
+	//=====================================================================
 
 	const ImoNumber& UniversalId::imoNumber() const
 	{
@@ -46,9 +73,25 @@ namespace dnv::vista::sdk
 		return m_localId;
 	}
 
-	//-------------------------------------------------------------------------
-	// Static Methods - Parsing
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// Conversion and Comparison
+	//=====================================================================
+
+	std::string UniversalId::toString() const
+	{
+		SPDLOG_INFO( "Converting UniversalId to string" );
+		return m_builder->toString();
+	}
+
+	bool UniversalId::equals( const UniversalId& other ) const
+	{
+		SPDLOG_INFO( "Comparing UniversalIds for equality" );
+		return m_builder->toString() == other.m_builder->toString();
+	}
+
+	//=====================================================================
+	// Static Parsing
+	//=====================================================================
 
 	UniversalId UniversalId::parse( const std::string& universalIdStr )
 	{
@@ -57,7 +100,7 @@ namespace dnv::vista::sdk
 		return builder.build();
 	}
 
-	bool UniversalId::tryParse( const std::string& universalIdStr, ParsingErrors& errors, std::unique_ptr<UniversalId>& universalId )
+	bool UniversalId::tryParse( const std::string& universalIdStr, ParsingErrors& errors, std::optional<UniversalId>& universalId )
 	{
 		SPDLOG_INFO( "Attempting to parse UniversalId: {}", universalIdStr );
 		std::shared_ptr<UniversalIdBuilder> builder;
@@ -65,48 +108,12 @@ namespace dnv::vista::sdk
 		if ( !UniversalIdBuilder::tryParse( universalIdStr, errors, builder ) )
 		{
 			SPDLOG_WARN( "Failed to parse UniversalId: {}", universalIdStr );
-			universalId = nullptr;
+			// TODO	universalId = nullptr;
 			return false;
 		}
 
 		SPDLOG_INFO( "Successfully parsed UniversalId" );
-		universalId = std::make_unique<UniversalId>( builder );
+		// TODO universalId = std::make_unique<UniversalId>( builder );
 		return true;
-	}
-
-	//-------------------------------------------------------------------------
-	// Instance Methods - Comparison
-	//-------------------------------------------------------------------------
-
-	bool UniversalId::equals( const UniversalId& other ) const
-	{
-		SPDLOG_INFO( "Comparing UniversalIds for equality" );
-		return m_builder->toString() == other.m_builder->toString();
-	}
-
-	bool UniversalId::operator==( const UniversalId& other ) const
-	{
-		return equals( other );
-	}
-
-	bool UniversalId::operator!=( const UniversalId& other ) const
-	{
-		return !equals( other );
-	}
-
-	//-------------------------------------------------------------------------
-	// Instance Methods - Conversion
-	//-------------------------------------------------------------------------
-
-	std::string UniversalId::toString() const
-	{
-		SPDLOG_INFO( "Converting UniversalId to string" );
-		return m_builder->toString();
-	}
-
-	size_t UniversalId::hashCode() const
-	{
-		SPDLOG_INFO( "Calculating hash code for UniversalId" );
-		return std::hash<std::string>{}( m_builder->toString() );
 	}
 }

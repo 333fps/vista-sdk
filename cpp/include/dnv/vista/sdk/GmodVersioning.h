@@ -1,12 +1,13 @@
 #pragma once
 
 #include "GmodVersioningDto.h"
+#include "dnv/vista/sdk/GmodPath.h"
+
 #include "LocalId.h"
 
 namespace dnv::vista::sdk
 {
 	class GmodNode;
-	class GmodPath;
 	class LocalIdBuilder;
 	enum class VisVersion;
 

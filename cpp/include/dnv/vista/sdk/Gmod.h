@@ -56,14 +56,6 @@ namespace dnv::vista::sdk
 		const GmodNode* lastOrDefault() const;
 
 		/**
-		 * @brief Convert parent pointers to vector of actual nodes
-		 * @details Creates copies of the nodes. Can be expensive if called frequently.
-		 *          Consider using nodePointers() for direct access if copies are not needed.
-		 * @return Vector of node copies
-		 */
-		std::vector<GmodNode> nodes() const;
-
-		/**
 		 * @brief Direct access to the parent node pointers
 		 * @return Constant reference to the vector of parent node pointers
 		 */
@@ -209,7 +201,7 @@ namespace dnv::vista::sdk
 		Gmod( VisVersion version, const std::unordered_map<std::string, GmodNode>& nodeMap );
 
 		/** @brief Copy constructor */
-		Gmod( const Gmod& other );
+		Gmod( const Gmod& other ) = delete;
 
 		/**
 		 * @brief Move constructor for Gmod
@@ -232,7 +224,7 @@ namespace dnv::vista::sdk
 		 * @param other The source Gmod object to copy from
 		 * @return Reference to this object
 		 */
-		Gmod& operator=( const Gmod& other );
+		Gmod& operator=( const Gmod& other ) = delete;
 
 		//-------------------------------------------------------------------
 		// Basic Access Methods
@@ -263,7 +255,8 @@ namespace dnv::vista::sdk
 		 * @param[out] node The found node, if successful
 		 * @return true if node was found, false otherwise
 		 */
-		bool tryGetNode( const std::string& code, GmodNode& node ) const;
+		// bool tryGetNode( const std::string& code, GmodNode& node ) const;
+		// bool tryGetNode( std::string_view code, const GmodNode*& outNodePtr ) const;
 
 		/**
 		 * @brief Tries to get a pointer to the node associated with the specified code.
@@ -388,8 +381,10 @@ namespace dnv::vista::sdk
 		 * @param[out] remainingParents Populated with the nodes required to complete the path after the `fromPath` prefix, if found. Cleared otherwise.
 		 * @return true if a path exists with the matching prefix and `remainingParents` is populated, false otherwise.
 		 */
-		bool pathExistsBetween( const std::vector<GmodNode>& fromPath, const GmodNode& to,
-			std::vector<GmodNode>& remainingParents ) const;
+
+		bool pathExistsBetween(
+			const std::vector<const GmodNode*>& parents, const GmodNode& target,
+			std::vector<const GmodNode*>& remainingParents ) const;
 
 		//-------------------------------------------------------------------
 		// Iterator Methods

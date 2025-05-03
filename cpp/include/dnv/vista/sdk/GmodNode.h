@@ -7,7 +7,7 @@
  * ISO 19848. These classes provide the node structure, relationships, and
  * type classification used throughout the VISTA SDK.
  *
- * @see ISO 19848:2018 - Ships and marine technology - Standard data for shipboard machinery and equipment
+ * @see ISO 19848 - Ships and marine technology - Standard data for shipboard machinery and equipment
  */
 
 #pragma once

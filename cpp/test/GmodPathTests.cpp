@@ -1,11 +1,13 @@
 #include "pch.h"
 
-#include "dnv/vista/sdk/Gmod.h"
-#include "dnv/vista/sdk/GmodNode.h"
-#include "dnv/vista/sdk/GmodPath.h"
-#include "dnv/vista/sdk/Locations.h"
-#include "dnv/vista/sdk/VIS.h"
+#include "dnv/vista/sdk/LocalId.h"
+#include "dnv/vista/sdk/LocalIdBuilder.h"
+#include "dnv/vista/sdk/LocalIdParsingErrorBuilder.h"
+#include "dnv/vista/sdk/ParsingErrors.h"
 #include "dnv/vista/sdk/VisVersion.h"
+#include "dnv/vista/sdk/VIS.h"
+#include "dnv/vista/sdk/GmodNode.h"
+#include "dnv/vista/sdk/Gmod.h"
 
 using namespace dnv::vista::sdk;
 
@@ -37,8 +39,8 @@ TEST_P( GmodPathParamTest, Test_GmodPath_Parse )
 	auto visVersion = VisVersionExtensions::parse( testItem.visVersion );
 	auto inputPath = testItem.path;
 
-	auto gmod = vis->gmod( visVersion );
-	auto locations = vis->locations( visVersion );
+	const auto& gmod = vis->gmod( visVersion );
+	const auto& locations = vis->locations( visVersion );
 
 	std::optional<GmodPath> path;
 	GmodPath actualPath;
@@ -46,7 +48,7 @@ TEST_P( GmodPathParamTest, Test_GmodPath_Parse )
 
 	if ( parsed )
 	{
-		path = actualPath;
+		path = std::move( actualPath );
 	}
 
 	ASSERT_TRUE( parsed );
@@ -60,8 +62,8 @@ TEST_P( GmodPathParamTest, Test_GmodPath_Parse_Invalid )
 	auto visVersion = VisVersionExtensions::parse( testItem.visVersion );
 	auto inputPath = testItem.path;
 
-	auto gmod = vis->gmod( visVersion );
-	auto locations = vis->locations( visVersion );
+	const auto& gmod = vis->gmod( visVersion );
+	const auto& locations = vis->locations( visVersion );
 
 	std::optional<GmodPath> path;
 	GmodPath actualPath;
@@ -69,7 +71,7 @@ TEST_P( GmodPathParamTest, Test_GmodPath_Parse_Invalid )
 
 	if ( parsed )
 	{
-		path = actualPath;
+		path = std::move( actualPath );
 	}
 
 	ASSERT_FALSE( parsed );
@@ -79,8 +81,8 @@ TEST_P( GmodPathParamTest, Test_GmodPath_Parse_Invalid )
 TEST_F( GmodPathTest, Test_GetFullPath )
 {
 	auto version = VisVersion::v3_4a;
-	auto gmod = vis->gmod( version );
-	auto locations = vis->locations( version );
+	const auto& gmod = vis->gmod( version );
+	const auto& locations = vis->locations( version );
 
 	std::string pathStr = "411.1/C101.72/I101";
 	std::map<size_t, std::string> expectation = {
@@ -98,10 +100,11 @@ TEST_F( GmodPathTest, Test_GetFullPath )
 
 	std::optional<GmodPath> parsedPath;
 	GmodPath actualPath;
+
 	bool parsed = GmodPath::tryParse( pathStr, gmod, locations, actualPath );
 	if ( parsed )
 	{
-		parsedPath = actualPath;
+		parsedPath = std::move( actualPath );
 	}
 	ASSERT_TRUE( parsed );
 
@@ -128,8 +131,8 @@ TEST_F( GmodPathTest, Test_GetFullPath )
 TEST_F( GmodPathTest, Test_GetFullPathFrom )
 {
 	auto version = VisVersion::v3_4a;
-	auto gmod = vis->gmod( version );
-	auto locations = vis->locations( version );
+	const auto& gmod = vis->gmod( version );
+	const auto& locations = vis->locations( version );
 
 	std::string pathStr = "411.1/C101.72/I101";
 	std::map<size_t, std::string> expectation = {
@@ -143,10 +146,11 @@ TEST_F( GmodPathTest, Test_GetFullPathFrom )
 
 	std::optional<GmodPath> parsedPath;
 	GmodPath actualPath;
+
 	bool parsed = GmodPath::tryParse( pathStr, gmod, locations, actualPath );
 	if ( parsed )
 	{
-		parsedPath = actualPath;
+		parsedPath = std::move( actualPath );
 	}
 	ASSERT_TRUE( parsed );
 
@@ -180,16 +184,17 @@ TEST_P( FullPathParsingTest, Test_FullPathParsing )
 	auto [shortPathStr, expectedFullPathStr] = GetParam();
 
 	auto version = VisVersion::v3_4a;
-	auto gmod = vis->gmod( version );
-	auto locations = vis->locations( version );
+	const auto& gmod = vis->gmod( version );
+	const auto& locations = vis->locations( version );
 
 	std::optional<GmodPath> shortPath;
 	{
 		GmodPath parsedPath;
+
 		bool success = GmodPath::tryParse( shortPathStr, gmod, locations, parsedPath );
 		if ( success )
 		{
-			shortPath = parsedPath;
+			shortPath = std::move( parsedPath );
 		}
 		ASSERT_TRUE( success ) << "Failed to parse short path: " << shortPathStr;
 		ASSERT_TRUE( shortPath.has_value() );
@@ -201,10 +206,11 @@ TEST_P( FullPathParsingTest, Test_FullPathParsing )
 	std::optional<GmodPath> fullPath;
 	{
 		GmodPath parsedPath;
+
 		bool success = GmodPath::tryParseFullPath( actualFullPathStr, gmod, locations, parsedPath );
 		if ( success )
 		{
-			fullPath = parsedPath;
+			fullPath = std::move( parsedPath );
 		}
 		ASSERT_TRUE( success ) << "Failed to parse full path: " << actualFullPathStr;
 		ASSERT_TRUE( fullPath.has_value() );
@@ -220,7 +226,7 @@ TEST_P( FullPathParsingTest, Test_FullPathParsing )
 TEST_F( GmodPathTest, Test_GmodPath_Does_Not_Individualize )
 {
 	auto version = VisVersion::v3_7a;
-	auto gmod = vis->gmod( version );
+	const auto& gmod = vis->gmod( version );
 
 	GmodPath path;
 	bool parsed = gmod.tryParsePath( "500a-1", path );
@@ -230,7 +236,7 @@ TEST_F( GmodPathTest, Test_GmodPath_Does_Not_Individualize )
 TEST_F( GmodPathTest, Test_ToFullPathString )
 {
 	auto version = VisVersion::v3_7a;
-	auto gmod = vis->gmod( version );
+	const auto& gmod = vis->gmod( version );
 
 	GmodPath path1;
 	ASSERT_TRUE( gmod.tryParsePath( "511.11-1/C101.663i-1/C663", path1 ) );

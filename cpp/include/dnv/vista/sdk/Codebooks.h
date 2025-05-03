@@ -1,10 +1,10 @@
 /**
  * @file Codebooks.h
  * @brief Container for Vessel Information Structure (VIS) codebooks
- * @details Provides access to standardized codebooks as defined in ISO 19848:2018,
+ * @details Provides access to standardized codebooks as defined in ISO 19848,
  *          with support for retrieving codebook entries, validating values, and
  *          creating metadata tags.
- * @see ISO 19848:2018 - Ships and marine technology - Standard data for shipboard machinery and equipment
+ * @see ISO 19848 - Ships and marine technology - Standard data for shipboard machinery and equipment
  */
 
 #pragma once
@@ -14,17 +14,17 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------
+	//=====================================================================
 	// Forward declarations
-	//-------------------------------------------------------------------
+	//=====================================================================
 
 	class MetadataTag;
 	class CodebooksDto;
 	enum class VisVersion;
 
-	//-------------------------------------------------------------------
+	//=====================================================================
 	// Constants
-	//-------------------------------------------------------------------
+	//=====================================================================
 
 	/**
 	 * @brief Number of codebooks based on the enum values.
@@ -32,10 +32,13 @@ namespace dnv::vista::sdk
 	 *          Example: CodebookName::Position (value 1) maps to index 0.
 	 */
 	static constexpr size_t NUM_CODEBOOKS = static_cast<size_t>( CodebookName::Detail );
+}
 
+namespace dnv::vista::sdk
+{
 	/**
 	 * @brief Container for all codebooks in a specific VIS version
-	 * @details Provides access to standard codebooks defined in ISO 19848:2018,
+	 * @details Provides access to standard codebooks defined in ISO 19848,
 	 *          supports iteration over codebooks and metadata tag creation.
 	 *          This container is immutable after construction.
 	 */
@@ -80,7 +83,6 @@ namespace dnv::vista::sdk
 			 * @brief Arrow operator (provides access to tuple members).
 			 * @return A temporary tuple object containing CodebookName and const reference_wrapper<Codebook>.
 			 * @throws std::out_of_range if iterator is out of bounds.
-			 * @note Returns by value as required for arrow operator on non-pointer types.
 			 */
 			value_type operator->() const;
 

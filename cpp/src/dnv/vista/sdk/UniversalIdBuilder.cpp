@@ -9,197 +9,188 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------------
+	//=====================================================================
 	// Constants
-	//-------------------------------------------------------------------------
+	//=====================================================================
 
 	const std::string UniversalIdBuilder::namingEntity = "data.dnv.com";
 
-	//-------------------------------------------------------------------------
-	// Factory Methods
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// !!!! CREATE !!!!!
+	//=====================================================================
 
 	UniversalIdBuilder UniversalIdBuilder::create( VisVersion version )
 	{
-		SPDLOG_INFO( "Creating UniversalIdBuilder for VIS version {}", static_cast<int>( version ) );
 		return UniversalIdBuilder().withLocalId( LocalIdBuilder::create( version ) );
 	}
 
-	UniversalId UniversalIdBuilder::build() const
-	{
-		SPDLOG_INFO( "Building UniversalId from builder" );
-		if ( !isValid() )
-		{
-			SPDLOG_ERROR( "Invalid UniversalIdBuilder state" );
-			throw std::invalid_argument( "Invalid UniversalIdBuilder state" );
-		}
-		return UniversalId( std::make_shared<UniversalIdBuilder>( *this ) );
-	}
+	//=====================================================================
+	// Core Build Method
+	//=====================================================================
 
-	//-------------------------------------------------------------------------
-	// Interface Implementation - State/Getters
-	//-------------------------------------------------------------------------
+	// UniversalId UniversalIdBuilder::build() const
+	// {
+	// 	SPDLOG_INFO( "Building UniversalId from builder" );
+	// 	if ( !isValid() )
+	// 	{
+	// 		SPDLOG_ERROR( "Invalid UniversalIdBuilder state" );
+	// 		throw std::invalid_argument( "Invalid UniversalIdBuilder state" );
+	// 	}
+	// 	// return UniversalId( std::make_shared<UniversalIdBuilder>( *this ) );
+	// 	return UniversalId();
+	// }
+
+	//=====================================================================
+	// Assessors
+	//=====================================================================
 
 	const std::optional<ImoNumber>& UniversalIdBuilder::imoNumber() const
 	{
-		SPDLOG_INFO( "Getting IMO number from builder" );
 		return m_imoNumber;
 	}
 
 	const std::optional<LocalIdBuilder>& UniversalIdBuilder::localId() const
 	{
-		SPDLOG_INFO( "Getting local ID from builder" );
-		return m_localId;
+		return m_localIdBuilder;
 	}
+
+	//=====================================================================
+	// State Inspection Methods
+	//=====================================================================
 
 	bool UniversalIdBuilder::isValid() const
 	{
-		bool valid = m_imoNumber.has_value() && m_localId.has_value() && m_localId->isValid();
+		bool valid = m_imoNumber.has_value() && m_localIdBuilder.has_value() && m_localIdBuilder->isValid();
 		SPDLOG_INFO( "Validating UniversalIdBuilder state: {}", ( valid ? "valid" : "invalid" ) );
 		return valid;
 	}
 
-	//-------------------------------------------------------------------------
-	// Interface Implementation - LocalId Modifiers
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// Builder Methods (Immutable Fluent Interface)
+	//=====================================================================
 
-	UniversalIdBuilder UniversalIdBuilder::withLocalId( const LocalIdBuilder& localId )
+	//----------------------------------------------
+	// Local id
+	//----------------------------------------------
+
+	UniversalIdBuilder UniversalIdBuilder::withLocalId( const LocalIdBuilder& localId ) const
 	{
-		SPDLOG_INFO( "Setting local ID on builder" );
-		bool succeeded;
-		return tryWithLocalId( localId, succeeded );
+		auto b = UniversalIdBuilder::create( localId.visVersion().value() );
+		b.withLocalId( localId );
+
+		return b;
 	}
 
-	UniversalIdBuilder UniversalIdBuilder::withoutLocalId()
-	{
-		SPDLOG_INFO( "Removing local ID from builder" );
-		UniversalIdBuilder copy( std::move( *this ) );
-		copy.m_localId.reset();
-		return copy;
-	}
-
-	UniversalIdBuilder UniversalIdBuilder::tryWithLocalId( const std::optional<LocalIdBuilder>& localId )
+	UniversalIdBuilder UniversalIdBuilder::tryWithLocalId( const std::optional<LocalIdBuilder>& localId ) const
 	{
 		SPDLOG_INFO( "Trying to set local ID on builder" );
 		bool succeeded;
+		// Delegate to the overload that uses the private constructor
 		return tryWithLocalId( localId, succeeded );
 	}
 
-	UniversalIdBuilder UniversalIdBuilder::tryWithLocalId( const std::optional<LocalIdBuilder>& localId, bool& succeeded )
+	UniversalIdBuilder UniversalIdBuilder::tryWithLocalId( const std::optional<LocalIdBuilder>& localId, bool& succeeded ) const
 	{
 		SPDLOG_INFO( "Trying to set local ID with success tracking" );
 		if ( !localId.has_value() )
 		{
 			SPDLOG_WARN( "Local ID is null, operation failed" );
 			succeeded = false;
-			return *this;
+
+			return UniversalIdBuilder();
 		}
 
-		UniversalIdBuilder copy( *this );
-		copy.m_localId = localId;
 		succeeded = true;
 		SPDLOG_INFO( "Successfully set local ID" );
-		return copy;
+
+		auto b = UniversalIdBuilder::create( localId->visVersion().value() );
+		b.withLocalId( localId.value() );
+
+		return b;
 	}
 
-	//-------------------------------------------------------------------------
-	// Interface Implementation - IMO Number Modifiers
-	//-------------------------------------------------------------------------
+	UniversalIdBuilder UniversalIdBuilder::withoutLocalId() const
+	{
+		return UniversalIdBuilder();
+	}
 
-	UniversalIdBuilder UniversalIdBuilder::withImoNumber( const ImoNumber& imoNumber )
+	//----------------------------------------------
+	// IMO Number
+	//----------------------------------------------
+
+	UniversalIdBuilder UniversalIdBuilder::withImoNumber( const ImoNumber& imoNumber ) const
 	{
 		SPDLOG_INFO( "Setting IMO number on builder" );
 		bool succeeded;
-		return tryWithImoNumber( imoNumber, succeeded );
+		return tryWithImoNumber( std::optional<ImoNumber>( imoNumber ), succeeded );
 	}
 
-	UniversalIdBuilder UniversalIdBuilder::withoutImoNumber()
-	{
-		SPDLOG_INFO( "Removing IMO number from builder" );
-		UniversalIdBuilder copy( *this );
-		copy.m_imoNumber.reset();
-		return copy;
-	}
-
-	UniversalIdBuilder UniversalIdBuilder::tryWithImoNumber( const std::optional<ImoNumber>& imoNumber )
+	UniversalIdBuilder UniversalIdBuilder::tryWithImoNumber( const std::optional<ImoNumber>& imoNumber ) const
 	{
 		SPDLOG_INFO( "Trying to set IMO number on builder" );
 		bool succeeded;
 		return tryWithImoNumber( imoNumber, succeeded );
 	}
 
-	UniversalIdBuilder UniversalIdBuilder::tryWithImoNumber( const std::optional<ImoNumber>& imoNumber, bool& succeeded )
+	UniversalIdBuilder UniversalIdBuilder::tryWithImoNumber( const std::optional<ImoNumber>& imoNumber, bool& succeeded ) const
 	{
-		SPDLOG_INFO( "Trying to set IMO number with success tracking" );
-		if ( !imoNumber.has_value() )
-		{
-			SPDLOG_WARN( "IMO number is null, operation failed" );
-			succeeded = false;
-			return *this;
-		}
+		// SPDLOG_INFO( "Trying to set IMO number with success tracking" );
+		// if ( !imoNumber.has_value() )
+		// {
+		// 	SPDLOG_WARN( "IMO number is null, operation failed" );
+		// 	succeeded = false;
+		// 	return *this;
+		// }
 
-		UniversalIdBuilder copy( *this );
-		copy.m_imoNumber = imoNumber;
-		succeeded = true;
-		SPDLOG_INFO( "Successfully set IMO number" );
-		return copy;
+		// UniversalIdBuilder copy( *this );
+
+		// 		copy.m_imoNumber = imoNumber;
+		// succeeded = true;
+		// SPDLOG_INFO( "Successfully set IMO number" );
+		// return copy;
+
+		return UniversalIdBuilder();
 	}
 
-	//-------------------------------------------------------------------------
-	// Interface Implementation - Conversion
-	//-------------------------------------------------------------------------
+	UniversalIdBuilder UniversalIdBuilder::withoutImoNumber() const
+	{
+		// SPDLOG_INFO( "Removing IMO number from builder" );
+		// UniversalIdBuilder copy( *this );
+		// copy.m_imoNumber.reset();
+		// return copy;
+
+		return UniversalIdBuilder();
+	}
+
+	//=====================================================================
+	// Conversion and Comparison
+	//=====================================================================
 
 	std::string UniversalIdBuilder::toString() const
 	{
 		SPDLOG_INFO( "Converting UniversalIdBuilder to string" );
-		if ( !m_imoNumber.has_value() )
+		if ( !isValid() )
 		{
-			SPDLOG_ERROR( "Invalid UniversalIdBuilder state: Missing IMO Number" );
-			throw std::runtime_error( "Invalid Universal Id state: Missing IMO Number" );
-		}
-		if ( !m_localId.has_value() )
-		{
-			SPDLOG_ERROR( "Invalid UniversalIdBuilder state: Missing LocalId" );
-			throw std::runtime_error( "Invalid Universal Id state: Missing LocalId" );
+			SPDLOG_WARN( "toString() called on invalid UniversalIdBuilder state" );
+			return "";
 		}
 
 		std::ostringstream builder;
 		builder << namingEntity << "/";
 		builder << m_imoNumber->toString();
-		builder << m_localId->toString();
+		builder << m_localIdBuilder->toString();
 
 		return builder.str();
 	}
 
-	//-------------------------------------------------------------------------
-	// Comparison Methods
-	//-------------------------------------------------------------------------
-
 	bool UniversalIdBuilder::equals( const UniversalIdBuilder& other ) const
 	{
-		SPDLOG_INFO( "Comparing UniversalIdBuilders for equality" );
-		return m_imoNumber == other.m_imoNumber && m_localId == other.m_localId;
+		return m_imoNumber == other.m_imoNumber && m_localIdBuilder == other.m_localIdBuilder;
 	}
 
-	size_t UniversalIdBuilder::hashCode() const
-	{
-		SPDLOG_INFO( "Calculating hash code for UniversalIdBuilder" );
-		std::hash<std::string> hasher;
-		size_t hash = 0;
-		if ( m_imoNumber.has_value() )
-		{
-			hash ^= hasher( m_imoNumber->toString() );
-		}
-		if ( m_localId.has_value() )
-		{
-			hash ^= hasher( m_localId->toString() );
-		}
-		return hash;
-	}
-
-	//-------------------------------------------------------------------------
+	//=====================================================================
 	// Static Parsing Methods
-	//-------------------------------------------------------------------------
+	//=====================================================================
 
 	UniversalIdBuilder UniversalIdBuilder::parse( const std::string& universalIdStr )
 	{
@@ -211,7 +202,9 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "Failed to parse UniversalId: {}", universalIdStr );
 			throw std::invalid_argument( "Failed to parse UniversalId: " + universalIdStr );
 		}
-		return *builder;
+		// return *builder;
+
+		return UniversalIdBuilder();
 	}
 
 	bool UniversalIdBuilder::tryParse( const std::string& universalIdStr, ParsingErrors& errors, std::shared_ptr<UniversalIdBuilder>& builder )
@@ -219,13 +212,13 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Trying to parse UniversalId string: {}", universalIdStr );
 		builder = nullptr;
 
-		LocalIdParsingErrorBuilder errorBuilder = LocalIdParsingErrorBuilder::create();
+		// LocalIdParsingErrorBuilder errorBuilder = LocalIdParsingErrorBuilder::create();
 
 		if ( universalIdStr.empty() )
 		{
 			SPDLOG_WARN( "Empty UniversalId string" );
-			addError( errorBuilder, LocalIdParsingState::NamingRule, "Failed to find localId start segment" );
-			errors = errorBuilder.build();
+			// addError( errorBuilder, LocalIdParsingState::NamingRule, "Failed to find localId start segment" );
+			// errors = errorBuilder.build();
 			return false;
 		}
 
@@ -233,8 +226,8 @@ namespace dnv::vista::sdk
 		if ( localIdStartIndex == std::string::npos )
 		{
 			SPDLOG_WARN( "Unable to find localId start marker in: {}", universalIdStr );
-			addError( errorBuilder, LocalIdParsingState::NamingRule, "Failed to find localId start segment" );
-			errors = errorBuilder.build();
+			// addError( errorBuilder, LocalIdParsingState::NamingRule, "Failed to find localId start segment" );
+			// errors = errorBuilder.build();
 			return false;
 		}
 
@@ -247,7 +240,7 @@ namespace dnv::vista::sdk
 		if ( !LocalIdBuilder::tryParse( localIdSegment, parseErrors, localIdBuilder ) )
 		{
 			SPDLOG_WARN( "Failed to parse LocalId segment: {}", localIdSegment );
-			errors = errorBuilder.build();
+			//	errors = errorBuilder.build();
 			std::vector<ParsingErrors::ErrorEntry> combinedErrors;
 			for ( const auto& err : errors )
 				combinedErrors.push_back( err );
@@ -306,7 +299,7 @@ namespace dnv::vista::sdk
 					if ( segment != namingEntity )
 					{
 						SPDLOG_WARN( "Invalid naming entity: {}", segment );
-						addError( errorBuilder, state, "Naming entity segment didn't match. Found: " + segment );
+						// addError( errorBuilder, state, "Naming entity segment didn't match. Found: " + segment );
 					}
 					break;
 
@@ -315,7 +308,7 @@ namespace dnv::vista::sdk
 					if ( !imo.has_value() )
 					{
 						SPDLOG_WARN( "Invalid IMO number: {}", segment );
-						addError( errorBuilder, state, "Invalid IMO number segment" );
+						// addError( errorBuilder, state, "Invalid IMO number segment" );
 					}
 					else
 					{
@@ -332,28 +325,17 @@ namespace dnv::vista::sdk
 		if ( !visVersion.has_value() )
 		{
 			SPDLOG_WARN( "Missing VIS version in LocalId" );
-			addError( errorBuilder, LocalIdParsingState::VisVersion, nullptr );
-			errors = errorBuilder.build();
+			// addError( errorBuilder, LocalIdParsingState::VisVersion, nullptr );
+			// errors = errorBuilder.build();
 			return false;
 		}
 
 		SPDLOG_INFO( "Creating UniversalIdBuilder with VIS version {}", static_cast<int>( visVersion.value() ) );
 		builder = std::make_shared<UniversalIdBuilder>( create( visVersion.value() ) );
-		builder->tryWithLocalId( *localIdBuilder );
+		// builder->tryWithLocalId( *localIdBuilder );
 		builder->tryWithImoNumber( imoNumber );
 
-		errors = errorBuilder.build();
+		// errors = errorBuilder.build();
 		return true;
-	}
-
-	//-------------------------------------------------------------------------
-	// Private Helper Methods
-	//-------------------------------------------------------------------------
-
-	void UniversalIdBuilder::addError( LocalIdParsingErrorBuilder& errorBuilder, LocalIdParsingState state, const std::string& message )
-	{
-		SPDLOG_ERROR( "Adding parsing error - State: {}, Message: {}", static_cast<int>( state ),
-			( message.empty() ? "<null>" : message ) );
-		errorBuilder.addError( state, message );
 	}
 }

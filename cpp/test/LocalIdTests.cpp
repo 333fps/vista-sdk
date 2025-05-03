@@ -9,6 +9,7 @@
 #include "dnv/vista/sdk/LocalIdBuilder.h"
 #include "dnv/vista/sdk/MetadataTag.h"
 #include "dnv/vista/sdk/ParsingErrors.h"
+#include "dnv/vista/sdk/LocalIdParsingErrorBuilder.h"
 
 namespace dnv::vista::sdk
 {
@@ -85,6 +86,61 @@ namespace dnv::vista::sdk::tests
 		return { vis, gmod };
 	}
 
+	std::optional<LocalIdBuilder> buildLocalIdFromInput( const Input& input, const Gmod& gmod, const Codebooks& codebooks )
+	{
+		GmodPath primaryPath;
+		if ( !gmod.tryParsePath( input.PrimaryItem, primaryPath ) )
+		{
+			SPDLOG_WARN( "buildLocalIdFromInput: Failed to parse primary path '{}'", input.PrimaryItem );
+			return std::nullopt;
+		}
+
+		LocalIdBuilder builder = LocalIdBuilder::create( input.visVersion )
+									 .withPrimaryItem( std::move( primaryPath ) )
+									 .withVerboseMode( input.Verbose );
+
+		if ( input.SecondaryItem.has_value() )
+		{
+			GmodPath secondaryPath;
+			if ( !gmod.tryParsePath( input.SecondaryItem.value(), secondaryPath ) )
+			{
+				SPDLOG_WARN( "buildLocalIdFromInput: Failed to parse secondary path '{}'", input.SecondaryItem.value() );
+				return std::nullopt;
+			}
+			builder = builder.withSecondaryItem( std::move( secondaryPath ) );
+		}
+
+		try
+		{
+			if ( input.Quantity.has_value() )
+			{
+				builder = builder.withQuantity( codebooks.codebook( CodebookName::Quantity ).createTag( input.Quantity.value() ) );
+			}
+
+			if ( input.Content.has_value() )
+			{
+				builder = builder.withContent( codebooks.codebook( CodebookName::Content ).createTag( input.Content.value() ) );
+			}
+
+			if ( input.Position.has_value() )
+			{
+				builder = builder.withPosition( codebooks.codebook( CodebookName::Position ).createTag( input.Position.value() ) );
+			}
+		}
+		catch ( const std::invalid_argument& e )
+		{
+			SPDLOG_WARN( "buildLocalIdFromInput: Failed to create metadata tag - {}", e.what() );
+			return std::nullopt;
+		}
+		catch ( const std::out_of_range& e )
+		{
+			SPDLOG_WARN( "buildLocalIdFromInput: Failed to find codebook - {}", e.what() );
+			return std::nullopt;
+		}
+
+		return builder;
+	}
+
 	std::vector<std::pair<Input, std::string>> validTestData()
 	{
 		return {
@@ -128,17 +184,16 @@ namespace dnv::vista::sdk::tests
 
 		GmodPath primaryPath;
 		ASSERT_TRUE( gmod.tryParsePath( input.PrimaryItem, primaryPath ) );
-		// ASSERT_TRUE( primaryPath.has_value() );
 
 		LocalIdBuilder builder = LocalIdBuilder::create( input.visVersion )
-									 .withPrimaryItem( primaryPath )
+									 .withPrimaryItem( std::move( primaryPath ) )
 									 .withVerboseMode( input.Verbose );
 
 		if ( input.SecondaryItem.has_value() )
 		{
 			GmodPath secondaryPath;
 			ASSERT_TRUE( gmod.tryParsePath( input.SecondaryItem.value(), secondaryPath ) );
-			builder = builder.withSecondaryItem( secondaryPath );
+			builder = builder.withSecondaryItem( std::move( secondaryPath ) );
 		}
 
 		if ( input.Quantity.has_value() )
@@ -174,15 +229,12 @@ namespace dnv::vista::sdk::tests
 		ASSERT_TRUE( gmod.tryParsePath( "411.1/C101.31-2", primaryPath ) );
 		ASSERT_TRUE( gmod.tryParsePath( "411.1/C101.31-5", secondaryPath ) );
 
-		// ASSERT_TRUE( primaryPath.has_value() );
-		// ASSERT_TRUE( secondaryPath.has_value() );
-
 		SPDLOG_INFO( "Primary: {}", primaryPath.toString() );
 		SPDLOG_INFO( "Secondary: {}", secondaryPath.toString() );
 
 		LocalIdBuilder localId = LocalIdBuilder::create( VisVersion::v3_4a )
-									 .withPrimaryItem( primaryPath )
-									 .withSecondaryItem( secondaryPath )
+									 .withPrimaryItem( std::move( primaryPath ) )
+									 .withSecondaryItem( std::move( secondaryPath ) )
 									 .withVerboseMode( false )
 									 .withQuantity( codebooks.codebook( CodebookName::Quantity ).createTag( "quantity" ) )
 									 .withContent( codebooks.codebook( CodebookName::Content ).createTag( "content" ) )
@@ -194,7 +246,7 @@ namespace dnv::vista::sdk::tests
 
 		EXPECT_TRUE( localId.isValid() );
 
-		LocalIdBuilder allWithout = localId;
+		LocalIdBuilder allWithout = std::move( localId );
 
 		SPDLOG_INFO( "allWithout.toString(): {}", allWithout.toString() );
 
@@ -223,10 +275,14 @@ namespace dnv::vista::sdk::tests
 	/*
 	class MqttLocalIdValidTest : public ::testing::TestWithParam<std::pair<Input, std::string>>
 	{
+		// TODO Implement when Mqtt will be implemented.
+
 	};
 
 	TEST_P( MqttLocalIdValidTest, Test_Mqtt_LocalId_Build_Valid )
 		{
+		// TODO Implement when Mqtt will be implemented.
+
 			auto testCase = GetParam();
 			Input input = testCase.first;
 			std::string expected = testCase.second;
@@ -274,100 +330,51 @@ namespace dnv::vista::sdk::tests
 			std::string result = mqttLocalId.toString();
 			EXPECT_EQ( result, expected );
 		}
-			*/
 
-	TEST( LocalIdTests, Test_LocalId_Equality )
+		*/
+
+	TEST_P( LocalIdValidTest, Test_LocalId_Equality )
 	{
-		auto testCases = validTestData();
+		auto testCase = GetParam();
+		Input input = testCase.first;
 
-		for ( const auto& testCase : testCases )
-		{
-			Input input = testCase.first;
+		const auto& [vis, gmod] = visAndGmod( input.visVersion );
+		const auto& codebooks = vis.codebooks( input.visVersion );
 
-			auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
-			auto codebooks = vis.codebooks( VisVersion::v3_4a );
+		auto builder1Opt = buildLocalIdFromInput( input, gmod, codebooks );
+		auto builder2Opt = buildLocalIdFromInput( input, gmod, codebooks );
 
-			GmodPath primaryPath;
-			ASSERT_TRUE( gmod.tryParsePath( input.PrimaryItem, primaryPath ) );
+		ASSERT_TRUE( builder1Opt.has_value() ) << "Failed to build builder1 for input: " << input.PrimaryItem;
+		ASSERT_TRUE( builder2Opt.has_value() ) << "Failed to build builder2 for input: " << input.PrimaryItem;
 
-			GmodPath secondaryPath;
-			if ( input.SecondaryItem.has_value() )
-			{
-				ASSERT_TRUE( gmod.tryParsePath( input.SecondaryItem.value(), secondaryPath ) );
-			}
+		LocalIdBuilder builder1 = std::move( *builder1Opt );
+		LocalIdBuilder builder2 = std::move( *builder2Opt );
 
-			LocalIdBuilder localId = LocalIdBuilder::create( VisVersion::v3_4a )
-										 .withPrimaryItem( primaryPath );
+		EXPECT_EQ( builder1, builder1 );
 
-			// if ( secondaryPath.has_value() )
-			//{
-			localId = localId.withSecondaryItem( secondaryPath );
-			//}
+		EXPECT_EQ( builder1, builder2 );
 
-			if ( input.Quantity.has_value() )
-			{
-				localId = localId.withQuantity( codebooks.codebook( CodebookName::Quantity ).createTag( input.Quantity.value() ) );
-			}
+		EXPECT_NE( &builder1, &builder2 );
 
-			if ( input.Content.has_value() )
-			{
-				localId = localId.withContent( codebooks.codebook( CodebookName::Content ).createTag( input.Content.value() ) );
-			}
+		auto testTag = codebooks.codebook( CodebookName::Position ).createTag( "eqtestvalue" );
 
-			if ( input.Position.has_value() )
-			{
-				localId = localId.withPosition( codebooks.codebook( CodebookName::Position ).createTag( input.Position.value() ) );
-			}
+		auto modifiedBuilder2 = builder2.withPosition( testTag );
 
-			LocalIdBuilder otherLocalId = localId;
-			EXPECT_EQ( localId, otherLocalId );
+		EXPECT_NE( builder1, modifiedBuilder2 );
 
-			LocalIdBuilder freshCopy = LocalIdBuilder::create( VisVersion::v3_4a );
-			if ( localId.primaryItem().length() > 0 )
-			{
-				freshCopy = freshCopy.withPrimaryItem( localId.primaryItem() );
-			}
-			if ( localId.secondaryItem().has_value() )
-			{
-				freshCopy = freshCopy.withSecondaryItem( *localId.secondaryItem() );
-			}
-			if ( localId.quantity().has_value() )
-			{
-				freshCopy = freshCopy.withQuantity( *localId.quantity() );
-			}
-			if ( localId.content().has_value() )
-			{
-				freshCopy = freshCopy.withContent( *localId.content() );
-			}
-			if ( localId.position().has_value() )
-			{
-				freshCopy = freshCopy.withPosition( *localId.position() );
-			}
+		EXPECT_EQ( builder1, builder2 );
+		EXPECT_NE( builder2, modifiedBuilder2 );
 
-			EXPECT_EQ( localId, freshCopy );
+		EXPECT_EQ( builder1, builder2 );
+		EXPECT_NE( builder2, modifiedBuilder2 );
 
-			if ( input.Position.has_value() )
-			{
-				otherLocalId = otherLocalId.withPosition( codebooks.codebook( CodebookName::Position ).createTag( "eqtestvalue" ) );
-				EXPECT_NE( localId, otherLocalId );
-			}
-			else
-			{
-				otherLocalId = otherLocalId.withPosition( codebooks.codebook( CodebookName::Position ).createTag( "eqtestvalue" ) );
-				EXPECT_NE( localId, otherLocalId );
-			}
+		// Declare and initialize restoredBuilder2 directly using the conditional operator
+		LocalIdBuilder restoredBuilder2 = builder1.position().has_value() ? modifiedBuilder2.withPosition( *builder1.position() ) : modifiedBuilder2.withoutPosition();
 
-			if ( localId.position().has_value() )
-			{
-				otherLocalId = otherLocalId.withPosition( *localId.position() );
-			}
-			else
-			{
-				otherLocalId = otherLocalId.withoutPosition();
-			}
+		EXPECT_EQ( builder1, restoredBuilder2 );
 
-			EXPECT_EQ( localId, otherLocalId );
-		}
+		EXPECT_NE( &builder1, &restoredBuilder2 );
+		EXPECT_NE( &modifiedBuilder2, &restoredBuilder2 );
 	}
 
 	TEST( LocalIdTests, Test_Parsing )
@@ -410,12 +417,12 @@ namespace dnv::vista::sdk::tests
 			"testdata/LocalIds.txt",
 			"../testdata/LocalIds.txt",
 			"../../testdata/LocalIds.txt",
-			"../../../testdata/LocalIds.txt",
-		};
+			"../../../testdata/LocalIds.txt" };
 
 		std::ifstream file;
 		std::string attemptedPaths;
 		bool fileOpened = false;
+		std::string foundPath;
 
 		for ( const auto& path : possiblePaths )
 		{
@@ -423,10 +430,10 @@ namespace dnv::vista::sdk::tests
 			if ( file.is_open() )
 			{
 				SPDLOG_INFO( "Found test data at path: {}", path );
+				foundPath = path;
 				fileOpened = true;
 				break;
 			}
-
 			attemptedPaths += path + ", ";
 			file.clear();
 			SPDLOG_DEBUG( "Failed to open test data file: {}", path );
@@ -434,59 +441,114 @@ namespace dnv::vista::sdk::tests
 
 		if ( !fileOpened )
 		{
-			SPDLOG_ERROR( "Failed to open test data file. Attempted paths: {}", attemptedPaths );
-			ASSERT_TRUE( false ) << "Failed to open LocalIds.txt. Attempted paths: " << attemptedPaths;
+			std::string errorMsg = "Failed to open LocalIds.txt. Check paths relative to build/test execution directory. Attempted: " + attemptedPaths;
+			SPDLOG_ERROR( errorMsg );
+			FAIL() << errorMsg;
 			return;
 		}
 
-		std::vector<std::tuple<std::string, std::optional<LocalIdBuilder>, std::optional<std::string>, ParsingErrors>> errored;
+		struct ErrorInfo
+		{
+			std::string LocalIdStr;
+			std::optional<LocalIdBuilder> LocalIdOpt;
+			std::optional<std::string> ExceptionMsgOpt;
+			ParsingErrors Errors;
+		};
+		std::vector<ErrorInfo> errored;
 
 		std::string localIdStr;
+		int lineNumber = 0;
+
 		while ( std::getline( file, localIdStr ) )
 		{
+			lineNumber++;
 			try
 			{
-				if ( localIdStr.find( "qty-content" ) != std::string::npos )
+				if ( localIdStr.empty() || localIdStr[0] == '#' )
 					continue;
 
+				if ( localIdStr.find( "qty-content" ) != std::string::npos )
+				{
+					SPDLOG_DEBUG( "Line {}: Skipping due to 'qty-content': {}", lineNumber, localIdStr );
+					continue;
+				}
+
 				ParsingErrors errorBuilder;
-				std::optional<LocalIdBuilder> localId;
-				bool parsed = LocalIdBuilder::tryParse( localIdStr, errorBuilder, localId );
+				std::optional<LocalIdBuilder> localIdOpt;
+				bool parsed = LocalIdBuilder::tryParse( localIdStr, errorBuilder, localIdOpt );
 
 				if ( !parsed )
 				{
-					errored.push_back( std::make_tuple( localIdStr, localId, std::nullopt, errorBuilder ) );
+					SPDLOG_WARN( "Line {}: Failed to parse: {}", lineNumber, localIdStr );
+					errored.push_back( ErrorInfo{ localIdStr, std::move( localIdOpt ), std::nullopt, std::move( errorBuilder ) } );
 				}
-				else if ( !localId->isValid() || localId->isEmpty() )
+				else if ( !localIdOpt.has_value() || localIdOpt->isEmpty() || !localIdOpt->isValid() )
 				{
-					errored.push_back( std::make_tuple( localIdStr, localId, std::nullopt, errorBuilder ) );
+					SPDLOG_WARN( "Line {}: Parsed but invalid/empty: {}", lineNumber, localIdStr );
+					errored.push_back( ErrorInfo{ localIdStr, std::move( localIdOpt ), std::nullopt, std::move( errorBuilder ) } );
 				}
 			}
 			catch ( const std::exception& ex )
 			{
-				if ( std::string( ex.what() ).find( "location" ) != std::string::npos )
+				std::string exMsg = ex.what();
+				if ( exMsg.find( "location" ) != std::string::npos )
+				{
+					SPDLOG_DEBUG( "Line {}: Skipping due to location exception: {} - {}", lineNumber, localIdStr, exMsg );
 					continue;
-
-				errored.push_back( std::make_tuple( localIdStr, std::nullopt, ex.what(), ParsingErrors::Empty ) );
+				}
+				SPDLOG_ERROR( "Line {}: Exception during parsing: {} - {}", lineNumber, localIdStr, exMsg );
+				errored.push_back( ErrorInfo{ localIdStr, std::nullopt, std::optional<std::string>{ exMsg }, ParsingErrors::Empty } );
+			}
+			catch ( ... )
+			{
+				SPDLOG_ERROR( "Line {}: Unknown exception during parsing: {}", lineNumber, localIdStr );
+				errored.push_back( ErrorInfo{ localIdStr, std::nullopt, std::optional<std::string>{ "Unknown exception" }, ParsingErrors::Empty } );
 			}
 		}
 
-		for ( const auto& [id, builder, ex, errors] : errored )
+		file.close();
+
+		bool errorsFound = !errored.empty();
+		if ( errorsFound )
 		{
-			SPDLOG_ERROR( "Failed to parse: {}", id );
+			std::stringstream errorDetails;
+			errorDetails << "Found " << errored.size() << " parsing errors/exceptions in '" << foundPath << "':\n";
+			SPDLOG_ERROR( "Found {} errors during LocalId smoke test parsing from '{}':", errored.size(), foundPath );
 
-			if ( ex.has_value() )
+			for ( const auto& errorInfo : errored )
 			{
-				SPDLOG_ERROR( "  Exception: {}", *ex );
-			}
+				errorDetails << "  Input: \"" << errorInfo.LocalIdStr << "\"\n";
+				SPDLOG_ERROR( "  Failed ID: {}", errorInfo.LocalIdStr );
 
-			for ( const auto& [errorType, errorMsg] : errors )
-			{
-				SPDLOG_ERROR( "  Error: {} - {}", errorType, errorMsg );
+				if ( errorInfo.ExceptionMsgOpt.has_value() )
+				{
+					errorDetails << "    Exception: " << *errorInfo.ExceptionMsgOpt << "\n";
+					SPDLOG_ERROR( "    Exception: {}", *errorInfo.ExceptionMsgOpt );
+				}
+
+				if ( errorInfo.Errors.hasErrors() )
+				{
+					errorDetails << "    Parsing Errors:\n";
+					SPDLOG_ERROR( "    Parsing Errors:" );
+					for ( const auto& [errorType, errorMsg] : errorInfo.Errors )
+					{
+						errorDetails << "      - " << errorType << ": " << errorMsg << "\n";
+						SPDLOG_ERROR( "      {}: {}", errorType, errorMsg );
+					}
+				}
+				else if ( !errorInfo.ExceptionMsgOpt.has_value() )
+				{
+					const char* reason = ( !errorInfo.LocalIdOpt.has_value() ? "Builder not created" : ( errorInfo.LocalIdOpt->isEmpty() ? "IsEmpty" : ( !errorInfo.LocalIdOpt->isValid() ? "IsValid=false" : "Unknown" ) ) );
+					errorDetails << "    Reason: Parsed but deemed invalid (" << reason << ").\n";
+					SPDLOG_ERROR( "    Reason: Parsed but deemed invalid ({}).", reason );
+				}
 			}
+			FAIL() << errorDetails.str();
 		}
-
-		EXPECT_TRUE( errored.empty() ) << "Found " << errored.size() << " errors";
+		else
+		{
+			SUCCEED() << "Successfully parsed all entries in " << foundPath;
+		}
 	}
 
 	TEST( LocalIdTests, Test_Parsing_Validation )
@@ -550,5 +612,8 @@ namespace dnv::vista::sdk::tests
 			ValidMqttTests,
 			MqttLocalIdValidTest,
 			::testing::ValuesIn( validMqttTestData() ) );
-			*/
+
+		// TODO Implement when Mqtt will be implemented.
+
+	*/
 }

@@ -3,7 +3,7 @@
  * @brief Data transfer objects for ISO 19848 Generic Product Model (GMOD) serialization
  * @details Provides data transfer objects used for serializing and deserializing
  *          the Generic Product Model (GMOD) according to the ISO 19848 standard.
- * @see ISO 19848:2018 - Ships and marine technology - Standard data for shipboard machinery and equipment
+ * @see ISO 19848 - Ships and marine technology - Standard data for shipboard machinery and equipment
  */
 
 #pragma once

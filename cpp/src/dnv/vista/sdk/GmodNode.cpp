@@ -624,7 +624,7 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_DEBUG( "Adding child {} to parent {}", child->code(), m_code );
-		m_children.push_back( child );
+		m_children.push_back( std::move( child ) );
 		m_childrenSet.insert( child->code() );
 	}
 
@@ -637,7 +637,7 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_DEBUG( "Adding parent {} to child {}", parent->code(), m_code );
-		m_parents.push_back( parent );
+		m_parents.push_back( std::move( parent ) );
 	}
 
 	void GmodNode::trim()
