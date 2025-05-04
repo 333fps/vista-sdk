@@ -225,7 +225,6 @@ namespace dnv::vista::sdk
 		std::vector<const GmodNode*> reconstructedPathPtrs;
 		for ( size_t i = 0; i < qualifyingNodes.size(); ++i )
 		{
-			const auto& sourceNodeRef = qualifyingNodes[i].first;
 			const GmodNode& targetOwnedNode = qualifyingNodes[i].second;
 
 			const GmodNode* targetNodePtr = nullptr;
@@ -241,7 +240,6 @@ namespace dnv::vista::sdk
 				continue;
 			}
 
-			bool codeChanged = sourceNodeRef.get().code() != targetOwnedNode.code();
 			if ( !addToPath( targetGmod, reconstructedPathPtrs, targetNodePtr ) )
 			{
 				SPDLOG_ERROR( "Failed to add node '{}' to path during reconstruction: parent-child relationship broken or reconstruction failed.", targetNodePtr->code() );

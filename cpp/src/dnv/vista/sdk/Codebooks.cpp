@@ -13,9 +13,9 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------
-	// Iterator implementation
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// Iterator
+	//=====================================================================
 
 	Codebooks::Iterator::Iterator( const std::array<Codebook, NUM_CODEBOOKS>* codebooks, size_t index )
 		: m_codebooks{ codebooks },
@@ -66,9 +66,9 @@ namespace dnv::vista::sdk
 		return !( *this == other );
 	}
 
-	//-------------------------------------------------------------------
+	//=====================================================================
 	// Construction / Destruction
-	//-------------------------------------------------------------------
+	//=====================================================================
 
 	Codebooks::Codebooks( VisVersion version, const CodebooksDto& dto )
 		: m_visVersion{ version },
@@ -116,9 +116,9 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------
-	// Codebook access methods
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// Operators
+	//=====================================================================
 
 	const Codebook& Codebooks::operator[]( CodebookName name ) const
 	{
@@ -135,6 +135,10 @@ namespace dnv::vista::sdk
 		return m_codebooks[index];
 	}
 
+	//=====================================================================
+	// Assessors
+	//=====================================================================
+
 	const Codebook& Codebooks::codebook( CodebookName name ) const
 	{
 		SPDLOG_TRACE( "Accessing codebook via codebook() method for name {}", static_cast<int>( name ) );
@@ -146,9 +150,9 @@ namespace dnv::vista::sdk
 		return m_visVersion;
 	}
 
-	//-------------------------------------------------------------------
-	// Tag creation methods
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// Tag creation
+	//=====================================================================
 
 	std::optional<MetadataTag> Codebooks::tryCreateTag( CodebookName name, const std::string_view value ) const
 	{
@@ -192,9 +196,9 @@ namespace dnv::vista::sdk
 		return cb.createTag( value );
 	}
 
-	//-------------------------------------------------------------------
-	// Iteration methods (Standard C++)
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// Iteration
+	//=====================================================================
 
 	Codebooks::Iterator Codebooks::begin() const
 	{
