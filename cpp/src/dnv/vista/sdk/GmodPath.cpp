@@ -9,7 +9,7 @@
 
 #include "dnv/vista/sdk/Codebook.h"
 #include "dnv/vista/sdk/Gmod.h"
-#include "dnv/vista/sdk/Gmodnode.h"
+#include "dnv/vista/sdk/GmodNode.h"
 #include "dnv/vista/sdk/Locations.h"
 #include "dnv/vista/sdk/MetadataTag.h"
 #include "dnv/vista/sdk/VIS.h"
@@ -77,7 +77,7 @@ namespace dnv::vista::sdk
 
 					for ( size_t j = m_currentParentStart + 1; j <= i; j++ )
 					{
-						const auto& setNode = j < static_cast<int>( parents.size() ) ? parents[j] : target;
+						const auto& setNode = j < parents.size() ? parents[j] : target;
 
 						if ( !setNode.isIndividualizable( j == parents.size(), true ) )
 						{
@@ -121,8 +121,8 @@ namespace dnv::vista::sdk
 					bool hasLeafNode = false;
 					for ( size_t j = std::get<0>( *nodes ); j <= std::get<1>( *nodes ); j++ )
 					{
-						const auto& setNode = j < static_cast<int>( parents.size() ) ? parents[static_cast<size_t>( j )] : target;
-						if ( setNode.isLeafNode() || j == static_cast<int>( parents.size() ) )
+						const auto& setNode = j < parents.size() ? parents[static_cast<size_t>( j )] : target;
+						if ( setNode.isLeafNode() || j == parents.size() )
 						{
 							hasLeafNode = true;
 							break;
@@ -149,7 +149,7 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	//=====================================================================
-	// Constructors and Special Member Functions
+	// Constructors & Assignment Operators
 	//=====================================================================
 
 	GmodPath::GmodPath()
@@ -687,9 +687,10 @@ namespace dnv::vista::sdk
 				return true;
 			}
 		}
-		catch ( const std::exception& e )
+		catch ( const std::exception& ex )
 		{
-			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing: {}", e.what() );
+			(void)ex;
+			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing: {}", ex.what() );
 		}
 
 		return false;
@@ -727,9 +728,11 @@ namespace dnv::vista::sdk
 
 			return tryParseFullPath( pathStr, gmod, locations, path );
 		}
-		catch ( const std::exception& e )
+		catch ( const std::exception& ex )
 		{
-			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing full path: {}", e.what() );
+			(void)ex;
+
+			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing full path: {}", ex.what() );
 			return false;
 		}
 	}
@@ -748,9 +751,11 @@ namespace dnv::vista::sdk
 
 			return tryParseFullPath( pathStr, gmod, locations, path );
 		}
-		catch ( const std::exception& e )
+		catch ( const std::exception& ex )
 		{
-			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing full path: {}", e.what() );
+			(void)ex;
+
+			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing full path: {}", ex.what() );
 			return false;
 		}
 	}
@@ -763,24 +768,22 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_INFO( "Parsing path '{}' using provided GMOD and Locations", item );
 
-		auto result = parseInternal( item, gmod, locations );
+		auto resultPtr = parseInternal( item, gmod, locations );
 
-		auto* okResult = dynamic_cast<GmodParsePathResult::Ok*>( &result );
-		if ( okResult != nullptr )
+		if ( auto* okResult = dynamic_cast<GmodParsePathResult::Ok*>( resultPtr.get() ) )
 		{
 			SPDLOG_INFO( "Successfully parsed path" );
 			return std::move( okResult->path() );
 		}
 
-		auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( &result );
-		if ( errResult == nullptr )
+		if ( auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( resultPtr.get() ) )
 		{
-			SPDLOG_ERROR( "Failed to parse path: unknown error" );
-			throw std::invalid_argument( "Failed to parse path: unknown error" );
+			SPDLOG_ERROR( "Failed to parse path: {}", errResult->error() );
+			throw std::invalid_argument( "Failed to parse path: " + errResult->error() );
 		}
 
-		SPDLOG_ERROR( "Failed to parse path: {}", errResult->error() );
-		throw std::invalid_argument( "Failed to parse path: " + errResult->error() );
+		SPDLOG_ERROR( "Failed to parse path: unknown internal error" );
+		throw std::runtime_error( "Failed to parse path: unknown internal error" );
 	}
 
 	bool GmodPath::tryParse( const std::string& item, const Gmod& gmod, const Locations& locations, GmodPath& path )
@@ -791,7 +794,7 @@ namespace dnv::vista::sdk
 		{
 			auto result = parseInternal( item, gmod, locations );
 
-			auto* okResult = dynamic_cast<GmodParsePathResult::Ok*>( &result );
+			auto* okResult = dynamic_cast<GmodParsePathResult::Ok*>( result.get() );
 			if ( okResult != nullptr )
 			{
 				path = std::move( okResult->path() );
@@ -799,13 +802,22 @@ namespace dnv::vista::sdk
 				return true;
 			}
 
-			auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( &result );
-			SPDLOG_ERROR( "Failed to parse path: {}", errResult->error() );
+			auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() );
+			if ( errResult != nullptr )
+			{
+				SPDLOG_ERROR( "Failed to parse path: {}", errResult->error() );
+			}
+			else
+			{
+				SPDLOG_ERROR( "Failed to parse path: unknown internal error (result was not Ok or Err)" );
+			}
 			return false;
 		}
-		catch ( const std::exception& e )
+		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Failed to parse path: {}", e.what() );
+			(void)ex;
+
+			SPDLOG_ERROR( "Exception during tryParse: {}", ex.what() ); // Changed message slightly
 			return false;
 		}
 	}
@@ -818,7 +830,7 @@ namespace dnv::vista::sdk
 		{
 			auto result = parseFullPathInternal( pathStr, gmod, locations );
 
-			auto* okResult = dynamic_cast<GmodParsePathResult::Ok*>( &result );
+			auto* okResult = dynamic_cast<GmodParsePathResult::Ok*>( result.get() );
 			if ( okResult != nullptr )
 			{
 				path = std::move( okResult->path() );
@@ -826,21 +838,23 @@ namespace dnv::vista::sdk
 				return true;
 			}
 
-			auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( &result );
+			auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() );
 			if ( errResult != nullptr )
 			{
 				SPDLOG_ERROR( "Failed to parse full path: {}", errResult->error() );
 			}
 			else
 			{
-				SPDLOG_ERROR( "Failed to parse full path: unknown error" );
+				SPDLOG_ERROR( "Failed to parse full path: unknown internal error (result was not Ok or Err)" );
 			}
 
 			return false;
 		}
-		catch ( const std::exception& e )
+		catch ( const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Failed to parse full path: {}", e.what() );
+			(void)ex;
+
+			SPDLOG_ERROR( "Exception during tryParseFullPath: {}", ex.what() );
 			return false;
 		}
 	}
@@ -849,7 +863,7 @@ namespace dnv::vista::sdk
 	// GmodPath Implementation - Private Static Methods - Parsing Internals
 	//-------------------------------------------------------------------------
 
-	GmodParsePathResult GmodPath::parseInternal( const std::string& item, const Gmod& gmod, const Locations& locations )
+	std::unique_ptr<GmodParsePathResult> GmodPath::parseInternal( const std::string& item, const Gmod& gmod, const Locations& locations )
 	{
 		try
 		{
@@ -865,7 +879,7 @@ namespace dnv::vista::sdk
 			if ( parts.empty() )
 			{
 				SPDLOG_ERROR( "Cannot parse empty path string: '{}'", item );
-				return GmodParsePathResult::Err( "Path cannot be empty" );
+				return std::make_unique<GmodParsePathResult::Err>( "Path cannot be empty" + item );
 			}
 
 			std::string targetPart = parts.back();
@@ -882,7 +896,7 @@ namespace dnv::vista::sdk
 				if ( !locations.tryParse( locStr, parsedLocation ) )
 				{
 					SPDLOG_ERROR( "Failed to parse target location: '{}' in path '{}'", locStr, item );
-					return GmodParsePathResult::Err( "Failed to parse target location: " + locStr );
+					return std::make_unique<GmodParsePathResult::Err>( "Failed to parse target location: " + locStr );
 				}
 				targetLocation = parsedLocation;
 			}
@@ -895,12 +909,12 @@ namespace dnv::vista::sdk
 			if ( !gmod.tryGetNode( targetCode, targetNodePtr ) )
 			{
 				SPDLOG_ERROR( "Failed to find target node with code: '{}' in path '{}'", targetCode, item );
-				return GmodParsePathResult::Err( "Failed to get target node: " + targetCode );
+				return std::make_unique<GmodParsePathResult::Err>( "Failed to get target node: " + targetCode );
 			}
 			if ( targetNodePtr == nullptr )
 			{
 				SPDLOG_ERROR( "Internal error: tryGetNode succeeded but returned null pointer for target code: '{}' in path '{}'", targetCode, item );
-				return GmodParsePathResult::Err( "Internal error retrieving target node: " + targetCode );
+				return std::make_unique<GmodParsePathResult::Err>( "Internal error retrieving target node: " + targetCode );
 			}
 
 			GmodNode finalTargetNode;
@@ -926,7 +940,7 @@ namespace dnv::vista::sdk
 			const GmodNode* rootPtr = &gmod.rootNode();
 			if ( !rootPtr )
 			{
-				return GmodParsePathResult::Err( "Internal error: Could not get root node from GMOD" );
+				return std::make_unique<GmodParsePathResult::Err>( "Internal error: Could not get root node from GMOD" );
 			}
 			parentPathPtrs.push_back( rootPtr );
 
@@ -942,7 +956,7 @@ namespace dnv::vista::sdk
 					if ( !locations.tryParse( locStr, ignoredLocation ) )
 					{
 						SPDLOG_ERROR( "Failed to parse intermediate node location: '{}' in path '{}'", locStr, item );
-						return GmodParsePathResult::Err( "Failed to parse intermediate node location: " + locStr );
+						return std::make_unique<GmodParsePathResult::Err>( "Failed to parse intermediate node location: " + locStr );
 					}
 					SPDLOG_WARN( "Location specified for intermediate node '{}' in path string '{}' is ignored during parsing.", nodeCode, item );
 				}
@@ -955,12 +969,12 @@ namespace dnv::vista::sdk
 				if ( !gmod.tryGetNode( nodeCode, nodePtr ) )
 				{
 					SPDLOG_ERROR( "Failed to find intermediate node with code: '{}' in path '{}'", nodeCode, item );
-					return GmodParsePathResult::Err( "Failed to get intermediate node: " + nodeCode );
+					return std::make_unique<GmodParsePathResult::Err>( "Failed to get intermediate node: " + nodeCode );
 				}
 				if ( nodePtr == nullptr )
 				{
 					SPDLOG_ERROR( "Internal error: tryGetNode succeeded but returned null pointer for intermediate code: '{}' in path '{}'", nodeCode, item );
-					return GmodParsePathResult::Err( "Internal error retrieving intermediate node: " + nodeCode );
+					return std::make_unique<GmodParsePathResult::Err>( "Internal error retrieving intermediate node: " + nodeCode );
 				}
 
 				parentPathPtrs.push_back( nodePtr );
@@ -970,7 +984,7 @@ namespace dnv::vista::sdk
 			if ( !gmod.pathExistsBetween( parentPathPtrs, finalTargetNode, remainingParentPtrs ) )
 			{
 				SPDLOG_ERROR( "No valid path exists between specified parents and target node '{}' in path '{}'", finalTargetNode.code(), item );
-				return GmodParsePathResult::Err( "No valid path exists between specified parents and target node" );
+				return std::make_unique<GmodParsePathResult::Err>( "No valid path exists between specified parents and target node." );
 			}
 
 			parentPathPtrs.insert( parentPathPtrs.end(), remainingParentPtrs.begin(), remainingParentPtrs.end() );
@@ -978,27 +992,27 @@ namespace dnv::vista::sdk
 			try
 			{
 				GmodPath path( parentPathPtrs, std::move( finalTargetNode ), gmod.visVersion(), false );
-				return GmodParsePathResult::Ok( std::move( path ) );
+				return std::make_unique<GmodParsePathResult::Ok>( std::move( path ) );
 			}
 			catch ( const std::invalid_argument& ex )
 			{
 				SPDLOG_ERROR( "Error creating path object for '{}': {}", item, ex.what() );
-				return GmodParsePathResult::Err( std::string( "Error creating path object: " ) + ex.what() );
+				return std::make_unique<GmodParsePathResult::Err>( std::string( "Error creating path object: " ) + ex.what() );
 			}
 			catch ( const std::exception& ex )
 			{
 				SPDLOG_ERROR( "Unexpected error creating path object for '{}': {}", item, ex.what() );
-				return GmodParsePathResult::Err( std::string( "Unexpected error creating path object: " ) + ex.what() );
+				return std::make_unique<GmodParsePathResult::Err>( std::string( "Unexpected error creating path object: " ) + ex.what() );
 			}
 		}
 		catch ( const std::exception& ex )
 		{
 			SPDLOG_ERROR( "Exception during parsing of path '{}': {}", item, ex.what() );
-			return GmodParsePathResult::Err( std::string( "Exception during parsing: " ) + ex.what() );
+			return std::make_unique<GmodParsePathResult::Err>( std::string( "Exception during parsing: " ) + ex.what() );
 		}
 	}
 
-	GmodParsePathResult GmodPath::parseFullPathInternal(
+	std::unique_ptr<GmodParsePathResult> GmodPath::parseFullPathInternal(
 		std::string_view pathStr,
 		const Gmod& gmod,
 		const Locations& locations )
@@ -1008,7 +1022,7 @@ namespace dnv::vista::sdk
 		if ( pathStr.empty() || std::all_of( pathStr.begin(), pathStr.end(), []( char c ) { return std::isspace( c ); } ) )
 		{
 			SPDLOG_ERROR( "Cannot parse empty full path string" );
-			return GmodParsePathResult::Err( "Path cannot be empty" );
+			return std::make_unique<GmodParsePathResult::Err>( "Path cannot be empty" );
 		}
 
 		std::vector<std::string_view> parts;
@@ -1026,7 +1040,8 @@ namespace dnv::vista::sdk
 		if ( parts.empty() )
 		{
 			SPDLOG_ERROR( "No parts found after splitting full path string: '{}'", pathStr );
-			return GmodParsePathResult::Err( "Path cannot be empty or contain only separators" );
+			return std::make_unique<GmodParsePathResult::Err>(
+				std::string( "Path cannot be empty or contain only separators: " ) + std::string( pathStr ) );
 		}
 
 		std::vector<const GmodNode*> nodePtrs;
@@ -1051,7 +1066,7 @@ namespace dnv::vista::sdk
 				if ( !locations.tryParse( locStr, parsedLocation ) )
 				{
 					SPDLOG_ERROR( "Failed to parse location '{}' in full path part '{}'", locStr, part );
-					return GmodParsePathResult::Err( "Failed to parse location: " + locStr );
+					return std::make_unique<GmodParsePathResult::Err>( "Failed to parse location: " + locStr );
 				}
 				locationOpt = parsedLocation;
 			}
@@ -1065,12 +1080,12 @@ namespace dnv::vista::sdk
 			if ( !gmod.tryGetNode( code, nodePtr ) )
 			{
 				SPDLOG_ERROR( "Failed to find node with code '{}' in full path '{}'", code, pathStr );
-				return GmodParsePathResult::Err( "Failed to get node: " + code );
+				return std::make_unique<GmodParsePathResult::Err>( "Failed to get node: " + code );
 			}
 			if ( nodePtr == nullptr )
 			{
 				SPDLOG_ERROR( "Internal error: tryGetNode succeeded but returned null pointer for code '{}' in full path '{}'", code, pathStr );
-				return GmodParsePathResult::Err( "Internal error retrieving node: " + code );
+				return std::make_unique<GmodParsePathResult::Err>( "Internal error retrieving node: " + code );
 			}
 
 			if ( i < parts.size() - 1 )
@@ -1104,7 +1119,7 @@ namespace dnv::vista::sdk
 		if ( !finalTargetNodeOpt )
 		{
 			SPDLOG_ERROR( "Internal error: Target node was not created during full path parsing for '{}'", pathStr );
-			return GmodParsePathResult::Err( "Internal error: Target node missing" );
+			return std::make_unique<GmodParsePathResult::Err>( std::string( "Error creating path object: " ) + std::string( pathStr ) );
 		}
 
 		size_t missingLinkAt = std::numeric_limits<size_t>::max();
@@ -1120,18 +1135,18 @@ namespace dnv::vista::sdk
 			{
 				errorDetail += ": Target node '" + finalTargetNodeOpt->code() + "' validation failed.";
 			}
-			return GmodParsePathResult::Err( errorDetail );
+			return std::make_unique<GmodParsePathResult::Err>( errorDetail );
 		}
 
 		try
 		{
 			GmodPath path( nodePtrs, std::move( *finalTargetNodeOpt ), gmod.visVersion(), true );
-			return GmodParsePathResult::Ok( std::move( path ) );
+			return std::make_unique<GmodParsePathResult::Ok>( std::move( path ) );
 		}
 		catch ( const std::exception& ex )
 		{
 			SPDLOG_ERROR( "Error creating GmodPath object after parsing full path '{}': {}", pathStr, ex.what() );
-			return GmodParsePathResult::Err( std::string( "Error creating path object: " ) + ex.what() );
+			return std::make_unique<GmodParsePathResult::Err>( std::string( "Error creating path object: " ) + ex.what() );
 		}
 	}
 

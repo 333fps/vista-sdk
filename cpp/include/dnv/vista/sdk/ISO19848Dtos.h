@@ -29,7 +29,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief Default constructor - deleted for immutability */
-		DataChannelTypeNameDto() = delete;
+		DataChannelTypeNameDto() = default;
 
 		/**
 		 * @brief Constructor with parameters
@@ -48,7 +48,7 @@ namespace dnv::vista::sdk
 		~DataChannelTypeNameDto() = default;
 
 		//-------------------------------------------------------------------------
-		// Public Interface - Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**
@@ -68,26 +68,29 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a DataChannelTypeNameDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Try to deserialize a DataChannelTypeNameDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<DataChannelTypeNameDto> tryFromJson( const rapidjson::Value& json );
+		static std::optional<DataChannelTypeNameDto> tryFromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Deserialize a DataChannelTypeNameDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Deserialize a DataChannelTypeNameDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return The deserialized DataChannelTypeNameDto
-		 * @throws std::invalid_argument If JSON format is invalid
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
+		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static DataChannelTypeNameDto fromJson( const rapidjson::Value& json );
+		static DataChannelTypeNameDto fromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Serialize this DataChannelTypeNameDto to a RapidJSON Value
-		 * @param allocator The JSON value allocator to use
-		 * @return The serialized JSON value
+		 * @brief Serialize this DataChannelTypeNameDto to an nlohmann::json object
+		 * @return The serialized nlohmann::json object
 		 */
-		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
+		nlohmann::json toJson() const;
+
+		friend void from_json( const nlohmann::json& j, DataChannelTypeNameDto& dto );
+		friend void to_json( nlohmann::json& j, const DataChannelTypeNameDto& dto );
 
 	private:
 		//-------------------------------------------------------------------------
@@ -105,10 +108,10 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief Type name (JSON: "type") */
-		const std::string m_type;
+		std::string m_type;
 
 		/** @brief Description of the type (JSON: "description") */
-		const std::string m_description;
+		std::string m_description;
 	};
 
 	//-------------------------------------------------------------------------
@@ -129,7 +132,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief Default constructor - deleted for immutability */
-		DataChannelTypeNamesDto() = delete;
+		DataChannelTypeNamesDto() = default;
 
 		/**
 		 * @brief Constructor with parameters
@@ -147,7 +150,7 @@ namespace dnv::vista::sdk
 		~DataChannelTypeNamesDto() = default;
 
 		//-------------------------------------------------------------------------
-		// Public Interface - Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**
@@ -161,26 +164,29 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a DataChannelTypeNamesDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Try to deserialize a DataChannelTypeNamesDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<DataChannelTypeNamesDto> tryFromJson( const rapidjson::Value& json );
+		static std::optional<DataChannelTypeNamesDto> tryFromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Deserialize a DataChannelTypeNamesDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Deserialize a DataChannelTypeNamesDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return The deserialized DataChannelTypeNamesDto
-		 * @throws std::invalid_argument If JSON format is invalid
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
+		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static DataChannelTypeNamesDto fromJson( const rapidjson::Value& json );
+		static DataChannelTypeNamesDto fromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Serialize this DataChannelTypeNamesDto to a RapidJSON Value
-		 * @param allocator The JSON value allocator to use
-		 * @return The serialized JSON value
+		 * @brief Serialize this DataChannelTypeNamesDto to an nlohmann::json object
+		 * @return The serialized nlohmann::json object
 		 */
-		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
+		nlohmann::json toJson() const;
+
+		friend void from_json( const nlohmann::json& j, DataChannelTypeNamesDto& dto );
+		friend void to_json( nlohmann::json& j, const DataChannelTypeNamesDto& dto );
 
 	private:
 		//-------------------------------------------------------------------------
@@ -198,7 +204,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief Collection of data channel type name values (JSON: "values") */
-		const std::vector<DataChannelTypeNameDto> m_values;
+		std::vector<DataChannelTypeNameDto> m_values;
 	};
 
 	//-------------------------------------------------------------------------
@@ -219,7 +225,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief Default constructor - deleted for immutability */
-		FormatDataTypeDto() = delete;
+		FormatDataTypeDto() = default;
 
 		/**
 		 * @brief Constructor with parameters
@@ -238,7 +244,7 @@ namespace dnv::vista::sdk
 		~FormatDataTypeDto() = default;
 
 		//-------------------------------------------------------------------------
-		// Public Interface - Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**
@@ -258,26 +264,29 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a FormatDataTypeDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Try to deserialize a FormatDataTypeDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<FormatDataTypeDto> tryFromJson( const rapidjson::Value& json );
+		static std::optional<FormatDataTypeDto> tryFromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Deserialize a FormatDataTypeDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Deserialize a FormatDataTypeDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return The deserialized FormatDataTypeDto
-		 * @throws std::invalid_argument If JSON format is invalid
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
+		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static FormatDataTypeDto fromJson( const rapidjson::Value& json );
+		static FormatDataTypeDto fromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Serialize this FormatDataTypeDto to a RapidJSON Value
-		 * @param allocator The JSON value allocator to use
-		 * @return The serialized JSON value
+		 * @brief Serialize this FormatDataTypeDto to an nlohmann::json object
+		 * @return The serialized nlohmann::json object
 		 */
-		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
+		nlohmann::json toJson() const;
+
+		friend void from_json( const nlohmann::json& j, FormatDataTypeDto& dto );
+		friend void to_json( nlohmann::json& j, const FormatDataTypeDto& dto );
 
 	private:
 		//-------------------------------------------------------------------------
@@ -295,10 +304,10 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief Type name (JSON: "type") */
-		const std::string m_type;
+		std::string m_type;
 
 		/** @brief Description of the type (JSON: "description") */
-		const std::string m_description;
+		std::string m_description;
 	};
 
 	//-------------------------------------------------------------------------
@@ -319,7 +328,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief Default constructor - deleted for immutability */
-		FormatDataTypesDto() = delete;
+		FormatDataTypesDto() = default;
 
 		/**
 		 * @brief Constructor with parameters
@@ -337,7 +346,7 @@ namespace dnv::vista::sdk
 		~FormatDataTypesDto() = default;
 
 		//-------------------------------------------------------------------------
-		// Public Interface - Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**
@@ -351,26 +360,29 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a FormatDataTypesDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Try to deserialize a FormatDataTypesDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<FormatDataTypesDto> tryFromJson( const rapidjson::Value& json );
+		static std::optional<FormatDataTypesDto> tryFromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Deserialize a FormatDataTypesDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Deserialize a FormatDataTypesDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return The deserialized FormatDataTypesDto
-		 * @throws std::invalid_argument If JSON format is invalid
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
+		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static FormatDataTypesDto fromJson( const rapidjson::Value& json );
+		static FormatDataTypesDto fromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Serialize this FormatDataTypesDto to a RapidJSON Value
-		 * @param allocator The JSON value allocator to use
-		 * @return The serialized JSON value
+		 * @brief Serialize this FormatDataTypesDto to an nlohmann::json object
+		 * @return The serialized nlohmann::json object
 		 */
-		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
+		nlohmann::json toJson() const;
+
+		friend void from_json( const nlohmann::json& j, FormatDataTypesDto& dto );
+		friend void to_json( nlohmann::json& j, const FormatDataTypesDto& dto );
 
 	private:
 		//-------------------------------------------------------------------------
@@ -388,6 +400,6 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------------
 
 		/** @brief Collection of format data type values (JSON: "values") */
-		const std::vector<FormatDataTypeDto> m_values;
+		std::vector<FormatDataTypeDto> m_values;
 	};
 }

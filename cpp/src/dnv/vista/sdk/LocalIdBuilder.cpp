@@ -14,7 +14,7 @@
 #include "dnv/vista/sdk/MetadataTag.h"
 #include "dnv/vista/sdk/ParsingErrors.h"
 #include "dnv/vista/sdk/GmodPath.h"
-#include "dnv/vista/sdk/CodeBooks.h"
+#include "dnv/vista/sdk/Codebooks.h"
 #include "dnv/vista/sdk/Gmod.h"
 #include "dnv/vista/sdk/VIS.h"
 
@@ -386,6 +386,8 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
+
 			SPDLOG_ERROR( "Invalid VisVersion string '{}': {}", visVersionStr, ex.what() );
 			throw std::invalid_argument( "Invalid VisVersion format: " + visVersionStr );
 		}
@@ -439,6 +441,8 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
+
 			SPDLOG_WARN( "Failed to parse VisVersion string '{}' in tryWithVisVersion: {}", *visVersionStr, ex.what() );
 			succeeded = false;
 			return std::move( *this );
@@ -497,6 +501,8 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
+
 			SPDLOG_ERROR( "Failed during tryWithPrimaryItem: {}", ex.what() );
 			return std::move( *this );
 		}
@@ -572,6 +578,8 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
+
 			SPDLOG_ERROR( "Failed during tryWithSecondaryItem(GmodPath&&): {}", ex.what() );
 			return std::move( *this );
 		}
@@ -667,6 +675,8 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
+
 			SPDLOG_WARN( "Failed to set metadata tag in tryWithMetadataTag: {}", ex.what() );
 			return std::move( *this );
 		}
@@ -1051,9 +1061,11 @@ namespace dnv::vista::sdk
 						advanceParser( currentIndex, segment, currentState, LocalIdParsingState::PrimaryItem );
 						primaryItemParseStart = currentIndex;
 					}
-					catch ( const std::exception& e )
+					catch ( const std::exception& ex )
 					{
-						SPDLOG_ERROR( "Parsing failed: Error processing VIS version '{}': {}", segment, e.what() );
+						(void)ex;
+
+						SPDLOG_ERROR( "Parsing failed: Error processing VIS version '{}': {}", segment, ex.what() );
 						addError( errorBuilder, currentState, "Error processing VIS version: " + std::string( segment ) );
 						return false;
 					}

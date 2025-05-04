@@ -6,7 +6,6 @@
 #include "pch.h"
 
 #include "dnv/vista/sdk/EmbeddedResource.h"
-
 #include "dnv/vista/sdk/CodebooksDto.h"
 #include "dnv/vista/sdk/GmodDto.h"
 #include "dnv/vista/sdk/GmodVersioningDto.h"
@@ -15,6 +14,8 @@
 
 namespace dnv::vista::sdk
 {
+	static constexpr const char* VIS_RELEASE_KEY = "visRelease";
+
 	//----------------------------------------------------------------------
 	// Public interface
 	//----------------------------------------------------------------------
@@ -27,31 +28,48 @@ namespace dnv::vista::sdk
 
 		for ( const auto& resourceName : names )
 		{
-			if ( resourceName.find( "gmod-vis-versioning" ) == std::string::npos && resourceName.find( ".gz" ) != std::string::npos )
+			if ( resourceName.find( "gmod" ) != std::string::npos &&
+				 resourceName.find( "versioning" ) == std::string::npos &&
+				 resourceName.find( ".json.gz" ) != std::string::npos )
 			{
 				try
 				{
 					auto stream = decompressedStream( resourceName );
-					std::string jsonStr( ( std::istreambuf_iterator<char>( *stream ) ),
-						std::istreambuf_iterator<char>() );
+					nlohmann::json gmodJson = nlohmann::json::parse( *stream );
 
-					rapidjson::Document gmodJson;
-					gmodJson.Parse( jsonStr.c_str() );
-
-					if ( !gmodJson.HasParseError() && gmodJson.HasMember( "visRelease" ) &&
-						 gmodJson["visRelease"].IsString() )
+					if ( gmodJson.contains( VIS_RELEASE_KEY ) && gmodJson.at( VIS_RELEASE_KEY ).is_string() )
 					{
-						visVersions.push_back( gmodJson["visRelease"].GetString() );
+						std::string version = gmodJson.at( VIS_RELEASE_KEY ).get<std::string>();
+						visVersions.push_back( version );
+						SPDLOG_INFO( "Found GMOD resource: {} with VIS version: {}", resourceName, version );
 					}
-
-					SPDLOG_INFO( "Found GMOD resource: {} with VIS version: {}", resourceName, gmodJson["visRelease"].GetString() );
+					else
+					{
+						SPDLOG_WARN( "GMOD resource {} missing or has invalid '{}' field.", resourceName, VIS_RELEASE_KEY );
+					}
 				}
-				catch ( const std::exception& e )
+				catch ( const nlohmann::json::parse_error& ex )
 				{
-					SPDLOG_ERROR( "Error parsing GMOD for version extraction: {}", e.what() );
+					(void)ex;
+					SPDLOG_ERROR( "JSON parse error in resource {}: {}", resourceName, ex.what() );
+				}
+				catch ( const nlohmann::json::exception& ex )
+				{
+					(void)ex;
+
+					SPDLOG_ERROR( "JSON error processing resource {}: {}", resourceName, ex.what() );
+				}
+				catch ( const std::exception& ex )
+				{
+					(void)ex;
+
+					SPDLOG_ERROR( "Error reading/decompressing resource {} for version extraction: {}", resourceName, ex.what() );
 				}
 			}
 		}
+
+		std::sort( visVersions.begin(), visVersions.end() );
+		visVersions.erase( std::unique( visVersions.begin(), visVersions.end() ), visVersions.end() );
 
 		{
 			std::ostringstream versionsList;
@@ -63,7 +81,11 @@ namespace dnv::vista::sdk
 				auto endTime = std::chrono::high_resolution_clock::now();
 				auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
 
-				SPDLOG_INFO( "Found {} VIS versions in {} ms: {}", visVersions.size(), duration.count(), versionsList.str() );
+				SPDLOG_INFO( "Found {} unique VIS versions in {} ms: {}", visVersions.size(), duration.count(), versionsList.str() );
+			}
+			else
+			{
+				SPDLOG_WARN( "No VIS versions found in embedded GMOD resources." );
 			}
 		}
 
@@ -81,7 +103,6 @@ namespace dnv::vista::sdk
 			if ( cacheIt != gmodCache.end() )
 			{
 				SPDLOG_DEBUG( "Using cached GMOD DTO for version: {}", visVersion );
-
 				return cacheIt->second;
 			}
 		}
@@ -97,7 +118,7 @@ namespace dnv::vista::sdk
 			[&visVersion]( const std::string& name ) {
 				return name.find( "gmod" ) != std::string::npos &&
 					   name.find( visVersion ) != std::string::npos &&
-					   name.find( ".gz" ) != std::string::npos &&
+					   name.ends_with( ".json.gz" ) &&
 					   name.find( "versioning" ) == std::string::npos;
 			} );
 
@@ -108,60 +129,56 @@ namespace dnv::vista::sdk
 		if ( it == names.end() )
 		{
 			SPDLOG_ERROR( "GMOD resource not found for version: {}", visVersion );
-
 			std::lock_guard<std::mutex> lock( gmodCacheMutex );
-			gmodCache[visVersion] = std::nullopt;
-
+			gmodCache.emplace( visVersion, std::nullopt );
 			return std::nullopt;
 		}
 
 		SPDLOG_INFO( "Found matching GMOD resource: {}", *it );
+		std::optional<GmodDto> resultForCache = std::nullopt;
 
 		try
 		{
 			auto startTime = std::chrono::high_resolution_clock::now();
 
 			auto stream = decompressedStream( *it );
-			std::string jsonStr( ( std::istreambuf_iterator<char>( *stream ) ),
-				std::istreambuf_iterator<char>() );
+			nlohmann::json gmodJson = nlohmann::json::parse( *stream );
 
-			rapidjson::Document gmodJson;
-			gmodJson.Parse( jsonStr.c_str() );
-
-			if ( gmodJson.HasParseError() )
-			{
-				SPDLOG_ERROR( "JSON parse error at offset {}: {}", gmodJson.GetErrorOffset(), rapidjson::GetParseError_En( gmodJson.GetParseError() ) );
-
-				std::lock_guard<std::mutex> lock( gmodCacheMutex );
-				gmodCache[visVersion] = std::nullopt;
-
-				return std::nullopt;
-			}
-
-			auto gmodDto = GmodDto::fromJson( gmodJson );
+			GmodDto loadedDto = GmodDto::fromJson( gmodJson );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
 
 			SPDLOG_INFO( "Successfully loaded GMOD DTO for version {} in {} ms", visVersion, duration.count() );
 
-			std::lock_guard<std::mutex> lock( gmodCacheMutex );
-			auto [emplaceIt, inserted] = gmodCache.emplace( visVersion, std::move( gmodDto ) );
-
-			return emplaceIt->second;
+			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const std::exception& e )
+		catch ( const nlohmann::json::parse_error& ex )
 		{
-			SPDLOG_ERROR( "Error processing GMOD resource: {}", e.what() );
+			(void)ex;
 
-			std::lock_guard<std::mutex> lock( gmodCacheMutex );
-			gmodCache[visVersion] = std::nullopt;
-
-			return std::nullopt;
+			SPDLOG_ERROR( "JSON parse error in GMOD resource {}: {}", *it, ex.what() );
 		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "JSON validation/deserialization error in GMOD resource {}: {}", *it, ex.what() );
+		}
+		catch ( const std::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "Error processing GMOD resource {}: {}", *it, ex.what() );
+		}
+
+		std::lock_guard<std::mutex> lock( gmodCacheMutex );
+		auto [emplaceIt, inserted] = gmodCache.emplace( visVersion, std::move( resultForCache ) );
+
+		return emplaceIt->second;
 	}
 
-	std::optional<std::unordered_map<std::string, GmodVersioningDto>> EmbeddedResource::gmodVersioning()
+	const std::optional<std::unordered_map<std::string, GmodVersioningDto>>& EmbeddedResource::gmodVersioning()
 	{
 		static std::mutex gmodVersioningCacheMutex;
 		static std::optional<std::unordered_map<std::string, GmodVersioningDto>> gmodVersioningCache;
@@ -171,8 +188,7 @@ namespace dnv::vista::sdk
 			std::lock_guard<std::mutex> lock( gmodVersioningCacheMutex );
 			if ( cacheInitialized )
 			{
-				SPDLOG_DEBUG( "Using cached GMOD Versioning DTO" );
-
+				SPDLOG_DEBUG( "Using cached GMOD Versioning DTO map" );
 				return gmodVersioningCache;
 			}
 		}
@@ -186,7 +202,7 @@ namespace dnv::vista::sdk
 		{
 			if ( resourceName.find( "gmod" ) != std::string::npos &&
 				 resourceName.find( "versioning" ) != std::string::npos &&
-				 resourceName.find( ".gz" ) != std::string::npos )
+				 resourceName.ends_with( ".json.gz" ) )
 			{
 				matchingResources.push_back( resourceName );
 			}
@@ -194,7 +210,7 @@ namespace dnv::vista::sdk
 
 		SPDLOG_INFO( "Found {} matching versioning resources", matchingResources.size() );
 
-		std::unordered_map<std::string, GmodVersioningDto> result;
+		std::unordered_map<std::string, GmodVersioningDto> resultMap;
 		std::mutex resultMutex;
 		bool foundAnyResource = false;
 
@@ -205,36 +221,47 @@ namespace dnv::vista::sdk
 				auto processStartTime = std::chrono::high_resolution_clock::now();
 
 				auto stream = decompressedStream( resourceName );
-				std::string jsonStr( ( std::istreambuf_iterator<char>( *stream ) ),
-					std::istreambuf_iterator<char>() );
+				nlohmann::json versioningJson = nlohmann::json::parse( *stream );
 
-				rapidjson::Document versioningJson;
-				versioningJson.Parse( jsonStr.c_str() );
-
-				if ( versioningJson.HasParseError() )
+				if ( versioningJson.contains( VIS_RELEASE_KEY ) && versioningJson.at( VIS_RELEASE_KEY ).is_string() )
 				{
-					SPDLOG_ERROR( "JSON parse error at offset {}: {}", versioningJson.GetErrorOffset(), rapidjson::GetParseError_En( versioningJson.GetParseError() ) );
-					continue;
-				}
+					std::string visVersion = versioningJson.at( VIS_RELEASE_KEY ).get<std::string>();
 
-				if ( versioningJson.HasMember( "visVersion" ) && versioningJson["visVersion"].IsString() )
-				{
-					std::string visVersion = versioningJson["visVersion"].GetString();
 					auto dto = GmodVersioningDto::fromJson( versioningJson );
 
-					std::lock_guard<std::mutex> lock( resultMutex );
-					result.emplace( visVersion, std::move( dto ) );
-					foundAnyResource = true;
+					{
+						std::lock_guard<std::mutex> lock( resultMutex );
+						resultMap.emplace( visVersion, std::move( dto ) );
+						foundAnyResource = true;
+					}
 
 					auto processEndTime = std::chrono::high_resolution_clock::now();
 					auto processDuration = std::chrono::duration_cast<std::chrono::milliseconds>( processEndTime - processStartTime );
 
-					SPDLOG_INFO( "Loaded GMOD Versioning DTO for version {} in {} ms", visVersion, processDuration.count() );
+					SPDLOG_INFO( "Loaded GMOD Versioning DTO for version {} from {} in {} ms", visVersion, resourceName, processDuration.count() );
+				}
+				else
+				{
+					SPDLOG_WARN( "GMOD Versioning resource {} missing or has invalid '{}' field.", resourceName, VIS_RELEASE_KEY );
 				}
 			}
-			catch ( const std::exception& e )
+			catch ( const nlohmann::json::parse_error& ex )
 			{
-				SPDLOG_ERROR( "Error processing GMOD Versioning resource {}: {}", resourceName, e.what() );
+				(void)ex;
+
+				SPDLOG_ERROR( "JSON parse error in GMOD Versioning resource {}: {}", resourceName, ex.what() );
+			}
+			catch ( const nlohmann::json::exception& ex )
+			{
+				(void)ex;
+
+				SPDLOG_ERROR( "JSON validation/deserialization error in GMOD Versioning resource {}: {}", resourceName, ex.what() );
+			}
+			catch ( const std::exception& ex )
+			{
+				(void)ex;
+
+				SPDLOG_ERROR( "Error processing GMOD Versioning resource {}: {}", resourceName, ex.what() );
 			}
 		}
 
@@ -243,21 +270,17 @@ namespace dnv::vista::sdk
 
 		std::lock_guard<std::mutex> lock( gmodVersioningCacheMutex );
 		cacheInitialized = true;
-
 		if ( foundAnyResource )
 		{
-			SPDLOG_INFO( "Successfully loaded {} GMOD Versioning DTOs in {} ms", result.size(), duration.count() );
-			gmodVersioningCache.emplace( std::move( result ) );
-
-			return result;
+			SPDLOG_INFO( "Successfully loaded {} GMOD Versioning DTOs in {} ms", resultMap.size(), duration.count() );
+			gmodVersioningCache.emplace( std::move( resultMap ) );
 		}
 		else
 		{
-			SPDLOG_ERROR( "No GMOD Versioning resources found after {} ms", duration.count() );
+			SPDLOG_ERROR( "No valid GMOD Versioning resources found after {} ms", duration.count() );
 			gmodVersioningCache = std::nullopt;
-
-			return std::nullopt;
 		}
+		return gmodVersioningCache;
 	}
 
 	std::optional<CodebooksDto> EmbeddedResource::codebooks( const std::string& visVersion )
@@ -271,7 +294,6 @@ namespace dnv::vista::sdk
 			if ( cacheIt != codebooksCache.end() )
 			{
 				SPDLOG_DEBUG( "Using cached Codebooks DTO for version: {}", visVersion );
-
 				return cacheIt->second;
 			}
 		}
@@ -284,60 +306,55 @@ namespace dnv::vista::sdk
 			[&visVersion]( const std::string& name ) {
 				return name.find( "codebooks" ) != std::string::npos &&
 					   name.find( visVersion ) != std::string::npos &&
-					   name.find( ".gz" ) != std::string::npos;
+					   name.ends_with( ".json.gz" );
 			} );
 
 		if ( it == names.end() )
 		{
 			SPDLOG_ERROR( "Codebooks resource not found for version: {}", visVersion );
-
 			std::lock_guard<std::mutex> lock( codebooksCacheMutex );
-			codebooksCache[visVersion] = std::nullopt;
-
+			codebooksCache.emplace( visVersion, std::nullopt );
 			return std::nullopt;
 		}
 
+		SPDLOG_INFO( "Found matching Codebooks resource: {}", *it );
+		std::optional<CodebooksDto> resultForCache = std::nullopt;
 		try
 		{
 			auto stream = decompressedStream( *it );
-			std::string jsonStr( ( std::istreambuf_iterator<char>( *stream ) ),
-				std::istreambuf_iterator<char>() );
+			nlohmann::json codebooksJson = nlohmann::json::parse( *stream );
 
-			rapidjson::Document codebooksJson;
-			codebooksJson.Parse( jsonStr.c_str() );
-
-			if ( codebooksJson.HasParseError() )
-			{
-				SPDLOG_ERROR( "JSON parse error at offset {}: {}", codebooksJson.GetErrorOffset(), rapidjson::GetParseError_En( codebooksJson.GetParseError() ) );
-
-				std::lock_guard<std::mutex> lock( codebooksCacheMutex );
-				codebooksCache[visVersion] = std::nullopt;
-
-				return std::nullopt;
-			}
-
-			auto result = CodebooksDto::fromJson( codebooksJson );
+			CodebooksDto loadedDto = CodebooksDto::fromJson( codebooksJson );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
-
 			SPDLOG_INFO( "Successfully loaded Codebooks DTO for version {} in {} ms", visVersion, duration.count() );
 
-			std::lock_guard<std::mutex> lock( codebooksCacheMutex );
-
-			codebooksCache.emplace( visVersion, std::move( result ) );
-
-			return codebooksCache.at( visVersion );
+			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const std::exception& e )
+		catch ( const nlohmann::json::parse_error& ex )
 		{
-			SPDLOG_ERROR( "Error parsing Codebooks resource for version {}: {}", visVersion, e.what() );
+			(void)ex;
 
-			std::lock_guard<std::mutex> lock( codebooksCacheMutex );
-			codebooksCache[visVersion] = std::nullopt;
-
-			return std::nullopt;
+			SPDLOG_ERROR( "JSON parse error in Codebooks resource {}: {}", *it, ex.what() );
 		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "JSON validation/deserialization error in Codebooks resource {}: {}", *it, ex.what() );
+		}
+		catch ( const std::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "Error processing Codebooks resource {}: {}", *it, ex.what() );
+		}
+
+		std::lock_guard<std::mutex> lock( codebooksCacheMutex );
+		auto [emplaceIt, inserted] = codebooksCache.emplace( visVersion, std::move( resultForCache ) );
+
+		return emplaceIt->second;
 	}
 
 	std::optional<LocationsDto> EmbeddedResource::locations( const std::string& visVersion )
@@ -351,7 +368,6 @@ namespace dnv::vista::sdk
 			if ( cacheIt != locationsCache.end() )
 			{
 				SPDLOG_DEBUG( "Using cached Locations DTO for version: {}", visVersion );
-
 				return cacheIt->second;
 			}
 		}
@@ -364,73 +380,55 @@ namespace dnv::vista::sdk
 			[&visVersion]( const std::string& name ) {
 				return name.find( "locations" ) != std::string::npos &&
 					   name.find( visVersion ) != std::string::npos &&
-					   name.find( ".gz" ) != std::string::npos;
+					   name.ends_with( ".json.gz" );
 			} );
 
 		if ( it == names.end() )
 		{
 			SPDLOG_ERROR( "Locations resource not found for version: {}", visVersion );
-
 			std::lock_guard<std::mutex> lock( locationsCacheMutex );
-
-			locationsCache.erase( visVersion );
 			locationsCache.emplace( visVersion, std::nullopt );
-
 			return std::nullopt;
 		}
 
+		SPDLOG_INFO( "Found matching Locations resource: {}", *it );
+		std::optional<LocationsDto> resultForCache = std::nullopt;
 		try
 		{
 			auto stream = decompressedStream( *it );
-			std::string jsonStr( ( std::istreambuf_iterator<char>( *stream ) ),
-				std::istreambuf_iterator<char>() );
+			nlohmann::json locationsJson = nlohmann::json::parse( *stream );
 
-			rapidjson::Document locationsJson;
-			locationsJson.Parse( jsonStr.c_str() );
-
-			if ( locationsJson.HasParseError() )
-			{
-				SPDLOG_ERROR( "JSON parse error at offset {}: {}",
-					locationsJson.GetErrorOffset(),
-					rapidjson::GetParseError_En( locationsJson.GetParseError() ) );
-
-				std::lock_guard<std::mutex> lock( locationsCacheMutex );
-
-				locationsCache.erase( visVersion );
-				locationsCache.emplace( visVersion, std::nullopt );
-
-				return std::nullopt;
-			}
-
-			auto result = LocationsDto::fromJson( locationsJson );
+			LocationsDto loadedDto = LocationsDto::fromJson( locationsJson );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
+			SPDLOG_INFO( "Successfully loaded Locations DTO for version {} in {} ms", visVersion, duration.count() );
 
-			SPDLOG_INFO( "Successfully loaded Locations DTO for version {} in {} ms",
-				visVersion, duration.count() );
-
-			std::lock_guard<std::mutex> lock( locationsCacheMutex );
-
-			std::optional<LocationsDto> optResult( std::move( result ) );
-
-			locationsCache.erase( visVersion );
-			auto [cacheIt, inserted] = locationsCache.emplace( visVersion, std::move( optResult ) );
-
-			return cacheIt->second;
+			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const std::exception& e )
+		catch ( const nlohmann::json::parse_error& ex )
 		{
-			SPDLOG_ERROR( "Error parsing Locations resource for version {}: {}",
-				visVersion, e.what() );
+			(void)ex;
 
-			std::lock_guard<std::mutex> lock( locationsCacheMutex );
-
-			locationsCache.erase( visVersion );
-			locationsCache.emplace( visVersion, std::nullopt );
-
-			return std::nullopt;
+			SPDLOG_ERROR( "JSON parse error in Locations resource {}: {}", *it, ex.what() );
 		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "JSON validation/deserialization error in Locations resource {}: {}", *it, ex.what() );
+		}
+		catch ( const std::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "Error processing Locations resource {}: {}", *it, ex.what() );
+		}
+
+		std::lock_guard<std::mutex> lock( locationsCacheMutex );
+		auto [emplaceIt, inserted] = locationsCache.emplace( visVersion, std::move( resultForCache ) );
+
+		return emplaceIt->second;
 	}
 
 	std::optional<DataChannelTypeNamesDto> EmbeddedResource::dataChannelTypeNames( const std::string& version )
@@ -457,64 +455,55 @@ namespace dnv::vista::sdk
 				return name.find( "data-channel-type-names" ) != std::string::npos &&
 					   name.find( "iso19848" ) != std::string::npos &&
 					   name.find( version ) != std::string::npos &&
-					   name.find( ".gz" ) != std::string::npos;
+					   name.ends_with( ".json.gz" );
 			} );
 
 		if ( it == names.end() )
 		{
 			SPDLOG_ERROR( "DataChannelTypeNames resource not found for version: {}", version );
-
 			std::lock_guard<std::mutex> lock( dataChannelTypeNamesCacheMutex );
-			dataChannelTypeNamesCache[version] = std::nullopt;
+			dataChannelTypeNamesCache.emplace( version, std::nullopt );
 			return std::nullopt;
 		}
 
+		SPDLOG_INFO( "Found matching DataChannelTypeNames resource: {}", *it );
+		std::optional<DataChannelTypeNamesDto> resultForCache = std::nullopt;
 		try
 		{
 			auto stream = decompressedStream( *it );
-			std::string jsonStr( ( std::istreambuf_iterator<char>( *stream ) ),
-				std::istreambuf_iterator<char>() );
+			nlohmann::json dtNamesJson = nlohmann::json::parse( *stream );
 
-			rapidjson::Document dtNamesJson;
-			dtNamesJson.Parse( jsonStr.c_str() );
-
-			if ( dtNamesJson.HasParseError() )
-			{
-				SPDLOG_ERROR( "JSON parse error at offset {}: {}",
-					dtNamesJson.GetErrorOffset(),
-					rapidjson::GetParseError_En( dtNamesJson.GetParseError() ) );
-
-				std::lock_guard<std::mutex> lock( dataChannelTypeNamesCacheMutex );
-
-				dataChannelTypeNamesCache.erase( version );
-				dataChannelTypeNamesCache.emplace( version, std::nullopt );
-
-				return std::nullopt;
-			}
-
-			auto result = DataChannelTypeNamesDto::fromJson( dtNamesJson );
+			DataChannelTypeNamesDto loadedDto = DataChannelTypeNamesDto::fromJson( dtNamesJson );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
-
 			SPDLOG_INFO( "Successfully loaded DataChannelTypeNames DTO for version {} in {} ms", version, duration.count() );
 
-			std::optional<DataChannelTypeNamesDto> optResult( std::move( result ) );
-
-			dataChannelTypeNamesCache.erase( version );
-			auto [cacheIt, inserted] = dataChannelTypeNamesCache.emplace( version, std::move( optResult ) );
-
-			return cacheIt->second;
+			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const std::exception& e )
+		catch ( const nlohmann::json::parse_error& ex )
 		{
-			SPDLOG_ERROR( "Error parsing DataChannelTypeNames resource for version {}: {}", version, e.what() );
+			(void)ex;
 
-			dataChannelTypeNamesCache.erase( version );
-			dataChannelTypeNamesCache.emplace( version, std::nullopt );
-
-			return std::nullopt;
+			SPDLOG_ERROR( "JSON parse error in DataChannelTypeNames resource {}: {}", *it, ex.what() );
 		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "JSON validation/deserialization error in DataChannelTypeNames resource {}: {}", *it, ex.what() );
+		}
+		catch ( const std::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "Error processing DataChannelTypeNames resource {}: {}", *it, ex.what() );
+		}
+
+		std::lock_guard<std::mutex> lock( dataChannelTypeNamesCacheMutex );
+		auto [emplaceIt, inserted] = dataChannelTypeNamesCache.emplace( version, std::move( resultForCache ) );
+
+		return emplaceIt->second;
 	}
 
 	std::optional<FormatDataTypesDto> EmbeddedResource::formatDataTypes( const std::string& version )
@@ -541,67 +530,55 @@ namespace dnv::vista::sdk
 				return name.find( "format-data-types" ) != std::string::npos &&
 					   name.find( "iso19848" ) != std::string::npos &&
 					   name.find( version ) != std::string::npos &&
-					   name.find( ".gz" ) != std::string::npos;
+					   name.ends_with( ".json.gz" );
 			} );
 
 		if ( it == names.end() )
 		{
 			SPDLOG_ERROR( "FormatDataTypes resource not found for version: {}", version );
-
 			std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
-
-			fdTypesCache.erase( version );
 			fdTypesCache.emplace( version, std::nullopt );
-
 			return std::nullopt;
 		}
 
+		SPDLOG_INFO( "Found matching FormatDataTypes resource: {}", *it );
+		std::optional<FormatDataTypesDto> resultForCache = std::nullopt;
 		try
 		{
 			auto stream = decompressedStream( *it );
-			std::string jsonStr( ( std::istreambuf_iterator<char>( *stream ) ), std::istreambuf_iterator<char>() );
+			nlohmann::json fdTypesJson = nlohmann::json::parse( *stream );
 
-			rapidjson::Document fdTypesJson;
-			fdTypesJson.Parse( jsonStr.c_str() );
-
-			if ( fdTypesJson.HasParseError() )
-			{
-				SPDLOG_ERROR( "JSON parse error at offset {}: {}", fdTypesJson.GetErrorOffset(), rapidjson::GetParseError_En( fdTypesJson.GetParseError() ) );
-
-				std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
-
-				fdTypesCache.erase( version );
-				fdTypesCache.emplace( version, std::nullopt );
-
-				return std::nullopt;
-			}
-
-			auto result = FormatDataTypesDto::fromJson( fdTypesJson );
+			FormatDataTypesDto loadedDto = FormatDataTypesDto::fromJson( fdTypesJson );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
-
 			SPDLOG_INFO( "Successfully loaded FormatDataTypes DTO for version {} in {} ms", version, duration.count() );
 
-			std::optional<FormatDataTypesDto> optResult( std::move( result ) );
-			std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
-
-			fdTypesCache.erase( version );
-			auto [cacheIt, inserted] = fdTypesCache.emplace( version, std::move( optResult ) );
-
-			return cacheIt->second;
+			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const std::exception& e )
+		catch ( const nlohmann::json::parse_error& ex )
 		{
-			SPDLOG_ERROR( "Error parsing FormatDataTypes resource for version {}: {}", version, e.what() );
+			(void)ex;
 
-			std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
-
-			fdTypesCache.erase( version );
-			fdTypesCache.emplace( version, std::nullopt );
-
-			return std::nullopt;
+			SPDLOG_ERROR( "JSON parse error in FormatDataTypes resource {}: {}", *it, ex.what() );
 		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "JSON validation/deserialization error in FormatDataTypes resource {}: {}", *it, ex.what() );
+		}
+		catch ( const std::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "Error processing FormatDataTypes resource {}: {}", *it, ex.what() );
+		}
+
+		std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
+		auto [emplaceIt, inserted] = fdTypesCache.emplace( version, std::move( resultForCache ) );
+
+		return emplaceIt->second;
 	}
 
 	//----------------------------------------------------------------------
@@ -612,32 +589,34 @@ namespace dnv::vista::sdk
 	{
 		static std::mutex cacheMutex;
 		static std::vector<std::string> cachedResourceNames;
-		static std::optional<std::string> successfulDir;
+		static std::optional<std::filesystem::path> successfulDir;
 		static bool initialized = false;
 
 		{
 			std::lock_guard<std::mutex> lock( cacheMutex );
-
 			if ( initialized )
 			{
 				SPDLOG_DEBUG( "Using cached resource names ({} entries)", cachedResourceNames.size() );
 				return cachedResourceNames;
 			}
 		}
+		SPDLOG_INFO( "Building resource names cache..." );
+		auto startTime = std::chrono::high_resolution_clock::now();
 
-		SPDLOG_INFO( "Building resource names cache" );
-
-		std::vector<std::string> possibleDirs{
-			"resources/",
-			"../resources/",
-			"../../resources/",
-			"./" };
+		std::vector<std::filesystem::path> possibleDirs;
 
 		if ( successfulDir )
 		{
-			possibleDirs.insert( possibleDirs.begin(), *successfulDir );
-			SPDLOG_DEBUG( "Trying previously successful directory first: {}", *successfulDir );
+			possibleDirs.push_back( *successfulDir );
+			SPDLOG_DEBUG( "Trying previously successful directory first: {}", successfulDir->string() );
 		}
+
+		possibleDirs.push_back( std::filesystem::current_path() / "resources" );
+		possibleDirs.push_back( std::filesystem::current_path() / "../resources" );
+		possibleDirs.push_back( std::filesystem::current_path() / "../../resources" );
+		possibleDirs.push_back( std::filesystem::current_path() );
+
+		std::vector<std::string> foundNames;
 
 		for ( const auto& dir : possibleDirs )
 		{
@@ -645,49 +624,71 @@ namespace dnv::vista::sdk
 			{
 				if ( !std::filesystem::exists( dir ) || !std::filesystem::is_directory( dir ) )
 				{
+					SPDLOG_DEBUG( "Directory does not exist or is not a directory: {}", dir.string() );
 					continue;
 				}
 
+				SPDLOG_DEBUG( "Scanning directory: {}", dir.string() );
 				for ( const auto& entry : std::filesystem::directory_iterator( dir ) )
 				{
-					if ( !entry.is_regular_file() )
+					if ( entry.is_regular_file() )
 					{
-						continue;
-					}
-
-					std::string filename = entry.path().filename().string();
-					if ( filename.find( ".json.gz" ) != std::string::npos )
-					{
-						cachedResourceNames.push_back( filename );
+						std::string filename = entry.path().filename().string();
+						if ( filename.size() > 8 && filename.substr( filename.size() - 8 ) == ".json.gz" )
+						{
+							foundNames.push_back( filename );
+						}
 					}
 				}
 
-				if ( !cachedResourceNames.empty() )
+				if ( !foundNames.empty() )
 				{
-					SPDLOG_INFO( "Found resources in directory: {}", dir );
+					SPDLOG_INFO( "Found {} resources in directory: {}", foundNames.size(), dir.string() );
 					successfulDir = dir;
 					break;
 				}
-
-				SPDLOG_INFO( "No resources found in directory: {}", dir );
+				else
+				{
+					SPDLOG_DEBUG( "No resources found in directory: {}", dir.string() );
+				}
 			}
-			catch ( const std::exception& e )
+			catch ( const std::filesystem::filesystem_error& ex )
 			{
-				SPDLOG_ERROR( "Error scanning directory {}: {}", dir, e.what() );
+				(void)ex;
+
+				SPDLOG_ERROR( "Filesystem error scanning directory {}: {}", dir.string(), ex.what() );
+			}
+			catch ( const std::exception& ex )
+			{
+				(void)ex;
+
+				SPDLOG_ERROR( "Error scanning directory {}: {}", dir.string(), ex.what() );
 			}
 		}
 
-		for ( const auto& n : cachedResourceNames )
+		if ( !foundNames.empty() )
 		{
-			SPDLOG_INFO( "Found resource: {}", n );
+			for ( const auto& n : foundNames )
+			{
+				(void)n;
+				SPDLOG_DEBUG( "Found resource: {}", n );
+			}
 		}
+		else
+		{
+			SPDLOG_WARN( "No embedded resource files (.json.gz) found in search paths." );
+		}
+
+		auto endTime = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
+		SPDLOG_INFO( "Resource names cache built in {} ms.", duration.count() );
 
 		{
 			std::lock_guard<std::mutex> lock( cacheMutex );
+			cachedResourceNames = std::move( foundNames );
 			initialized = true;
+			return cachedResourceNames;
 		}
-
-		return cachedResourceNames;
 	}
 
 	std::shared_ptr<std::istream> EmbeddedResource::decompressedStream( const std::string& resourceName )
@@ -697,70 +698,79 @@ namespace dnv::vista::sdk
 
 		auto decompressedBuffer = std::make_shared<std::stringstream>();
 
-		::z_stream zs = { 0 };
+		::z_stream zs = {};
 		zs.zalloc = Z_NULL;
 		zs.zfree = Z_NULL;
 		zs.opaque = Z_NULL;
 
-		if ( ::inflateInit2( &zs, 16 + MAX_WBITS ) != Z_OK )
+		if ( ::inflateInit2( &zs, 15 + 16 ) != Z_OK )
 		{
-			SPDLOG_ERROR( "Failed to initialize zlib for decompression" );
-			throw std::runtime_error( "Failed to initialize zlib for decompression" );
+			SPDLOG_ERROR( "Failed to initialize zlib inflateInit2 for resource '{}'", resourceName );
+			throw std::runtime_error( "Failed to initialize zlib for decompression for " + resourceName );
 		}
 
-		SPDLOG_INFO( "Decompressing resource: {}", resourceName );
+		SPDLOG_DEBUG( "Decompressing resource: {}", resourceName );
 
-		std::vector<char> compressedData(
-			( std::istreambuf_iterator<char>( *compressedStream ) ),
-			std::istreambuf_iterator<char>() );
+		const size_t CHUNK_IN_SIZE = 16384;
+		std::vector<char> inBuffer( CHUNK_IN_SIZE );
+		const size_t CHUNK_OUT_SIZE = 32768;
+		std::vector<char> outBuffer( CHUNK_OUT_SIZE );
+		int ret = Z_OK;
+		size_t totalCompressedRead = 0;
+		size_t totalDecompressedWritten = 0;
 
-		const size_t compressedSize = compressedData.size();
-		const size_t estimatedSize = compressedSize * 8;
-		std::string decompressedStr;
-		decompressedStr.reserve( estimatedSize );
-
-		zs.next_in = reinterpret_cast<Bytef*>( compressedData.data() );
-		zs.avail_in = static_cast<uInt>( compressedData.size() );
-
-		const int chunkSize = 16384;
-		std::vector<char> outBuffer( chunkSize );
-
-		int ret;
 		do
 		{
-			zs.next_out = reinterpret_cast<::Bytef*>( outBuffer.data() );
-			zs.avail_out = chunkSize;
+			compressedStream->read( inBuffer.data(), CHUNK_IN_SIZE );
+			zs.avail_in = static_cast<uInt>( compressedStream->gcount() );
+			totalCompressedRead += zs.avail_in;
 
-			ret = ::inflate( &zs, Z_NO_FLUSH );
-
-			if ( ret != Z_OK && ret != Z_STREAM_END )
+			if ( zs.avail_in == 0 && !compressedStream->eof() )
 			{
 				::inflateEnd( &zs );
-				SPDLOG_ERROR( "Decompression failed with error code: {}", ret );
-				throw std::runtime_error( "Decompression failed" );
+				SPDLOG_ERROR( "Error reading compressed stream for resource '{}'", resourceName );
+				throw std::runtime_error( "Error reading compressed stream for " + resourceName );
 			}
 
-			decompressedBuffer->write( outBuffer.data(), chunkSize - zs.avail_out );
+			zs.next_in = reinterpret_cast<Bytef*>( inBuffer.data() );
+
+			do
+			{
+				zs.avail_out = CHUNK_OUT_SIZE;
+				zs.next_out = reinterpret_cast<Bytef*>( outBuffer.data() );
+
+				ret = ::inflate( &zs, Z_NO_FLUSH );
+
+				if ( ret != Z_OK && ret != Z_STREAM_END && ret != Z_BUF_ERROR /* Z_BUF_ERROR is ok if avail_out is 0 */ )
+				{
+					std::string errorMsg = ( zs.msg ) ? zs.msg : "Unknown zlib error";
+					::inflateEnd( &zs );
+					SPDLOG_ERROR( "Zlib decompression failed for resource '{}' with error code {}: {}", resourceName, ret, errorMsg );
+					throw std::runtime_error( "Decompression failed for " + resourceName + ": " + errorMsg );
+				}
+
+				size_t have = CHUNK_OUT_SIZE - zs.avail_out;
+				decompressedBuffer->write( outBuffer.data(), static_cast<std::streamsize>( have ) );
+				totalDecompressedWritten += have;
+			} while ( zs.avail_out == 0 );
 		} while ( ret != Z_STREAM_END );
 
 		::inflateEnd( &zs );
+
 		decompressedBuffer->seekg( 0 );
 
 		auto endTime = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
 
-		const size_t decompressedSize = decompressedBuffer->str().size();
+		double ratio = ( totalCompressedRead > 0 ) ? static_cast<double>( totalDecompressedWritten ) / static_cast<double>( totalCompressedRead ) : 0.0;
+		(void)ratio;
+		double compressionPercent = ( totalDecompressedWritten > 0 ) ? ( static_cast<double>( totalCompressedRead ) * 100.0 ) / static_cast<double>( totalDecompressedWritten ) : 0.0;
+		(void)compressionPercent;
 
-		SPDLOG_INFO( "Decompressed resource {} in {} ms - Compressed: {} bytes, Decompressed: {} bytes, Ratio: {:.2f}x",
-			resourceName, duration.count(), compressedSize, decompressedSize,
-			static_cast<double>( decompressedSize ) / static_cast<double>( compressedSize > 0 ? compressedSize : 1 ) );
+		SPDLOG_INFO( "Decompressed resource '{}' in {} ms. Read: {} bytes, Wrote: {} bytes. Ratio: {:.2f}x. Compression: {:.1f}%.",
+			resourceName, duration.count(), totalCompressedRead, totalDecompressedWritten, ratio, compressionPercent );
 
-		SPDLOG_INFO( "Memory footprint: {:.2f} MB ({:.1f} kB) decompressed from {:.2f} MB ({:.1f} kB) with {:.1f}% compression ratio",
-			static_cast<double>( decompressedSize ) / ( 1024.0 * 1024.0 ),
-			static_cast<double>( decompressedSize ) / 1024.0,
-			static_cast<double>( compressedSize ) / ( 1024.0 * 1024.0 ),
-			static_cast<double>( compressedSize ) / 1024.0,
-			( static_cast<double>( compressedSize ) * 100.0 ) / static_cast<double>( decompressedSize ) );
+		SPDLOG_DEBUG( "Memory footprint: Decompressed ~{:.2f} MB", static_cast<double>( totalDecompressedWritten ) / ( 1024.0 * 1024.0 ) );
 
 		return decompressedBuffer;
 	}
@@ -768,8 +778,8 @@ namespace dnv::vista::sdk
 	std::shared_ptr<std::istream> EmbeddedResource::stream( const std::string& resourceName )
 	{
 		static std::mutex pathCacheMutex;
-		static std::unordered_map<std::string, std::string> resourcePathCache;
-		static std::optional<std::string> lastSuccessfulBaseDir;
+		static std::unordered_map<std::string, std::filesystem::path> resourcePathCache;
+		static std::optional<std::filesystem::path> lastSuccessfulBaseDir;
 		static size_t cacheHits = 0;
 		static size_t cacheMisses = 0;
 
@@ -778,69 +788,97 @@ namespace dnv::vista::sdk
 			auto it = resourcePathCache.find( resourceName );
 			if ( it != resourcePathCache.end() )
 			{
-				auto fileStream = std::make_shared<std::ifstream>( it->second, std::ios::binary );
-				if ( fileStream->is_open() )
+				if ( std::filesystem::exists( it->second ) && std::filesystem::is_regular_file( it->second ) )
 				{
-					cacheHits++;
-					SPDLOG_DEBUG( "Resource path cache hit: {} -> {}", resourceName, it->second );
-					return fileStream;
+					auto fileStream = std::make_shared<std::ifstream>( it->second, std::ios::binary );
+					if ( fileStream->is_open() )
+					{
+						cacheHits++;
+						SPDLOG_DEBUG( "Resource path cache hit: '{}' -> '{}'", resourceName, it->second.string() );
+						if ( ( cacheHits + cacheMisses ) % 50 == 0 && ( cacheHits + cacheMisses ) > 0 )
+						{
+							SPDLOG_INFO( "Path Cache effectiveness: {:.1f}% hit rate ({} hits, {} misses)",
+								( static_cast<double>( cacheHits ) * 100.0 ) / static_cast<double>( cacheHits + cacheMisses ),
+								cacheHits, cacheMisses );
+						}
+						return fileStream;
+					}
 				}
+				SPDLOG_WARN( "Cached resource path '{}' for '{}' is invalid, removing from cache.", it->second.string(), resourceName );
 				resourcePathCache.erase( it );
-				SPDLOG_INFO( "Cached resource path invalid, removing from cache: {}", it->second );
 			}
 			cacheMisses++;
 		}
 
-		std::vector<std::string> possiblePaths;
+		SPDLOG_DEBUG( "Resource path cache miss for: '{}'. Searching...", resourceName );
+
+		std::vector<std::filesystem::path> possiblePaths;
+
 		if ( lastSuccessfulBaseDir )
 		{
-			possiblePaths.push_back( *lastSuccessfulBaseDir + resourceName );
+			possiblePaths.push_back( *lastSuccessfulBaseDir / resourceName );
 		}
 
-		possiblePaths.insert( possiblePaths.end(), { "resources/" + resourceName,
-													   "../resources/" + resourceName,
-													   "../../resources/" + resourceName,
-													   resourceName } );
+		possiblePaths.push_back( std::filesystem::current_path() / "resources" / resourceName );
+		possiblePaths.push_back( std::filesystem::current_path() / "../resources" / resourceName );
+		possiblePaths.push_back( std::filesystem::current_path() / "../../resources" / resourceName );
 
-		std::shared_ptr<std::ifstream> fileStream;
-		std::string attemptedPaths;
+		if ( !lastSuccessfulBaseDir || *lastSuccessfulBaseDir != std::filesystem::current_path() )
+		{
+			possiblePaths.push_back( std::filesystem::current_path() / resourceName );
+		}
+
+		std::string attemptedPathsStr;
 
 		for ( const auto& path : possiblePaths )
 		{
-			auto startTime = std::chrono::high_resolution_clock::now();
-
-			fileStream = std::make_shared<std::ifstream>( path, std::ios::binary );
-			if ( fileStream->is_open() )
+			attemptedPathsStr += "'" + path.string() + "', ";
+			SPDLOG_DEBUG( "Attempting to open resource: '{}'", path.string() );
+			try
 			{
-				auto endTime = std::chrono::high_resolution_clock::now();
-				auto duration = std::chrono::duration_cast<std::chrono::microseconds>( endTime - startTime );
-
-				SPDLOG_INFO( "Found resource at path: {} (opened in {} μs)", path, duration.count() );
-
-				size_t lastSlash = path.find_last_of( "/\\" );
-				if ( lastSlash != std::string::npos )
+				if ( std::filesystem::exists( path ) && std::filesystem::is_regular_file( path ) )
 				{
-					lastSuccessfulBaseDir = path.substr( 0, lastSlash + 1 );
-					SPDLOG_DEBUG( "Caching base directory: {}", *lastSuccessfulBaseDir );
+					auto fileStream = std::make_shared<std::ifstream>( path, std::ios::binary );
+					if ( fileStream->is_open() )
+					{
+						SPDLOG_INFO( "Successfully opened resource '{}' at path: '{}'", resourceName, path.string() );
+
+						{
+							std::lock_guard<std::mutex> lock( pathCacheMutex );
+							resourcePathCache[resourceName] = path;
+							if ( path.has_parent_path() )
+							{
+								lastSuccessfulBaseDir = path.parent_path();
+								SPDLOG_DEBUG( "Updated last successful base directory: '{}'", lastSuccessfulBaseDir->string() );
+							}
+						}
+						return fileStream;
+					}
+					else
+					{
+						SPDLOG_WARN( "Found file '{}' but failed to open stream.", path.string() );
+					}
 				}
-
-				{
-					std::lock_guard<std::mutex> lock( pathCacheMutex );
-					resourcePathCache[resourceName] = path;
-
-					SPDLOG_INFO( "Cache effectiveness: {:.1f}% hit rate ({} hits, {} misses)",
-						( static_cast<double>( cacheHits ) * 100.0 ) / static_cast<double>( cacheHits + cacheMisses ),
-						cacheHits, cacheMisses );
-				}
-
-				return fileStream;
 			}
-			attemptedPaths += path + ", ";
+			catch ( const std::filesystem::filesystem_error& ex )
+			{
+				(void)ex;
+				SPDLOG_ERROR( "Filesystem error accessing path '{}': {}", path.string(), ex.what() );
+			}
+			catch ( const std::exception& ex )
+			{
+				(void)ex;
 
-			SPDLOG_DEBUG( "Failed to open resource file: {}", path );
+				SPDLOG_ERROR( "Error checking/opening path '{}': {}", path.string(), ex.what() );
+			}
 		}
 
-		SPDLOG_ERROR( "Failed to open resource file: {}. Attempted paths: {}", resourceName, attemptedPaths );
-		throw std::runtime_error( "Failed to open resource file: " + resourceName + ". Attempted paths: " + attemptedPaths );
+		if ( !attemptedPathsStr.empty() )
+		{
+			attemptedPathsStr.resize( attemptedPathsStr.size() - 2 ); /* Remove trailing ", " */
+		}
+
+		SPDLOG_ERROR( "Failed to find or open resource file: '{}'. Attempted paths: [{}]", resourceName, attemptedPathsStr );
+		throw std::runtime_error( "Failed to find or open resource file: " + resourceName + ". Attempted paths: [" + attemptedPathsStr + "]" );
 	}
 }

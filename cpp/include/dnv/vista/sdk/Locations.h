@@ -52,7 +52,7 @@ namespace dnv::vista::sdk
 		explicit Location( const std::string& value );
 
 		//-------------------------------------------------------------------------
-		// Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**
@@ -118,7 +118,7 @@ namespace dnv::vista::sdk
 			const std::optional<std::string> definition = std::nullopt );
 
 		//-------------------------------------------------------------------------
-		// Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**
@@ -189,7 +189,7 @@ namespace dnv::vista::sdk
 		explicit LocationCharDict();
 
 		//-------------------------------------------------------------------------
-		// Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**
@@ -235,7 +235,7 @@ namespace dnv::vista::sdk
 		explicit Locations( VisVersion version, const LocationsDto& dto );
 
 		//-------------------------------------------------------------------------
-		// Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**

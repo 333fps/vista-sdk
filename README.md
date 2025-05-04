@@ -178,29 +178,33 @@ It follows the same patterns and design principles as the C# implementation whil
 
 #### Dependencies
 
-The C++ SDK uses [vcpkg](https://github.com/microsoft/vcpkg) for dependency management. The required libraries are listed below:
+The C++ SDK uses CMake and its [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) module to manage external dependencies directly during the build configuration phase. The required libraries are fetched from their respective sources (primarily GitHub):
 
-- [RapidJSON](https://rapidjson.org/): For JSON parsing and serialization
-- [spdlog](https://github.com/gabime/spdlog): For structured logging (development phase only)
-- [ZLIB](https://www.zlib.net/): For compression and decompression of resources
-- [cpuid](https://github.com/anrieff/libcpuid): For CPU feature detection (intrinsic capabilities)
-- [async_mqtt_iface](https://github.com/redboltz/async_mqtt): For MQTT communication interface
+- [nlohmann/json](https://github.com/nlohmann/json): For JSON parsing and serialization
+- [spdlog](https://github.com/gabime/spdlog): For structured logging
+- [zlib](https://www.zlib.net/): For compression and decompression of resources
+- [libcpuid](https://github.com/anrieff/libcpuid): For CPU feature detection
 - [GoogleTest](https://github.com/google/googletest): For unit testing framework
+- [{fmt}](https://fmt.dev/): Formatting library
 
 #### Building with CMake
 
 ```bash
 # Clone the repository
 git clone https://github.com/dnv-opensource/vista-sdk.git
-cd vista-sdk
+cd vista-sdk/cpp # Navigate to the C++ subdirectory
 
-# Configure CMake with vcpkg toolchain
-cmake -B build -S cpp -DCMAKE_TOOLCHAIN_FILE=[path_to_vcpkg]/scripts/buildsystems/vcpkg.cmake
+# Configure CMake (FetchContent will download dependencies)
+# For Visual Studio Generator (adjust generator as needed):
+cmake -B build -S .
 
-# Build
+# Or specify generator explicitly:
+# cmake -B build -S . -G "Visual Studio 17 2022"
+
+# Build (using CMake's build tool mode)
 cmake --build build --config Release
 
-# Run tests
+# Run tests (from the build directory)
 cd build
 ctest -C Release
 ```

@@ -19,8 +19,6 @@ namespace dnv::vista::sdk
 	static constexpr const char* VIS_RELEASE_KEY = "visRelease";
 	static constexpr const char* ITEMS_KEY = "items";
 
-	static constexpr size_t BATCH_SIZE = 1000;
-
 	//-------------------------------------------------------------------------
 	// Utility Functions
 	//-------------------------------------------------------------------------
@@ -54,19 +52,6 @@ namespace dnv::vista::sdk
 			return value;
 		}
 
-		void safeReserveArray( rapidjson::Value& array, size_t size, rapidjson::Document::AllocatorType& allocator )
-		{
-			if ( size > std::numeric_limits<rapidjson::SizeType>::max() )
-			{
-				SPDLOG_WARN( "Array size {} exceeds maximum RapidJSON capacity", size );
-				array.Reserve( std::numeric_limits<rapidjson::SizeType>::max(), allocator );
-			}
-			else
-			{
-				array.Reserve( static_cast<rapidjson::SizeType>( size ), allocator );
-			}
-		}
-
 		template <typename T>
 		size_t estimateMemoryUsage( const std::vector<T>& collection )
 		{
@@ -92,7 +77,7 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// Public Interface - Accessor Methods
+	// Accessors
 	//-------------------------------------------------------------------------
 
 	char RelativeLocationsDto::code() const
@@ -114,79 +99,118 @@ namespace dnv::vista::sdk
 	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------------
 
-	std::optional<RelativeLocationsDto> RelativeLocationsDto::tryFromJson( const rapidjson::Value& json )
+	std::optional<RelativeLocationsDto> RelativeLocationsDto::tryFromJson( const nlohmann::json& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_DEBUG( "Attempting to parse RelativeLocationsDto from JSON" );
+		SPDLOG_DEBUG( "Attempting to parse RelativeLocationsDto from nlohmann::json" );
 
-		if ( !json.IsObject() )
+		try
 		{
-			SPDLOG_WARN( "JSON value is not an object" );
+			if ( !json.is_object() )
+			{
+				SPDLOG_ERROR( "JSON value for RelativeLocationsDto is not an object" );
+				return std::nullopt;
+			}
+
+			RelativeLocationsDto dto = json.get<RelativeLocationsDto>();
+
+			auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
+			SPDLOG_DEBUG( "Parsed RelativeLocationsDto: code={}, name={} in {} µs", dto.code(), dto.name(), duration.count() );
+
+			return std::optional<RelativeLocationsDto>{ std::move( dto ) };
+		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "nlohmann::json exception during RelativeLocationsDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-
-		if ( !json.HasMember( CODE_KEY ) || !json[CODE_KEY].IsString() || json[CODE_KEY].GetStringLength() == 0 )
+		catch ( const std::exception& ex )
 		{
-			SPDLOG_WARN( "Missing or invalid '{}' field in RelativeLocationsDto JSON", CODE_KEY );
+			(void)ex;
+
+			SPDLOG_ERROR( "Standard exception during RelativeLocationsDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-
-		if ( !json.HasMember( NAME_KEY ) || !json[NAME_KEY].IsString() )
-		{
-			SPDLOG_WARN( "Missing or invalid '{}' field in RelativeLocationsDto JSON", NAME_KEY );
-			return std::nullopt;
-		}
-
-		char code = json[CODE_KEY].GetString()[0];
-		std::string name = internString( json[NAME_KEY].GetString() );
-
-		std::optional<std::string> definition;
-		if ( json.HasMember( DEFINITION_KEY ) && json[DEFINITION_KEY].IsString() )
-		{
-			definition = internString( json[DEFINITION_KEY].GetString() );
-		}
-
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
-			std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Successfully parsed relative location: code={}, name={} in {:.2f}ms",
-			code, name, static_cast<double>( duration.count() ) / 1000.0 );
-
-		return RelativeLocationsDto(
-			code,
-			std::move( name ),
-			std::move( definition ) );
 	}
 
-	RelativeLocationsDto RelativeLocationsDto::fromJson( const rapidjson::Value& json )
+	RelativeLocationsDto RelativeLocationsDto::fromJson( const nlohmann::json& json )
 	{
-		SPDLOG_DEBUG( "Parsing RelativeLocationsDto from JSON" );
-		auto dtoOpt = tryFromJson( json );
-		if ( !dtoOpt )
+		try
 		{
-			SPDLOG_ERROR( "Failed to parse RelativeLocationsDto from JSON" );
-			throw std::invalid_argument( "Failed to parse RelativeLocationsDto from JSON" );
+			return json.get<RelativeLocationsDto>();
 		}
-		return std::move( *dtoOpt );
+		catch ( const nlohmann::json::exception& e )
+		{
+			std::string errorMsg = fmt::format( "Failed to deserialize RelativeLocationsDto from JSON: {}", e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
+		catch ( const std::exception& e )
+		{
+			std::string errorMsg = fmt::format( "Failed to deserialize RelativeLocationsDto from JSON: {}", e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
 	}
 
-	rapidjson::Value RelativeLocationsDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
+	nlohmann::json RelativeLocationsDto::toJson() const
 	{
 		SPDLOG_DEBUG( "Serializing RelativeLocationsDto: code={}, name={}", m_code, m_name );
-		rapidjson::Value obj( rapidjson::kObjectType );
+		nlohmann::json j = *this;
+		return j;
+	}
 
-		char codeStr[2] = { m_code, '\0' };
-		obj.AddMember( rapidjson::StringRef( CODE_KEY ), rapidjson::Value( codeStr, allocator ), allocator );
-		obj.AddMember( rapidjson::StringRef( NAME_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_name.c_str() ), allocator ), allocator );
-
-		if ( m_definition.has_value() )
+	void to_json( nlohmann::json& j, const RelativeLocationsDto& dto )
+	{
+		j = nlohmann::json{
+			{ CODE_KEY, std::string( 1, dto.m_code ) },
+			{ NAME_KEY, dto.m_name } };
+		if ( dto.m_definition.has_value() )
 		{
-			obj.AddMember( rapidjson::StringRef( DEFINITION_KEY ),
-				rapidjson::Value( rapidjson::StringRef( m_definition.value().c_str() ), allocator ),
-				allocator );
+			j[DEFINITION_KEY] = dto.m_definition.value();
+		}
+	}
+
+	void from_json( const nlohmann::json& j, RelativeLocationsDto& dto )
+	{
+		if ( !j.contains( CODE_KEY ) || !j.at( CODE_KEY ).is_string() || j.at( CODE_KEY ).get<std::string>().empty() )
+		{
+			throw nlohmann::json::parse_error::create( 101, 0u, fmt::format( "RelativeLocationsDto JSON missing required '{}' field, not a string, or empty", CODE_KEY ), nullptr );
+		}
+		if ( !j.contains( NAME_KEY ) || !j.at( NAME_KEY ).is_string() )
+		{
+			throw nlohmann::json::parse_error::create( 101, 0u, fmt::format( "RelativeLocationsDto JSON missing required '{}' field or not a string", NAME_KEY ), nullptr );
+		}
+		if ( j.contains( DEFINITION_KEY ) && !j.at( DEFINITION_KEY ).is_string() )
+		{
+			throw nlohmann::json::type_error::create( 302, fmt::format( "RelativeLocationsDto JSON field '{}' is not a string", DEFINITION_KEY ), nullptr );
 		}
 
-		return obj;
+		std::string codeStr = j.at( CODE_KEY ).get<std::string>();
+		if ( codeStr.length() != 1 )
+		{
+			throw nlohmann::json::type_error::create( 302, fmt::format( "RelativeLocationsDto JSON field '{}' must be a single character string", CODE_KEY ), nullptr );
+		}
+		dto.m_code = codeStr[0];
+
+		dto.m_name = internString( j.at( NAME_KEY ).get<std::string>() );
+
+		if ( j.contains( DEFINITION_KEY ) )
+		{
+			dto.m_definition = internString( j.at( DEFINITION_KEY ).get<std::string>() );
+		}
+		else
+		{
+			dto.m_definition.reset();
+			SPDLOG_DEBUG( "RelativeLocationsDto JSON missing optional '{}' field for code '{}'", DEFINITION_KEY, dto.m_code );
+		}
+
+		if ( dto.m_name.empty() )
+		{
+			SPDLOG_WARN( "Parsed RelativeLocationsDto has empty name field for code '{}'", dto.m_code );
+		}
 	}
 
 	//-------------------------------------------------------------------------
@@ -206,7 +230,7 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// Public Interface - Accessor Methods
+	// Accessors
 	//-------------------------------------------------------------------------
 
 	const std::string& LocationsDto::visVersion() const
@@ -223,103 +247,145 @@ namespace dnv::vista::sdk
 	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------------
 
-	std::optional<LocationsDto> LocationsDto::tryFromJson( const rapidjson::Value& json )
+	std::optional<LocationsDto> LocationsDto::tryFromJson( const nlohmann::json& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_INFO( "Attempting to parse LocationsDto from JSON" );
+		SPDLOG_INFO( "Attempting to parse LocationsDto from nlohmann::json" );
 
-		if ( !json.IsObject() )
+		try
 		{
-			SPDLOG_WARN( "JSON value is not an object" );
+			if ( !json.is_object() )
+			{
+				SPDLOG_ERROR( "JSON value for LocationsDto is not an object" );
+				return std::nullopt;
+			}
+
+			LocationsDto dto = json.get<LocationsDto>();
+
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+			SPDLOG_INFO( "Parsed LocationsDto for VIS {} with {} items in {} ms", dto.visVersion(), dto.items().size(), duration.count() );
+
+			return std::optional<LocationsDto>{ std::move( dto ) };
+		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "nlohmann::json exception during LocationsDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-
-		if ( !json.HasMember( VIS_RELEASE_KEY ) || !json[VIS_RELEASE_KEY].IsString() )
+		catch ( const std::exception& ex )
 		{
-			SPDLOG_WARN( "Missing or invalid '{}' field in LocationsDto JSON", VIS_RELEASE_KEY );
+			(void)ex;
+
+			SPDLOG_ERROR( "Standard exception during LocationsDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
+	}
 
-		if ( !json.HasMember( ITEMS_KEY ) || !json[ITEMS_KEY].IsArray() )
+	LocationsDto LocationsDto::fromJson( const nlohmann::json& json )
+	{
+		try
 		{
-			SPDLOG_WARN( "Missing or invalid '{}' field in LocationsDto JSON", ITEMS_KEY );
-			return std::nullopt;
+			return json.get<LocationsDto>();
+		}
+		catch ( const nlohmann::json::exception& e )
+		{
+			std::string errorMsg = fmt::format( "Failed to deserialize LocationsDto from JSON: {}", e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
+		catch ( const std::exception& e )
+		{
+			std::string errorMsg = fmt::format( "Failed to deserialize LocationsDto from JSON: {}", e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
+	}
+
+	nlohmann::json LocationsDto::toJson() const
+	{
+		auto startTime = std::chrono::steady_clock::now();
+		SPDLOG_INFO( "Serializing LocationsDto: visVersion={}, items={}", m_visVersion, m_items.size() );
+		nlohmann::json j = *this;
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+		SPDLOG_DEBUG( "Serialized {} locations in {}ms", m_items.size(), duration.count() );
+		return j;
+	}
+
+	void to_json( nlohmann::json& j, const LocationsDto& dto )
+	{
+		j = nlohmann::json{
+			{ VIS_RELEASE_KEY, dto.m_visVersion },
+			{ ITEMS_KEY, dto.m_items } };
+	}
+
+	void from_json( const nlohmann::json& j, LocationsDto& dto )
+	{
+		dto.m_items.clear();
+
+		if ( !j.contains( VIS_RELEASE_KEY ) || !j.at( VIS_RELEASE_KEY ).is_string() )
+		{
+			throw nlohmann::json::parse_error::create( 101, 0u, fmt::format( "LocationsDto JSON missing required '{}' field or not a string", VIS_RELEASE_KEY ), nullptr );
+		}
+		if ( !j.contains( ITEMS_KEY ) || !j.at( ITEMS_KEY ).is_array() )
+		{
+			throw nlohmann::json::parse_error::create( 101, 0u, fmt::format( "LocationsDto JSON missing required '{}' field or not an array", ITEMS_KEY ), nullptr );
 		}
 
-		std::string visVersion = internString( json[VIS_RELEASE_KEY].GetString() );
-		SPDLOG_INFO( "Parsing locations for VIS version: {}", visVersion );
+		dto.m_visVersion = internString( j.at( VIS_RELEASE_KEY ).get<std::string>() );
+		SPDLOG_INFO( "Parsing locations for VIS version: {}", dto.m_visVersion );
 
-		const auto& jsonArray = json[ITEMS_KEY].GetArray();
-		size_t itemCount = jsonArray.Size();
+		const auto& jsonArray = j.at( ITEMS_KEY );
+		size_t itemCount = jsonArray.size();
 		SPDLOG_INFO( "Found {} location items to parse", itemCount );
 
-		std::vector<RelativeLocationsDto> items;
-		items.reserve( itemCount );
-
+		dto.m_items.reserve( itemCount );
 		size_t successCount = 0;
-		bool useBatching = itemCount > 5000;
+		auto parseStartTime = std::chrono::steady_clock::now();
 
-		if ( useBatching )
+		for ( const auto& itemJson : jsonArray )
 		{
-			SPDLOG_INFO( "Large location list detected, using batched processing" );
-
-			for ( size_t i = 0; i < itemCount; i += BATCH_SIZE )
+			try
 			{
-				auto batchStart = std::chrono::steady_clock::now();
-				size_t batchEnd = std::min( i + BATCH_SIZE, itemCount );
-				SPDLOG_DEBUG( "Processing batch {}-{}", i, batchEnd - 1 );
-
-				size_t batchSuccess = 0;
-				for ( size_t j = i; j < batchEnd; j++ )
-				{
-					auto itemOpt = RelativeLocationsDto::tryFromJson(
-						jsonArray[static_cast<rapidjson::SizeType>( j )] );
-					if ( itemOpt )
-					{
-						items.emplace_back( std::move( *itemOpt ) );
-						batchSuccess++;
-						successCount++;
-					}
-					else
-					{
-						SPDLOG_WARN( "Skipping malformed location item at index {}", j );
-					}
-				}
-
-				auto batchDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
-					std::chrono::steady_clock::now() - batchStart );
-				SPDLOG_DEBUG( "Batch {}-{} processed: {}/{} items in {}ms ({:.1f} items/sec)",
-					i, batchEnd - 1, batchSuccess, batchEnd - i, batchDuration.count(),
-					batchDuration.count() > 0 ? static_cast<double>( batchSuccess ) * 1000.0 /
-													static_cast<double>( batchDuration.count() )
-											  : 0 );
+				dto.m_items.emplace_back( itemJson.get<RelativeLocationsDto>() );
+				successCount++;
 			}
-		}
-		else
-		{
-			for ( size_t i = 0; i < itemCount; i++ )
+			catch ( const nlohmann::json::exception& ex )
 			{
-				auto itemOpt = RelativeLocationsDto::tryFromJson(
-					jsonArray[static_cast<rapidjson::SizeType>( i )] );
-				if ( itemOpt )
-				{
-					items.emplace_back( std::move( *itemOpt ) );
-					successCount++;
-				}
-				else
-				{
-					SPDLOG_WARN( "Skipping invalid location item at index {}", i );
-				}
+				(void)ex;
+
+				SPDLOG_ERROR( "Skipping malformed location item at index {}: {}", successCount, ex.what() );
+			}
+			catch ( const std::exception& ex )
+			{
+				(void)ex;
+
+				SPDLOG_ERROR( "Standard exception parsing location item at index {}: {}", successCount, ex.what() );
 			}
 		}
 
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::steady_clock::now() - startTime );
+		auto parseDuration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - parseStartTime );
 
-		if ( items.size() > 1000 )
+		if ( itemCount > 0 && parseDuration.count() > 0 )
 		{
-			size_t approxBytes = estimateMemoryUsage( items );
-			SPDLOG_INFO( "Large location collection loaded: {} items, ~{} KB", items.size(), approxBytes / 1024 );
+			double rate = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
+			(void)rate;
+
+			SPDLOG_INFO( "Successfully parsed {}/{} locations in {}ms ({:.1f} items/sec)",
+				successCount, itemCount, parseDuration.count(), rate );
+		}
+		else if ( itemCount > 0 )
+		{
+			SPDLOG_INFO( "Successfully parsed {}/{} locations very quickly.", successCount, itemCount );
+		}
+
+		if ( dto.m_items.size() > 1000 )
+		{
+			size_t approxBytes = estimateMemoryUsage( dto.m_items );
+			(void)approxBytes;
+
+			SPDLOG_INFO( "Large location collection loaded: {} items, ~{} KB estimated memory", dto.m_items.size(), approxBytes / 1024 );
 		}
 
 		if ( successCount < itemCount )
@@ -333,83 +399,5 @@ namespace dnv::vista::sdk
 				SPDLOG_ERROR( "High error rate in location data suggests possible format issue" );
 			}
 		}
-
-		SPDLOG_INFO( "Successfully parsed {}/{} locations for VIS {} in {}ms ({:.1f} items/sec)",
-			successCount, itemCount, visVersion, duration.count(),
-			duration.count() > 0 ? static_cast<double>( successCount ) * 1000.0 /
-									   static_cast<double>( duration.count() )
-								 : 0 );
-
-		return LocationsDto(
-			std::move( visVersion ),
-			std::move( items ) );
-	}
-
-	LocationsDto LocationsDto::fromJson( const rapidjson::Value& json )
-	{
-		SPDLOG_INFO( "Parsing LocationsDto from JSON" );
-		auto dtoOpt = tryFromJson( json );
-		if ( !dtoOpt )
-		{
-			SPDLOG_ERROR( "Failed to parse LocationsDto from JSON" );
-			throw std::invalid_argument( "Failed to parse LocationsDto from JSON" );
-		}
-		return std::move( *dtoOpt );
-	}
-
-	rapidjson::Value LocationsDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
-	{
-		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_INFO( "Serializing LocationsDto: visVersion={}, items={}",
-			m_visVersion, m_items.size() );
-
-		rapidjson::Value obj( rapidjson::kObjectType );
-		obj.AddMember( rapidjson::StringRef( VIS_RELEASE_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_visVersion.c_str() ), allocator ),
-			allocator );
-
-		rapidjson::Value itemsArray( rapidjson::kArrayType );
-		safeReserveArray( itemsArray, m_items.size(), allocator );
-
-		bool useBatching = m_items.size() > 5000;
-		if ( useBatching )
-		{
-			SPDLOG_INFO( "Large collection detected, using batched serialization" );
-
-			for ( size_t i = 0; i < m_items.size(); i += BATCH_SIZE )
-			{
-				auto batchStart = std::chrono::steady_clock::now();
-				size_t batchEnd = std::min( i + BATCH_SIZE, m_items.size() );
-
-				for ( size_t j = i; j < batchEnd; j++ )
-				{
-					itemsArray.PushBack( m_items[j].toJson( allocator ), allocator );
-				}
-
-				auto batchDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
-					std::chrono::steady_clock::now() - batchStart );
-				SPDLOG_DEBUG( "Serialized items {}-{} in {}ms", i, batchEnd - 1, batchDuration.count() );
-			}
-		}
-		else
-		{
-			for ( const auto& item : m_items )
-			{
-				itemsArray.PushBack( item.toJson( allocator ), allocator );
-			}
-		}
-
-		obj.AddMember( rapidjson::StringRef( ITEMS_KEY ), itemsArray, allocator );
-
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::steady_clock::now() - startTime );
-
-		SPDLOG_INFO( "Serialized {} locations in {}ms ({:.1f} items/sec)",
-			m_items.size(), duration.count(),
-			duration.count() > 0 ? static_cast<double>( m_items.size() ) * 1000.0 /
-									   static_cast<double>( duration.count() )
-								 : 0 );
-
-		return obj;
 	}
 }

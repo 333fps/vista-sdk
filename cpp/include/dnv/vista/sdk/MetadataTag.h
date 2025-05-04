@@ -27,7 +27,7 @@ namespace dnv::vista::sdk
 		MetadataTag( CodebookName name, const std::string& value, bool isCustom = false );
 
 		//-------------------------------------------------------------------------
-		// Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------------
 
 		/**

@@ -51,28 +51,36 @@ namespace dnv::vista::sdk
 				return;
 			}
 
-			rapidjson::IStreamWrapper isw( file );
-			rapidjson::Document data;
-			data.ParseStream( isw );
-
-			ASSERT_TRUE( data.IsObject() || data.IsArray() ) << "JSON data is not a valid object or array";
-
-			const rapidjson::Value& testCases = data.IsArray() ? data : ( data.HasMember( "imoNumbers" ) ? data["imoNumbers"] : data );
-
-			ASSERT_TRUE( testCases.IsArray() ) << "Test cases must be an array";
-
-			for ( const auto& item : testCases.GetArray() )
+			nlohmann::json data;
+			try
 			{
-				ASSERT_TRUE( item.HasMember( "value" ) && item["value"].IsString() ) << "Item missing value field";
-				ASSERT_TRUE( item.HasMember( "success" ) && item["success"].IsBool() ) << "Item missing success field";
+				data = nlohmann::json::parse( file );
+			}
+			catch ( const nlohmann::json::parse_error& e )
+			{
+				SPDLOG_ERROR( "JSON parse error: {}", e.what() );
+				ASSERT_TRUE( false ) << "Failed to parse ImoNumbers.json: " << e.what();
+				return;
+			}
+
+			ASSERT_TRUE( data.is_object() || data.is_array() ) << "JSON data is not a valid object or array";
+
+			const nlohmann::json& testCases = data.is_array() ? data : ( data.contains( "imoNumbers" ) ? data.at( "imoNumbers" ) : data );
+
+			ASSERT_TRUE( testCases.is_array() ) << "Test cases must be an array";
+
+			for ( const auto& item : testCases )
+			{
+				ASSERT_TRUE( item.contains( "value" ) && item.at( "value" ).is_string() ) << "Item missing 'value' field or not a string";
+				ASSERT_TRUE( item.contains( "success" ) && item.at( "success" ).is_boolean() ) << "Item missing 'success' field or not a boolean";
 
 				std::optional<std::string> output;
-				if ( item.HasMember( "output" ) && item["output"].IsString() )
+				if ( item.contains( "output" ) && item.at( "output" ).is_string() )
 				{
-					output = item["output"].GetString();
+					output = item.at( "output" ).get<std::string>();
 				}
 
-				testData.push_back( { item["value"].GetString(), item["success"].GetBool(), output } );
+				testData.push_back( { item.at( "value" ).get<std::string>(), item.at( "success" ).get<bool>(), output } );
 			}
 		}
 	};

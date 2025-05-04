@@ -60,7 +60,7 @@ namespace dnv::vista::sdk
 		virtual ~ILocalId() = default;
 
 		//=====================================================================
-		// Special Member Functions
+		// Assignment Operators
 		//=====================================================================
 
 		/** @brief Copy assignment operator */

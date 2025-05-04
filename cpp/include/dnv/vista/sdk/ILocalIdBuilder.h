@@ -62,7 +62,7 @@ namespace dnv::vista::sdk
 		virtual ~ILocalIdBuilder() = default;
 
 		//=====================================================================
-		// Special Member Functions
+		// Assignment Operators
 		//=====================================================================
 
 		/** @brief Copy assignment operator */

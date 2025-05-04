@@ -52,7 +52,7 @@ namespace dnv::vista::sdk
 		virtual ~IUniversalIdBuilder() = default;
 
 		//=====================================================================
-		// Special Member Functions
+		// Assignment Operators
 		//=====================================================================
 
 		/** @brief Copy assignment operator */
@@ -62,7 +62,7 @@ namespace dnv::vista::sdk
 		IUniversalIdBuilder& operator=( IUniversalIdBuilder&& ) noexcept = default;
 
 		//=====================================================================
-		// Assessors
+		// Accessors
 		//=====================================================================
 
 		/**

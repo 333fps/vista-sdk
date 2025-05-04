@@ -39,8 +39,11 @@
 
 /* Libs */
 #include <spdlog/spdlog.h>
-#include <rapidjson/document.h>
-#include <rapidjson/istreamwrapper.h>
-#include <rapidjson/error/en.h>
+#include <nlohmann/json.hpp>
+#include <fmt/format.h>
 #include <zlib.h>
-#include <libcpuid/libcpuid.h>
+#if defined( _MSC_VER )
+#	include <libcpuid.h>
+#elif defined( __GNUC__ )
+#	include <cpuid.h>
+#endif

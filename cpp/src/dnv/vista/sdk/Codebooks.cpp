@@ -46,6 +46,7 @@ namespace dnv::vista::sdk
 		{
 			++m_index;
 		}
+
 		return *this;
 	}
 
@@ -53,6 +54,7 @@ namespace dnv::vista::sdk
 	{
 		Iterator temp = *this;
 		++( *this );
+
 		return temp;
 	}
 
@@ -96,6 +98,7 @@ namespace dnv::vista::sdk
 			}
 			catch ( const std::exception& ex )
 			{
+				(void)ex;
 				SPDLOG_ERROR( "Error processing codebook DTO '{}': {}", typeDto.name(), ex.what() );
 			}
 		}
@@ -137,12 +140,13 @@ namespace dnv::vista::sdk
 	}
 
 	//=====================================================================
-	// Assessors
+	// Accessors
 	//=====================================================================
 
 	const Codebook& Codebooks::codebook( CodebookName name ) const
 	{
 		SPDLOG_TRACE( "Accessing codebook via codebook() method for name {}", static_cast<int>( name ) );
+
 		return ( *this )[name];
 	}
 
@@ -179,11 +183,15 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::invalid_argument& ex )
 		{
+			(void)ex;
+
 			SPDLOG_ERROR( "Invalid codebook name '{}' provided to tryCreateTag: {}", static_cast<int>( name ), ex.what() );
 			return std::nullopt;
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
+
 			SPDLOG_ERROR( "Exception during tryCreateTag for '{}' in codebook '{}': {}", value, CodebookNames::toPrefix( name ), ex.what() );
 			return std::nullopt;
 		}

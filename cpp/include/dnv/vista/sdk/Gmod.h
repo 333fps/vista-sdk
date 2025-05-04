@@ -634,6 +634,7 @@ namespace dnv::vista::sdk
 		try
 		{
 			const std::string& code = node.code();
+			(void)code;
 			const int occurrences = context.parents.occurrences( node );
 
 			bool skipOccurrenceCheck = isProductSelectionAssignment( context.parents.lastOrDefault(), &node );
@@ -693,6 +694,7 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
 			SPDLOG_ERROR( "Exception during stateful node traversal for node '{}': {}", node.code(), ex.what() );
 			if ( !context.parents.nodePointers().empty() && context.parents.lastOrDefault() == &node )
 			{

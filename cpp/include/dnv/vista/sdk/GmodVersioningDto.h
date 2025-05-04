@@ -30,7 +30,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/** @brief Default constructor - deleted for immutability */
-		GmodVersioningAssignmentChangeDto() = delete;
+		GmodVersioningAssignmentChangeDto() = default;
 
 		/**
 		 * @brief Constructor with parameters
@@ -49,7 +49,7 @@ namespace dnv::vista::sdk
 		~GmodVersioningAssignmentChangeDto() = default;
 
 		//-------------------------------------------------------------------
-		// Public Interface - Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------
 
 		/**
@@ -69,26 +69,29 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a GmodVersioningAssignmentChangeDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Try to deserialize a GmodVersioningAssignmentChangeDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<GmodVersioningAssignmentChangeDto> tryFromJson( const rapidjson::Value& json );
+		static std::optional<GmodVersioningAssignmentChangeDto> tryFromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Deserialize a GmodVersioningAssignmentChangeDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Deserialize a GmodVersioningAssignmentChangeDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return The deserialized GmodVersioningAssignmentChangeDto
-		 * @throws std::invalid_argument If required fields are missing or invalid
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
+		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static GmodVersioningAssignmentChangeDto fromJson( const rapidjson::Value& json );
+		static GmodVersioningAssignmentChangeDto fromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Serialize this GmodVersioningAssignmentChangeDto to a RapidJSON Value
-		 * @param allocator The JSON value allocator to use
-		 * @return The serialized JSON value
+		 * @brief Serialize this GmodVersioningAssignmentChangeDto to an nlohmann::json object
+		 * @return The serialized nlohmann::json object
 		 */
-		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
+		nlohmann::json toJson() const;
+
+		friend void from_json( const nlohmann::json& j, GmodVersioningAssignmentChangeDto& dto );
+		friend void to_json( nlohmann::json& j, const GmodVersioningAssignmentChangeDto& dto );
 
 	private:
 		//-------------------------------------------------------------------
@@ -106,10 +109,10 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/** @brief Previous assignment value (JSON: "oldAssignment") */
-		const std::string m_oldAssignment;
+		std::string m_oldAssignment;
 
 		/** @brief Current assignment value (JSON: "currentAssignment") */
-		const std::string m_currentAssignment;
+		std::string m_currentAssignment;
 	};
 
 	/**
@@ -133,7 +136,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/** @brief Default constructor - deleted for immutability */
-		GmodNodeConversionDto() = delete;
+		GmodNodeConversionDto() = default;
 
 		/**
 		 * @brief Constructor with parameters
@@ -162,7 +165,7 @@ namespace dnv::vista::sdk
 		~GmodNodeConversionDto() = default;
 
 		//-------------------------------------------------------------------
-		// Public Interface - Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------
 
 		/**
@@ -206,26 +209,29 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a GmodNodeConversionDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Try to deserialize a GmodNodeConversionDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<GmodNodeConversionDto> tryFromJson( const rapidjson::Value& json );
+		static std::optional<GmodNodeConversionDto> tryFromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Deserialize a GmodNodeConversionDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Deserialize a GmodNodeConversionDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return The deserialized GmodNodeConversionDto
-		 * @throws std::invalid_argument If required fields are missing or invalid
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
+		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static GmodNodeConversionDto fromJson( const rapidjson::Value& json );
+		static GmodNodeConversionDto fromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Serialize this GmodNodeConversionDto to a RapidJSON Value
-		 * @param allocator The JSON value allocator to use
-		 * @return The serialized JSON value
+		 * @brief Serialize this GmodNodeConversionDto to an nlohmann::json object
+		 * @return The serialized nlohmann::json object
 		 */
-		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
+		nlohmann::json toJson() const;
+
+		friend void from_json( const nlohmann::json& j, GmodNodeConversionDto& dto );
+		friend void to_json( nlohmann::json& j, const GmodNodeConversionDto& dto );
 
 	private:
 		//-------------------------------------------------------------------
@@ -243,22 +249,22 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/** @brief Set of operations to apply (JSON: "operations") */
-		const OperationSet m_operations;
+		OperationSet m_operations;
 
 		/** @brief Source node code (JSON: "source") */
-		const std::string m_source;
+		std::string m_source;
 
 		/** @brief Target node code (JSON: "target") */
-		const std::string m_target;
+		std::string m_target;
 
 		/** @brief Old assignment code (JSON: "oldAssignment") */
-		const std::string m_oldAssignment;
+		std::string m_oldAssignment;
 
 		/** @brief New assignment code (JSON: "newAssignment") */
-		const std::string m_newAssignment;
+		std::string m_newAssignment;
 
 		/** @brief Whether to delete assignment (JSON: "deleteAssignment") */
-		const bool m_deleteAssignment;
+		bool m_deleteAssignment;
 	};
 
 	/**
@@ -282,7 +288,7 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/** @brief Default constructor - deleted for immutability */
-		GmodVersioningDto() = delete;
+		GmodVersioningDto() = default;
 
 		/**
 		 * @brief Constructor with parameters
@@ -301,7 +307,7 @@ namespace dnv::vista::sdk
 		~GmodVersioningDto() = default;
 
 		//-------------------------------------------------------------------
-		// Public Interface - Accessor Methods
+		// Accessors
 		//-------------------------------------------------------------------
 
 		/**
@@ -321,26 +327,29 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a GmodVersioningDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Try to deserialize a GmodVersioningDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<GmodVersioningDto> tryFromJson( const rapidjson::Value& json );
+		static std::optional<GmodVersioningDto> tryFromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Deserialize a GmodVersioningDto from a RapidJSON object
-		 * @param json The RapidJSON object to deserialize
+		 * @brief Deserialize a GmodVersioningDto from an nlohmann::json object
+		 * @param json The nlohmann::json object to deserialize
 		 * @return The deserialized GmodVersioningDto
-		 * @throws std::invalid_argument If required fields are missing or invalid
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
+		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static GmodVersioningDto fromJson( const rapidjson::Value& json );
+		static GmodVersioningDto fromJson( const nlohmann::json& json );
 
 		/**
-		 * @brief Serialize this GmodVersioningDto to a RapidJSON Value
-		 * @param allocator The JSON value allocator to use
-		 * @return The serialized JSON value
+		 * @brief Serialize this GmodVersioningDto to an nlohmann::json object
+		 * @return The serialized nlohmann::json object
 		 */
-		rapidjson::Value toJson( rapidjson::Document::AllocatorType& allocator ) const;
+		nlohmann::json toJson() const;
+
+		friend void from_json( const nlohmann::json& j, GmodVersioningDto& dto );
+		friend void to_json( nlohmann::json& j, const GmodVersioningDto& dto );
 
 	private:
 		//-------------------------------------------------------------------
@@ -358,9 +367,9 @@ namespace dnv::vista::sdk
 		//-------------------------------------------------------------------
 
 		/** @brief VIS version string (e.g., "3.8a") */
-		const std::string m_visVersion;
+		std::string m_visVersion;
 
 		/** @brief Map of node codes to their conversion information */
-		const ItemsMap m_items;
+		ItemsMap m_items;
 	};
 }

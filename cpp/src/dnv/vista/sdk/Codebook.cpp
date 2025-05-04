@@ -92,6 +92,7 @@ namespace dnv::vista::sdk
 			}
 		}
 
+		/* TODO: Performance  - Consider C++20 heterogeneous lookup with transparent hashers. */
 		return m_standardValues.find( std::string( tagValue ) ) != m_standardValues.end();
 	}
 
@@ -134,6 +135,7 @@ namespace dnv::vista::sdk
 
 	bool CodebookGroups::contains( std::string_view group ) const
 	{
+		/* TODO: Performance  - Consider C++20 heterogeneous lookup with transparent hashers. */
 		return m_groups.find( std::string( group ) ) != m_groups.end();
 	}
 
@@ -198,16 +200,19 @@ namespace dnv::vista::sdk
 		size_t totalValueCount = std::accumulate(
 			dto.values().begin(), dto.values().end(), static_cast<size_t>( 0 ),
 			[]( size_t sum, const auto& pair ) {
+				/* Count only non-<number> values for accurate sizing */
 				return sum + std::count_if( pair.second.begin(), pair.second.end(),
 								 []( const std::string& v ) { return v != NUMBER_GROUP; } );
 			} );
-		m_groupMap.reserve( totalValueCount );
 
+		m_groupMap.reserve( totalValueCount );
 		valueSet.reserve( totalValueCount );
 		groupSet.reserve( dto.values().size() );
 
+		/* Process each group and its values from the DTO */
 		for ( const auto& [groupKey, values] : dto.values() )
 		{
+			/* Trim whitespace from group key */
 			std::string_view groupKeyView( groupKey );
 			const auto groupFirst = groupKeyView.find_first_not_of( WHITESPACE );
 			std::string trimmedGroup;
@@ -221,6 +226,7 @@ namespace dnv::vista::sdk
 			trimmedValues.reserve( values.size() );
 			bool groupHasValidValue = false;
 
+			/* Process and trim each value within the group */
 			for ( const auto& value : values )
 			{
 				std::string_view valueView( value );
@@ -234,6 +240,7 @@ namespace dnv::vista::sdk
 
 				trimmedValues.push_back( trimmedValue );
 
+				/* Map non-<number> values to their group, handling duplicates */
 				if ( trimmedValue != NUMBER_GROUP )
 				{
 					groupHasValidValue = true;
@@ -246,8 +253,10 @@ namespace dnv::vista::sdk
 				}
 			}
 
+			/* Store raw (but trimmed) group-value mapping */
 			m_rawData.emplace( trimmedGroup, std::move( trimmedValues ) );
 
+			/* Add group to the set only if it contained actual values */
 			if ( groupHasValidValue )
 			{
 				groupSet.insert( trimmedGroup );
@@ -411,6 +420,7 @@ namespace dnv::vista::sdk
 			return PositionValidationResult::Custom;
 		}
 
+		/* Split the position string by hyphens */
 		std::vector<std::string_view> parts{};
 		size_t start = 0;
 		while ( hyphenPos != std::string_view::npos )
@@ -421,6 +431,7 @@ namespace dnv::vista::sdk
 		}
 		parts.push_back( trimmedView.substr( start ) );
 
+		/* Recursively validate each part */
 		std::vector<PositionValidationResult> validations{};
 		validations.reserve( parts.size() );
 		PositionValidationResult worstResult = PositionValidationResult::Valid;
@@ -495,6 +506,7 @@ namespace dnv::vista::sdk
 			std::unordered_set<std::string> uniqueGroups{};
 			bool hasDefaultGroup = false;
 
+			/* Determine the group for each part */
 			for ( const auto& partView : parts )
 			{
 				int checkVal;
@@ -508,6 +520,7 @@ namespace dnv::vista::sdk
 				}
 				else
 				{
+					/* TODO: Performance - Creates temporary std::string for lookup */
 					std::string partStrForLookup( partView );
 					auto it = m_groupMap.find( partStrForLookup );
 					groupName = ( it != m_groupMap.end() ) ? it->second : UNKNOWN_GROUP;
@@ -522,6 +535,7 @@ namespace dnv::vista::sdk
 			}
 			SPDLOG_TRACE( "validatePosition('{}'): Grouping check: hasDefault={}, uniqueGroups={}, totalGroups={}", trimmedView, hasDefaultGroup, uniqueGroups.size(), groups.size() );
 
+			/* Grouping is invalid if multiple parts belong to the same non-DEFAULT group */
 			if ( !hasDefaultGroup && uniqueGroups.size() != groups.size() )
 			{
 				return PositionValidationResult::InvalidGrouping;

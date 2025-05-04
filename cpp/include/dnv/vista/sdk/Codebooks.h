@@ -159,7 +159,7 @@ namespace dnv::vista::sdk
 		~Codebooks() = default;
 
 		//=====================================================================
-		// Special Member Functions
+		// Assignment Operators
 		//=====================================================================
 
 		/** @brief Copy assignment operator */
@@ -182,7 +182,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] const Codebook& operator[]( CodebookName name ) const;
 
 		//=====================================================================
-		// Assessors
+		// Accessors
 		//=====================================================================
 
 		/**

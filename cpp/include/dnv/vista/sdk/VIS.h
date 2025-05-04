@@ -364,7 +364,7 @@ namespace dnv::vista::sdk
 
 	private:
 		//-------------------------------------------------------------------------
-		// Constructors & Special Member Functions
+		// Constructors & Assignment Operators
 		//-------------------------------------------------------------------------
 
 		/**

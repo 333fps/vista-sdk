@@ -14,33 +14,44 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and Test C++ on Windows
-    runs-on: windows-latest
+    name: Build and Test C++ on ${{ matrix.os }} (${{ matrix.build_type }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-latest, ubuntu-latest]
         build_type: [Debug, Release]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
-    - name: Setup Developer Command Prompt
+    # --- OS Specific Setup ---
+    - name: Setup Developer Command Prompt (Windows)
+      if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Set up CMake and Ninja
+    - name: Install build essentials (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y build-essential ninja-build
+      shell: bash
+
+    # --- Common Setup ---
+    - name: Set up CMake
       uses: lukka/get-cmake@latest
       with:
-        cmakeVersion: "~3.27.0"
-        ninjaVersion: "~1.11.0"
+        cmakeVersion: "~3.20.0"
 
-    - name: Install ccache
-      run: |
-        choco install ccache -y
-        ccache --version
-      shell: cmd
+    # --- ccache Setup ---
+    - name: Install ccache (Windows)
+      if: runner.os == 'Windows'
+      run: choco install ccache --no-progress -y
+      shell: pwsh
+
+    - name: Install ccache (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get install -y ccache
+      shell: bash
 
     - name: Cache ccache directory
       uses: actions/cache@v4
@@ -52,79 +63,98 @@ jobs:
           ccache-${{ runner.os }}-${{ matrix.build_type }}-v1
           ccache-${{ runner.os }}-v1
 
-    - name: Configure ccache
+    - name: Configure ccache settings (Windows)
+      if: runner.os == 'Windows'
       run: |
-        mkdir -p ${{ github.workspace }}\.ccache
-        ccache --max-size=2G
-        ccache --set-config=hash_dir=false
-        ccache --set-config=cache_dir=${{ github.workspace }}\.ccache
-        ccache -z
-      shell: cmd
+        New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/.ccache"
+        ccache --set-config=cache_dir="${{ github.workspace }}/.ccache"
+        ccache --set-config=max_size=2G
+        # ccache --set-config=hash_dir=false # Optional: Consider if needed for your setup
+        ccache -z # Zero statistics before build
+      shell: pwsh
 
-    - name: Cache vcpkg
+    - name: Configure ccache settings (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        mkdir -p "${{ github.workspace }}/.ccache"
+        ccache --set-config=cache_dir="${{ github.workspace }}/.ccache"
+        ccache --set-config=max_size=2G
+        # ccache --set-config=hash_dir=false # Optional: Consider if needed for your setup
+        ccache -z # Zero statistics before build
+      shell: bash
+
+    # --- FetchContent Cache ---
+    - name: Cache FetchContent dependencies
       uses: actions/cache@v4
-      id: vcpkg-cache
+      id: fetchcontent-cache
       with:
-        path: |
-          ${{ github.workspace }}/vcpkg
-          !${{ github.workspace }}/vcpkg/buildtrees
-          !${{ github.workspace }}/vcpkg/downloads
-        key: vcpkg-${{ runner.os }}-${{ hashFiles('cpp/CMakeLists.txt') }}-v1
+        path: ${{ github.workspace }}/cpp/build/_deps
+        key: fetchcontent-${{ runner.os }}-${{ hashFiles('cpp/CMakeLists.txt') }}-v1
         restore-keys: |
-          vcpkg-${{ runner.os }}-v1
+          fetchcontent-${{ runner.os }}-v1
 
-    - name: Cache build directory
-      uses: actions/cache@v4
-      id: build-cache
-      with:
-        path: |
-          ${{ github.workspace }}/build
-          !${{ github.workspace }}/build/Testing
-        key: build-${{ runner.os }}-${{ matrix.build_type }}-${{ hashFiles('cpp/**/*.cpp', 'cpp/**/*.h', 'cpp/**/*.hpp', 'cpp/CMakeLists.txt') }}-v1
-        restore-keys: |
-          build-${{ runner.os }}-${{ matrix.build_type }}-v1
-
-    - name: Checkout vcpkg
-      if: steps.vcpkg-cache.outputs.cache-hit != 'true'
-      uses: actions/checkout@v4
-      with:
-        repository: microsoft/vcpkg
-        path: vcpkg
-
-    - name: Bootstrap vcpkg
-      if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+    # --- Build Steps ---
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
       run: |
-        cd ${{ github.workspace }}/vcpkg
-        .\bootstrap-vcpkg.bat -disableMetrics
-      shell: cmd
+        cmake -B ${{ github.workspace }}/cpp/build -S ${{ github.workspace }} -G "Ninja" `
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+        -DCMAKE_CXX_STANDARD=20 `
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache `
+        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      shell: pwsh
 
-    - name: Install core dependencies with vcpkg
+    - name: Configure CMake (Linux)
+      if: runner.os == 'Linux'
       run: |
-        ${{ github.workspace }}/vcpkg/vcpkg install spdlog:x64-windows gtest:x64-windows cpuid:x64-windows rapidjson:x64-windows zlib:x64-windows async-mqtt[tls]:x64-windows
-        ${{ github.workspace }}/vcpkg/vcpkg integrate install
-      shell: cmd
+        cmake -B ${{ github.workspace }}/cpp/build -S ${{ github.workspace }} -G "Ninja" \
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+        -DCMAKE_CXX_STANDARD=20 \
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      shell: bash
 
-    - name: Verify Ninja installation
+    - name: Build (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
       run: |
-        ninja --version
-      shell: cmd
+        cmake --build ${{ github.workspace }}/cpp/build --config ${{ matrix.build_type }} --parallel
 
-    - name: Configure CMake with ccache
+    - name: Build (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
       run: |
-        cmake -B ${{ github.workspace }}/build -G "Ninja" ^
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
-        -DCMAKE_CXX_STANDARD=20 ^
-        -DCMAKE_C_COMPILER_LAUNCHER=ccache ^
-        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ^
-        -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-      shell: cmd
+        cmake --build ${{ github.workspace }}/cpp/build --config ${{ matrix.build_type }} --parallel
 
-    - name: Build
-      run: |
-        cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }} --parallel
-      shell: cmd
+    - name: Show ccache statistics after build
+      shell: bash
+      run: ccache -s
 
-    - name: ccache statistics
+    # --- List build directory ---
+    - name: List Build Directory Contents (Windows)
+      if: runner.os == 'Windows'
+      working-directory: ${{ github.workspace }}/cpp/build
+      shell: pwsh
       run: |
-        ccache -s
-      shell: cmd
+       Get-ChildItem -Recurse bin | Select-Object FullName, Length # Focus on the bin directory
+
+    - name: List Build Directory Contents (Linux)
+      if: runner.os == 'Linux'
+      working-directory: ${{ github.workspace }}/cpp/build
+      shell: bash
+      run: |
+        ls -lR bin # Focus on the bin directory
+
+    # --- Test Step ---
+    - name: Run Tests (Windows)
+      if: runner.os == 'Windows'
+      working-directory: ${{ github.workspace }}/cpp/build
+      shell: pwsh
+      run: ctest -C ${{ matrix.build_type }} --output-on-failure -VV
+
+    - name: Run Tests (Linux)
+      if: runner.os == 'Linux'
+      working-directory: ${{ github.workspace }}/cpp/build
+      shell: bash
+      run: ctest -C ${{ matrix.build_type }} --output-on-failure -VV
+

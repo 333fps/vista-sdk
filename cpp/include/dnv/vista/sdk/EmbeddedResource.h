@@ -65,7 +65,7 @@ namespace dnv::vista::sdk
 		 *
 		 * @return Dictionary of versioning DTOs by version string if found, std::nullopt otherwise
 		 */
-		static std::optional<std::unordered_map<std::string, GmodVersioningDto>> gmodVersioning();
+		static const std::optional<std::unordered_map<std::string, GmodVersioningDto>>& gmodVersioning();
 
 		/**
 		 * @brief Get codebooks for specific VIS version

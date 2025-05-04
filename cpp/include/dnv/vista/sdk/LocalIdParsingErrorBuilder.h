@@ -48,7 +48,7 @@ namespace dnv::vista::sdk
 		~LocalIdParsingErrorBuilder() = default;
 
 		//=====================================================================
-		// Special Member Functions
+		// Assignment Operators
 		//=====================================================================
 
 		/** @brief Copy assignment operator */

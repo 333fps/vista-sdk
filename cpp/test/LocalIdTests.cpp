@@ -127,14 +127,18 @@ namespace dnv::vista::sdk::tests
 				builder = builder.withPosition( codebooks.codebook( CodebookName::Position ).createTag( input.Position.value() ) );
 			}
 		}
-		catch ( const std::invalid_argument& e )
+		catch ( const std::invalid_argument& ex )
 		{
-			SPDLOG_WARN( "buildLocalIdFromInput: Failed to create metadata tag - {}", e.what() );
+			(void)ex;
+
+			SPDLOG_WARN( "buildLocalIdFromInput: Failed to create metadata tag - {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::out_of_range& e )
+		catch ( const std::out_of_range& ex )
 		{
-			SPDLOG_WARN( "buildLocalIdFromInput: Failed to find codebook - {}", e.what() );
+			(void)ex;
+
+			SPDLOG_WARN( "buildLocalIdFromInput: Failed to find codebook - {}", ex.what() );
 			return std::nullopt;
 		}
 

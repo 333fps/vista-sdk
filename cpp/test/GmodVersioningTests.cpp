@@ -30,6 +30,8 @@ namespace dnv::vista::sdk::tests
 				}
 				catch ( const std::exception& ex )
 				{
+					(void)ex;
+
 					SPDLOG_ERROR( "Failed to load versioning data: {}", ex.what() );
 					std::unordered_map<std::string, GmodVersioningDto> emptyDto;
 					m_gmodVersioning = std::make_unique<GmodVersioning>( emptyDto );
@@ -50,6 +52,8 @@ namespace dnv::vista::sdk::tests
 			}
 			catch ( const std::exception& ex )
 			{
+				(void)ex;
+
 				SPDLOG_ERROR( "Test setup failed: {}", ex.what() );
 				m_setupSuccess = false;
 			}

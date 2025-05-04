@@ -52,7 +52,7 @@ namespace dnv::vista::sdk
 
 		void ThrowHelper::throwInvalidOperationException()
 		{
-			throw std::invalid_argument( "Invalid operation" );
+			throw std::logic_error( "Invalid operation" );
 		}
 
 		//=====================================================================

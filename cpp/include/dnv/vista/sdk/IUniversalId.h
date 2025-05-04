@@ -43,7 +43,7 @@ namespace dnv::vista::sdk
 		virtual ~IUniversalId() = default;
 
 		//=====================================================================
-		// Special Member Functions
+		// Assignment Operators
 		//=====================================================================
 
 		/** @brief Copy assignment operator */

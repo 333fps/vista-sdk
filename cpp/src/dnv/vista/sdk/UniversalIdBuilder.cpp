@@ -41,7 +41,7 @@ namespace dnv::vista::sdk
 	// }
 
 	//=====================================================================
-	// Assessors
+	// Accessors
 	//=====================================================================
 
 	const std::optional<ImoNumber>& UniversalIdBuilder::imoNumber() const

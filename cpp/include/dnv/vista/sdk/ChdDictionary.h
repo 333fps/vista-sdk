@@ -140,7 +140,7 @@ namespace dnv::vista::sdk
 	 * @see https://en.wikipedia.org/wiki/Perfect_hash_function#CHD_algorithm
 	 */
 	template <typename TValue>
-	class ChdDictionary
+	class ChdDictionary final
 	{
 	public:
 		//=====================================================================
@@ -177,7 +177,7 @@ namespace dnv::vista::sdk
 		~ChdDictionary() = default;
 
 		//=====================================================================
-		// Special Member Functions
+		// Assignment Operators
 		//=====================================================================
 
 		/** @brief Copy assignment operator */

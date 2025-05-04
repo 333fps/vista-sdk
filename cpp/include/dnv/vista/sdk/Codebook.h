@@ -34,19 +34,12 @@ namespace dnv::vista::sdk
 	 */
 	enum class PositionValidationResult
 	{
-		/** @brief Position string is fundamentally invalid or does not conform to expected patterns. */
 		Invalid = 0,
-
-		/** @brief Position components are present but appear in an incorrect order. */
 		InvalidOrder,
-
-		/** @brief Position components are present but grouped incorrectly (e.g., mixing standard and custom). */
 		InvalidGrouping,
 
-		/** @brief Position string is valid according to standard codebook rules. */
 		Valid = 100,
 
-		/** @brief Position string is valid but contains custom (non-standard) components. */
 		Custom = 101
 	};
 
@@ -57,7 +50,7 @@ namespace dnv::vista::sdk
 	 */
 	class PositionValidationResults final
 	{
-	private:
+	public:
 		//----------------------------------------------
 		// Construction / Destruction
 		//----------------------------------------------
@@ -75,7 +68,7 @@ namespace dnv::vista::sdk
 		~PositionValidationResults() = default;
 
 		//----------------------------------------------
-		// Special Member Functions
+		// Assignment Operators
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
@@ -84,7 +77,6 @@ namespace dnv::vista::sdk
 		/** @brief Move assignment operator */
 		PositionValidationResults& operator=( PositionValidationResults&& ) noexcept = delete;
 
-	public:
 		//----------------------------------------------
 		// Public Static Methods
 		//----------------------------------------------
@@ -141,7 +133,7 @@ namespace dnv::vista::sdk
 		~CodebookStandardValues() = default;
 
 		//----------------------------------------------
-		// Special Member Functions
+		// Assignment Operators
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
@@ -239,7 +231,7 @@ namespace dnv::vista::sdk
 		~CodebookGroups() = default;
 
 		//----------------------------------------------
-		// Special Member Functions
+		// Assignment Operators
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
@@ -313,7 +305,7 @@ namespace dnv::vista::sdk
 		 * @param dto The data transfer object
 		 * @throws std::invalid_argument If the DTO has an unknown name
 		 */
-		Codebook( const CodebookDto& dto );
+		explicit Codebook( const CodebookDto& dto );
 
 		/** @brief Default constructor. */
 		Codebook() = default;
@@ -328,7 +320,7 @@ namespace dnv::vista::sdk
 		~Codebook() = default;
 
 		//----------------------------------------------
-		// Special Member Functions
+		// Assignment Operators
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */

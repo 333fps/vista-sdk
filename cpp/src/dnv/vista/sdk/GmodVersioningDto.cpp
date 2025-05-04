@@ -56,19 +56,6 @@ namespace dnv::vista::sdk
 			misses++;
 			return cache.emplace( value, value ).first->first;
 		}
-
-		void safeReserveArray( rapidjson::Value& array, size_t size, rapidjson::Document::AllocatorType& allocator )
-		{
-			if ( size > std::numeric_limits<rapidjson::SizeType>::max() )
-			{
-				SPDLOG_WARN( "Array size {} exceeds maximum RapidJSON capacity", size );
-				array.Reserve( std::numeric_limits<rapidjson::SizeType>::max(), allocator );
-			}
-			else
-			{
-				array.Reserve( static_cast<rapidjson::SizeType>( size ), allocator );
-			}
-		}
 	}
 
 	//-------------------------------------------------------------------
@@ -87,7 +74,7 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------
-	// Public Interface - Accessor Methods
+	// Accessors
 	//-------------------------------------------------------------------
 
 	const std::string& GmodVersioningAssignmentChangeDto::oldAssignment() const
@@ -104,69 +91,97 @@ namespace dnv::vista::sdk
 	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------
 
-	std::optional<GmodVersioningAssignmentChangeDto> GmodVersioningAssignmentChangeDto::tryFromJson( const rapidjson::Value& json )
+	std::optional<GmodVersioningAssignmentChangeDto> GmodVersioningAssignmentChangeDto::tryFromJson( const nlohmann::json& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_DEBUG( "Attempting to parse assignment change from JSON" );
+		SPDLOG_DEBUG( "Attempting to parse GmodVersioningAssignmentChangeDto from nlohmann::json" );
 
-		if ( !json.IsObject() )
+		try
 		{
-			SPDLOG_ERROR( "JSON value is not an object" );
+			if ( !json.is_object() )
+			{
+				SPDLOG_ERROR( "JSON value for GmodVersioningAssignmentChangeDto is not an object" );
+				return std::nullopt;
+			}
+
+			GmodVersioningAssignmentChangeDto dto = json.get<GmodVersioningAssignmentChangeDto>();
+
+			auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
+			SPDLOG_DEBUG( "Parsed assignment change: {} → {} in {} µs", dto.oldAssignment(), dto.currentAssignment(), duration.count() );
+
+			return std::optional<GmodVersioningAssignmentChangeDto>{ std::move( dto ) };
+		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "nlohmann::json exception during GmodVersioningAssignmentChangeDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-
-		std::string oldAssignment;
-		std::string currentAssignment;
-
-		if ( json.HasMember( OLD_ASSIGNMENT_KEY ) && json[OLD_ASSIGNMENT_KEY].IsString() )
+		catch ( const std::exception& ex )
 		{
-			oldAssignment = internString( json[OLD_ASSIGNMENT_KEY].GetString() );
-		}
-		else
-		{
-			SPDLOG_WARN( "Missing or invalid 'oldAssignment' field" );
-		}
+			(void)ex;
 
-		if ( json.HasMember( CURRENT_ASSIGNMENT_KEY ) && json[CURRENT_ASSIGNMENT_KEY].IsString() )
-		{
-			currentAssignment = internString( json[CURRENT_ASSIGNMENT_KEY].GetString() );
+			SPDLOG_ERROR( "Standard exception during GmodVersioningAssignmentChangeDto parsing: {}", ex.what() );
+			return std::nullopt;
 		}
-		else
-		{
-			SPDLOG_WARN( "Missing or invalid 'currentAssignment' field" );
-		}
-
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Parsed assignment change: {} → {} in {:.2f} ms", oldAssignment, currentAssignment, duration.count() / 1000.0 );
-
-		return GmodVersioningAssignmentChangeDto( std::move( oldAssignment ), std::move( currentAssignment ) );
 	}
 
-	GmodVersioningAssignmentChangeDto GmodVersioningAssignmentChangeDto::fromJson( const rapidjson::Value& json )
+	GmodVersioningAssignmentChangeDto GmodVersioningAssignmentChangeDto::fromJson( const nlohmann::json& json )
 	{
-		auto dto = tryFromJson( json );
-		if ( !dto )
+		try
 		{
-			SPDLOG_ERROR( "Failed to parse GmodVersioningAssignmentChangeDto from JSON" );
-			throw std::invalid_argument( "Invalid JSON for GmodVersioningAssignmentChangeDto" );
+			return json.get<GmodVersioningAssignmentChangeDto>();
 		}
-		return std::move( *dto );
+		catch ( const nlohmann::json::exception& e )
+		{
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningAssignmentChangeDto from JSON: {}", e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
+		catch ( const std::exception& e )
+		{
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningAssignmentChangeDto from JSON: {}", e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
 	}
 
-	rapidjson::Value GmodVersioningAssignmentChangeDto::toJson(
-		rapidjson::Document::AllocatorType& allocator ) const
+	nlohmann::json GmodVersioningAssignmentChangeDto::toJson() const
 	{
-		SPDLOG_DEBUG( "Serializing assignment change to JSON" );
-		rapidjson::Value obj( rapidjson::kObjectType );
+		SPDLOG_DEBUG( "Serializing GmodVersioningAssignmentChangeDto to nlohmann::json: {} -> {}", m_oldAssignment, m_currentAssignment );
+		return *this;
+	}
 
-		obj.AddMember( rapidjson::StringRef( OLD_ASSIGNMENT_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_oldAssignment.c_str() ), allocator ),
-			allocator );
-		obj.AddMember( rapidjson::StringRef( CURRENT_ASSIGNMENT_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_currentAssignment.c_str() ), allocator ),
-			allocator );
+	void to_json( nlohmann::json& j, const GmodVersioningAssignmentChangeDto& dto )
+	{
+		j = nlohmann::json{
+			{ OLD_ASSIGNMENT_KEY, dto.m_oldAssignment },
+			{ CURRENT_ASSIGNMENT_KEY, dto.m_currentAssignment } };
+	}
 
-		return obj;
+	void from_json( const nlohmann::json& j, GmodVersioningAssignmentChangeDto& dto )
+	{
+		if ( !j.contains( OLD_ASSIGNMENT_KEY ) || !j.at( OLD_ASSIGNMENT_KEY ).is_string() )
+		{
+			throw nlohmann::json::parse_error::create( 101, 0u, fmt::format( "GmodVersioningAssignmentChangeDto JSON missing required '{}' field or not a string", OLD_ASSIGNMENT_KEY ), nullptr );
+		}
+		if ( !j.contains( CURRENT_ASSIGNMENT_KEY ) || !j.at( CURRENT_ASSIGNMENT_KEY ).is_string() )
+		{
+			throw nlohmann::json::parse_error::create( 101, 0u, fmt::format( "GmodVersioningAssignmentChangeDto JSON missing required '{}' field or not a string", CURRENT_ASSIGNMENT_KEY ), nullptr );
+		}
+
+		dto.m_oldAssignment = internString( j.at( OLD_ASSIGNMENT_KEY ).get<std::string>() );
+		dto.m_currentAssignment = internString( j.at( CURRENT_ASSIGNMENT_KEY ).get<std::string>() );
+
+		if ( dto.m_oldAssignment.empty() )
+		{
+			SPDLOG_WARN( "Empty 'oldAssignment' field found in GmodVersioningAssignmentChangeDto" );
+		}
+		if ( dto.m_currentAssignment.empty() )
+		{
+			SPDLOG_WARN( "Empty 'currentAssignment' field found in GmodVersioningAssignmentChangeDto" );
+		}
 	}
 
 	//-------------------------------------------------------------------
@@ -192,7 +207,7 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------
-	// Public Interface - Accessor Methods
+	// Accessors
 	//-------------------------------------------------------------------
 
 	const GmodNodeConversionDto::OperationSet& GmodNodeConversionDto::operations() const
@@ -229,126 +244,187 @@ namespace dnv::vista::sdk
 	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------
 
-	std::optional<GmodNodeConversionDto> GmodNodeConversionDto::tryFromJson( const rapidjson::Value& json )
+	std::optional<GmodNodeConversionDto> GmodNodeConversionDto::tryFromJson( const nlohmann::json& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_DEBUG( "Attempting to parse node conversion from JSON" );
+		SPDLOG_DEBUG( "Attempting to parse GmodNodeConversionDto from nlohmann::json" );
 
-		if ( !json.IsObject() )
+		try
 		{
-			SPDLOG_ERROR( "JSON value for GmodNodeConversionDto is not an object" );
+			if ( !json.is_object() )
+			{
+				SPDLOG_ERROR( "JSON value for GmodNodeConversionDto is not an object" );
+				return std::nullopt;
+			}
+
+			GmodNodeConversionDto dto = json.get<GmodNodeConversionDto>();
+
+			auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
+			SPDLOG_DEBUG( "Parsed node conversion: source={}, target={}, operations={} in {} µs", dto.source(), dto.target(), dto.operations().size(), duration.count() );
+
+			return std::optional<GmodNodeConversionDto>{ std::move( dto ) };
+		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			SPDLOG_ERROR( "nlohmann::json exception during GmodNodeConversionDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-
-		OperationSet operations;
-		std::string source;
-		std::string target;
-		std::string oldAssignment;
-		std::string newAssignment;
-		bool deleteAssignment = false;
-
-		if ( json.HasMember( OPERATIONS_KEY ) && json[OPERATIONS_KEY].IsArray() )
+		catch ( const std::exception& ex )
 		{
-			size_t opCount = json[OPERATIONS_KEY].Size();
-			SPDLOG_DEBUG( "Found {} operations", opCount );
-			operations.reserve( opCount );
+			(void)ex;
 
-			for ( const auto& operation : json[OPERATIONS_KEY].GetArray() )
+			SPDLOG_ERROR( "Standard exception during GmodNodeConversionDto parsing: {}", ex.what() );
+			return std::nullopt;
+		}
+	}
+
+	GmodNodeConversionDto GmodNodeConversionDto::fromJson( const nlohmann::json& json )
+	{
+		try
+		{
+			return json.get<GmodNodeConversionDto>();
+		}
+		catch ( const nlohmann::json::exception& e )
+		{
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodNodeConversionDto from JSON: {}", e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
+		catch ( const std::exception& e )
+		{
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodNodeConversionDto from JSON: {}", e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
+	}
+
+	nlohmann::json GmodNodeConversionDto::toJson() const
+	{
+		auto startTime = std::chrono::steady_clock::now();
+		SPDLOG_DEBUG( "Serializing GmodNodeConversionDto to nlohmann::json: source={}, target={}", m_source, m_target );
+		nlohmann::json j = *this;
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
+		SPDLOG_DEBUG( "Serialized node conversion in {} µs", duration.count() );
+		return j;
+	}
+
+	void to_json( nlohmann::json& j, const GmodNodeConversionDto& dto )
+	{
+		j = nlohmann::json{
+			{ OPERATIONS_KEY, dto.m_operations },
+			{ SOURCE_KEY, dto.m_source },
+			{ TARGET_KEY, dto.m_target },
+			{ OLD_ASSIGNMENT_KEY, dto.m_oldAssignment },
+			{ NEW_ASSIGNMENT_KEY, dto.m_newAssignment },
+			{ DELETE_ASSIGNMENT_KEY, dto.m_deleteAssignment } };
+	}
+
+	void from_json( const nlohmann::json& j, GmodNodeConversionDto& dto )
+	{
+		if ( j.contains( OPERATIONS_KEY ) )
+		{
+			if ( !j.at( OPERATIONS_KEY ).is_array() )
 			{
-				if ( operation.IsString() )
+				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' is not an array", OPERATIONS_KEY ), nullptr );
+			}
+			dto.m_operations.clear();
+			const auto& opsArray = j.at( OPERATIONS_KEY );
+			dto.m_operations.reserve( opsArray.size() );
+			for ( const auto& op : opsArray )
+			{
+				if ( !op.is_string() )
 				{
-					operations.insert( internString( operation.GetString() ) );
+					throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' contains non-string element", OPERATIONS_KEY ), nullptr );
 				}
+				dto.m_operations.insert( internString( op.get<std::string>() ) );
 			}
 		}
-
-		if ( json.HasMember( SOURCE_KEY ) && json[SOURCE_KEY].IsString() )
+		else
 		{
-			source = internString( json[SOURCE_KEY].GetString() );
+			dto.m_operations.clear();
+			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field", OPERATIONS_KEY );
 		}
 
-		if ( json.HasMember( TARGET_KEY ) && json[TARGET_KEY].IsString() )
+		if ( j.contains( SOURCE_KEY ) )
 		{
-			target = internString( json[TARGET_KEY].GetString() );
+			if ( !j.at( SOURCE_KEY ).is_string() )
+			{
+				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' is not a string", SOURCE_KEY ), nullptr );
+			}
+			dto.m_source = internString( j.at( SOURCE_KEY ).get<std::string>() );
+		}
+		else
+		{
+			dto.m_source.clear();
+			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field", SOURCE_KEY );
 		}
 
-		if ( json.HasMember( OLD_ASSIGNMENT_KEY ) && json[OLD_ASSIGNMENT_KEY].IsString() )
-			oldAssignment = json[OLD_ASSIGNMENT_KEY].GetString();
-
-		if ( json.HasMember( NEW_ASSIGNMENT_KEY ) && json[NEW_ASSIGNMENT_KEY].IsString() )
-			newAssignment = json[NEW_ASSIGNMENT_KEY].GetString();
-
-		if ( json.HasMember( DELETE_ASSIGNMENT_KEY ) && json[DELETE_ASSIGNMENT_KEY].IsBool() )
-			deleteAssignment = json[DELETE_ASSIGNMENT_KEY].GetBool();
-
-		if ( operations.empty() )
+		if ( j.contains( TARGET_KEY ) )
 		{
-			SPDLOG_WARN( "Node conversion has no operations: source={}, target={}", source, target );
+			if ( !j.at( TARGET_KEY ).is_string() )
+			{
+				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' is not a string", TARGET_KEY ), nullptr );
+			}
+			dto.m_target = internString( j.at( TARGET_KEY ).get<std::string>() );
 		}
-		if ( source.empty() && target.empty() )
+		else
+		{
+			dto.m_target.clear();
+			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field", TARGET_KEY );
+		}
+
+		if ( j.contains( OLD_ASSIGNMENT_KEY ) )
+		{
+			if ( !j.at( OLD_ASSIGNMENT_KEY ).is_string() )
+			{
+				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' is not a string", OLD_ASSIGNMENT_KEY ), nullptr );
+			}
+			dto.m_oldAssignment = j.at( OLD_ASSIGNMENT_KEY ).get<std::string>();
+		}
+		else
+		{
+			dto.m_oldAssignment.clear();
+			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field", OLD_ASSIGNMENT_KEY );
+		}
+
+		if ( j.contains( NEW_ASSIGNMENT_KEY ) )
+		{
+			if ( !j.at( NEW_ASSIGNMENT_KEY ).is_string() )
+			{
+				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' is not a string", NEW_ASSIGNMENT_KEY ), nullptr );
+			}
+			dto.m_newAssignment = j.at( NEW_ASSIGNMENT_KEY ).get<std::string>();
+		}
+		else
+		{
+			dto.m_newAssignment.clear();
+			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field", NEW_ASSIGNMENT_KEY );
+		}
+
+		if ( j.contains( DELETE_ASSIGNMENT_KEY ) )
+		{
+			if ( !j.at( DELETE_ASSIGNMENT_KEY ).is_boolean() )
+			{
+				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' is not a boolean", DELETE_ASSIGNMENT_KEY ), nullptr );
+			}
+			dto.m_deleteAssignment = j.at( DELETE_ASSIGNMENT_KEY ).get<bool>();
+		}
+		else
+		{
+			dto.m_deleteAssignment = false;
+			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field, defaulting to false", DELETE_ASSIGNMENT_KEY );
+		}
+
+		if ( dto.m_operations.empty() )
+		{
+			SPDLOG_WARN( "Node conversion has no operations: source={}, target={}", dto.m_source, dto.m_target );
+		}
+		if ( dto.m_source.empty() && dto.m_target.empty() )
 		{
 			SPDLOG_WARN( "Node conversion has empty source and target" );
 		}
-
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Parsed node conversion: source={}, target={}, operations={} in {:.2f} ms", source, target, operations.size(), duration.count() / 1000.0 );
-
-		return GmodNodeConversionDto(
-			std::move( operations ),
-			std::move( source ),
-			std::move( target ),
-			std::move( oldAssignment ),
-			std::move( newAssignment ),
-			deleteAssignment );
-	}
-
-	GmodNodeConversionDto GmodNodeConversionDto::fromJson( const rapidjson::Value& json )
-	{
-		auto dto = tryFromJson( json );
-		if ( !dto )
-		{
-			SPDLOG_ERROR( "Failed to parse GmodNodeConversionDto from JSON" );
-			throw std::invalid_argument( "Invalid JSON for GmodNodeConversionDto" );
-		}
-		return std::move( *dto );
-	}
-
-	rapidjson::Value GmodNodeConversionDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
-	{
-		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_DEBUG( "Serializing node conversion to JSON" );
-		rapidjson::Value obj( rapidjson::kObjectType );
-
-		rapidjson::Value operationsArray( rapidjson::kArrayType );
-		safeReserveArray( operationsArray, m_operations.size(), allocator );
-
-		for ( const auto& operation : m_operations )
-		{
-			operationsArray.PushBack(
-				rapidjson::Value( rapidjson::StringRef( operation.c_str() ), allocator ),
-				allocator );
-		}
-		obj.AddMember( rapidjson::StringRef( OPERATIONS_KEY ), operationsArray, allocator );
-
-		obj.AddMember( rapidjson::StringRef( SOURCE_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_source.c_str() ), allocator ),
-			allocator );
-		obj.AddMember( rapidjson::StringRef( TARGET_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_target.c_str() ), allocator ),
-			allocator );
-		obj.AddMember( rapidjson::StringRef( OLD_ASSIGNMENT_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_oldAssignment.c_str() ), allocator ),
-			allocator );
-		obj.AddMember( rapidjson::StringRef( NEW_ASSIGNMENT_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_newAssignment.c_str() ), allocator ),
-			allocator );
-
-		obj.AddMember( rapidjson::StringRef( DELETE_ASSIGNMENT_KEY ), m_deleteAssignment, allocator );
-
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_DEBUG( "Serialized node conversion in {:.2f} ms", duration.count() / 1000.0 );
-
-		return obj;
 	}
 
 	//-------------------------------------------------------------------
@@ -367,7 +443,7 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------
-	// Public Interface - Accessor Methods
+	// Accessors
 	//-------------------------------------------------------------------
 
 	const std::string& GmodVersioningDto::visVersion() const
@@ -384,162 +460,252 @@ namespace dnv::vista::sdk
 	// Public Interface - Serialization Methods
 	//-------------------------------------------------------------------
 
-	std::optional<GmodVersioningDto> GmodVersioningDto::tryFromJson( const rapidjson::Value& json )
+	std::optional<GmodVersioningDto> GmodVersioningDto::tryFromJson( const nlohmann::json& json )
 	{
 		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_INFO( "Attempting to parse GMOD versioning data from JSON" );
+		SPDLOG_INFO( "Attempting to parse GMOD versioning data from nlohmann::json" );
 
-		if ( !json.IsObject() )
+		try
 		{
-			SPDLOG_ERROR( "JSON value is not an object" );
+			if ( !json.is_object() )
+			{
+				SPDLOG_ERROR( "JSON value for GmodVersioningDto is not an object" );
+				return std::nullopt;
+			}
+
+			GmodVersioningDto dto = json.get<GmodVersioningDto>();
+
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+			SPDLOG_INFO( "GMOD versioning parsing completed in {} ms ({} items)", duration.count(), dto.items().size() );
+
+			return std::optional<GmodVersioningDto>{ std::move( dto ) };
+		}
+		catch ( const nlohmann::json::exception& ex )
+		{
+			(void)ex;
+
+			std::string visHint = "[unknown version]";
+			try
+			{
+				if ( json.contains( VIS_RELEASE_KEY ) && json.at( VIS_RELEASE_KEY ).is_string() )
+				{
+					visHint = json.at( VIS_RELEASE_KEY ).get<std::string>();
+				}
+			}
+			catch ( ... )
+			{
+			}
+			SPDLOG_ERROR( "nlohmann::json exception during GmodVersioningDto parsing (hint: visRelease='{}'): {}", visHint, ex.what() );
 			return std::nullopt;
 		}
-
-		std::string visVersion;
-		ItemsMap items;
-
-		if ( json.HasMember( VIS_RELEASE_KEY ) && json[VIS_RELEASE_KEY].IsString() )
+		catch ( const std::exception& ex )
 		{
-			visVersion = json[VIS_RELEASE_KEY].GetString();
-			SPDLOG_INFO( "GMOD versioning for VIS version: {}", visVersion );
+			(void)ex;
+
+			std::string visHint = "[unknown version]";
+			try
+			{
+				if ( json.contains( VIS_RELEASE_KEY ) && json.at( VIS_RELEASE_KEY ).is_string() )
+				{
+					visHint = json.at( VIS_RELEASE_KEY ).get<std::string>();
+				}
+			}
+			catch ( ... )
+			{
+			}
+			SPDLOG_ERROR( "Standard exception during GmodVersioningDto parsing (hint: visRelease='{}'): {}", visHint, ex.what() );
+			return std::nullopt;
+		}
+	}
+
+	GmodVersioningDto GmodVersioningDto::fromJson( const nlohmann::json& json )
+	{
+		try
+		{
+			return json.get<GmodVersioningDto>();
+		}
+		catch ( const nlohmann::json::exception& e )
+		{
+			std::string visHint = "[unknown version]";
+			try
+			{
+				if ( json.is_object() && json.contains( VIS_RELEASE_KEY ) && json.at( VIS_RELEASE_KEY ).is_string() )
+				{
+					visHint = json.at( VIS_RELEASE_KEY ).get<std::string>();
+				}
+			}
+			catch ( ... )
+			{
+			}
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningDto from JSON (hint: visRelease='{}'): {}", visHint, e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
+		catch ( const std::exception& e )
+		{
+			std::string visHint = "[unknown version]";
+			try
+			{
+				if ( json.is_object() && json.contains( VIS_RELEASE_KEY ) && json.at( VIS_RELEASE_KEY ).is_string() )
+				{
+					visHint = json.at( VIS_RELEASE_KEY ).get<std::string>();
+				}
+			}
+			catch ( ... )
+			{
+			}
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningDto from JSON (hint: visRelease='{}'): {}", visHint, e.what() );
+			SPDLOG_ERROR( errorMsg );
+			throw std::invalid_argument( errorMsg );
+		}
+	}
+
+	nlohmann::json GmodVersioningDto::toJson() const
+	{
+		auto startTime = std::chrono::steady_clock::now();
+		SPDLOG_INFO( "Serializing GMOD versioning data to nlohmann::json, {} items", m_items.size() );
+		nlohmann::json j = *this;
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
+		SPDLOG_INFO( "Successfully serialized GMOD versioning data for VIS {} in {} ms", m_visVersion, duration.count() );
+		return j;
+	}
+
+	void to_json( nlohmann::json& j, const GmodVersioningDto& dto )
+	{
+		j = nlohmann::json{
+			{ VIS_RELEASE_KEY, dto.m_visVersion } };
+
+		if ( !dto.m_items.empty() )
+		{
+			auto serializationStartTime = std::chrono::steady_clock::now();
+			(void)serializationStartTime;
+
+			j[ITEMS_KEY] = dto.m_items;
+
+			auto serializationEndTime = std::chrono::steady_clock::now();
+			auto serializationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
+				serializationEndTime - serializationStartTime );
+
+			if ( !dto.m_items.empty() && serializationDuration.count() > 0 )
+			{
+				double serializationRatePerSecond = static_cast<double>( dto.m_items.size() ) * 1000.0 / static_cast<double>( serializationDuration.count() );
+				(void)serializationRatePerSecond;
+				SPDLOG_INFO( "Node serialization rate: {:.1f} items/sec", serializationRatePerSecond );
+			}
+			else if ( !dto.m_items.empty() )
+			{
+				SPDLOG_INFO( "Node serialization completed very quickly." );
+			}
+
+			size_t emptyOperationsCount = 0;
+			for ( const auto& [key, value] : dto.m_items )
+			{
+				if ( value.operations().empty() )
+				{
+					emptyOperationsCount++;
+				}
+			}
+			if ( emptyOperationsCount > 0 )
+			{
+				SPDLOG_WARN( "{} nodes have no operations defined during serialization", emptyOperationsCount );
+			}
 		}
 		else
 		{
-			SPDLOG_ERROR( "Missing or invalid 'visRelease' field" );
-			return std::nullopt;
+			j[ITEMS_KEY] = nlohmann::json::object();
 		}
+	}
 
-		if ( json.HasMember( ITEMS_KEY ) && json[ITEMS_KEY].IsObject() )
+	void from_json( const nlohmann::json& j, GmodVersioningDto& dto )
+	{
+		if ( !j.contains( VIS_RELEASE_KEY ) || !j.at( VIS_RELEASE_KEY ).is_string() )
 		{
-			size_t itemCount = json[ITEMS_KEY].MemberCount();
+			throw nlohmann::json::parse_error::create( 101, 0u, fmt::format( "GmodVersioningDto JSON missing required '{}' field or not a string", VIS_RELEASE_KEY ), nullptr );
+		}
+		dto.m_visVersion = j.at( VIS_RELEASE_KEY ).get<std::string>();
+		SPDLOG_INFO( "GMOD versioning for VIS version: {}", dto.m_visVersion );
+
+		dto.m_items.clear();
+		if ( j.contains( ITEMS_KEY ) )
+		{
+			if ( !j.at( ITEMS_KEY ).is_object() )
+			{
+				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodVersioningDto JSON field '{}' is not an object", ITEMS_KEY ), nullptr );
+			}
+
+			const auto& itemsObj = j.at( ITEMS_KEY );
+			size_t itemCount = itemsObj.size();
 			SPDLOG_INFO( "Found {} node conversion items to parse", itemCount );
 
 			if ( itemCount > 10000 )
 			{
-				SPDLOG_INFO( "Large versioning dataset detected, consider using parallel parsing implementation" );
+				SPDLOG_INFO( "Large versioning dataset detected ({}), consider performance implications", itemCount );
 			}
 
-			items.reserve( itemCount );
-
+			dto.m_items.reserve( itemCount );
 			size_t successCount = 0;
 			size_t emptyOperationsCount = 0;
-
 			auto parseStartTime = std::chrono::steady_clock::now();
 
-			for ( auto it = json[ITEMS_KEY].MemberBegin(); it != json[ITEMS_KEY].MemberEnd(); ++it )
+			for ( const auto& [key, value] : itemsObj.items() )
 			{
-				if ( it->value.IsObject() )
+				try
 				{
-					auto nodeDto = GmodNodeConversionDto::tryFromJson( it->value );
-					if ( nodeDto )
-					{
-						auto& emplaced = items.emplace( it->name.GetString(), std::move( *nodeDto ) ).first->second;
-						successCount++;
+					GmodNodeConversionDto nodeDto = value.get<GmodNodeConversionDto>();
+					auto& emplaced = dto.m_items.emplace( key, std::move( nodeDto ) ).first->second;
+					successCount++;
 
-						if ( emplaced.operations().empty() )
-						{
-							emptyOperationsCount++;
-						}
-					}
-					else
+					if ( emplaced.operations().empty() )
 					{
-						SPDLOG_ERROR( "Error parsing conversion item '{}'", it->name.GetString() );
+						emptyOperationsCount++;
 					}
+				}
+				catch ( const nlohmann::json::exception& ex )
+				{
+					(void)ex;
+
+					SPDLOG_ERROR( "Error parsing conversion item '{}': {}", key, ex.what() );
+				}
+				catch ( const std::exception& ex )
+				{
+					(void)ex;
+
+					SPDLOG_ERROR( "Standard exception parsing conversion item '{}': {}", key, ex.what() );
 				}
 			}
 
 			auto parseEndTime = std::chrono::steady_clock::now();
 			auto parseDuration = std::chrono::duration_cast<std::chrono::milliseconds>( parseEndTime - parseStartTime );
 
-			double parseRatePerSecond = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
-
-			SPDLOG_INFO( "Successfully parsed {}/{} node conversion items ({} with empty operations), rate: {:.1f} items/sec",
-				successCount, itemCount, emptyOperationsCount, parseRatePerSecond );
+			if ( parseDuration.count() > 0 )
+			{
+				double parseRatePerSecond = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
+				(void)parseRatePerSecond;
+				SPDLOG_INFO( "Successfully parsed {}/{} node conversion items ({} with empty operations), rate: {:.1f} items/sec",
+					successCount, itemCount, emptyOperationsCount, parseRatePerSecond );
+			}
+			else if ( itemCount > 0 )
+			{
+				SPDLOG_INFO( "Successfully parsed {}/{} node conversion items ({} with empty operations) very quickly.",
+					successCount, itemCount, emptyOperationsCount );
+			}
 
 			if ( successCount > 0 && static_cast<double>( successCount ) < static_cast<double>( itemCount ) * 0.9 )
 			{
 				SPDLOG_INFO( "Optimizing memory usage after parsing {} of {} items", successCount, itemCount );
-				items.rehash( static_cast<size_t>( static_cast<double>( successCount ) * 1.25 ) );
+				dto.m_items.rehash( static_cast<size_t>( static_cast<double>( successCount ) * 1.25 ) );
 			}
 		}
 		else
 		{
-			SPDLOG_WARN( "No 'items' object found in GMOD versioning data" );
+			SPDLOG_WARN( "No '{}' object found in GMOD versioning data for VIS version {}", ITEMS_KEY, dto.m_visVersion );
 		}
 
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::steady_clock::now() - startTime );
-
-		if ( items.size() > 1000 )
+		if ( dto.m_items.size() > 1000 )
 		{
-			size_t approxMemoryBytes = items.size() * ( sizeof( GmodNodeConversionDto ) + sizeof( std::string ) * 4 + 32 ); // estimate
-			SPDLOG_INFO( "Large versioning dataset loaded: {} items, ~{} MB estimated memory", items.size(), approxMemoryBytes / ( 1024 * 1024 ) );
+			size_t approxMemoryBytes = dto.m_items.size() * ( sizeof( GmodNodeConversionDto ) + sizeof( std::string ) * 4 + 32 );
+			(void)approxMemoryBytes;
+			SPDLOG_INFO( "Large versioning dataset loaded: {} items, ~{} MB estimated memory", dto.m_items.size(), approxMemoryBytes / ( 1024 * 1024 ) );
 		}
-
-		SPDLOG_INFO( "GMOD versioning parsing completed in {} ms", duration.count() );
-
-		return GmodVersioningDto( std::move( visVersion ), std::move( items ) );
-	}
-
-	GmodVersioningDto GmodVersioningDto::fromJson( const rapidjson::Value& json )
-	{
-		auto dto = tryFromJson( json );
-		if ( !dto )
-		{
-			SPDLOG_ERROR( "Failed to parse GmodVersioningDto from JSON" );
-			throw std::invalid_argument( "Invalid JSON for GmodVersioningDto" );
-		}
-		return std::move( *dto );
-	}
-
-	rapidjson::Value GmodVersioningDto::toJson( rapidjson::Document::AllocatorType& allocator ) const
-	{
-		auto startTime = std::chrono::steady_clock::now();
-		SPDLOG_INFO( "Serializing GMOD versioning data to JSON, {} items", m_items.size() );
-		rapidjson::Value obj( rapidjson::kObjectType );
-
-		obj.AddMember( rapidjson::StringRef( VIS_RELEASE_KEY ),
-			rapidjson::Value( rapidjson::StringRef( m_visVersion.c_str() ), allocator ),
-			allocator );
-
-		rapidjson::Value itemsObj( rapidjson::kObjectType );
-
-		size_t emptyOperationsCount = 0;
-		auto serializationStartTime = std::chrono::steady_clock::now();
-
-		for ( const auto& [key, value] : m_items )
-		{
-			itemsObj.AddMember(
-				rapidjson::Value( rapidjson::StringRef( key.c_str() ), allocator ),
-				value.toJson( allocator ),
-				allocator );
-
-			if ( value.operations().empty() )
-			{
-				emptyOperationsCount++;
-			}
-		}
-
-		auto serializationEndTime = std::chrono::steady_clock::now();
-		auto serializationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
-			serializationEndTime - serializationStartTime );
-
-		if ( m_items.size() > 0 )
-		{
-			double serializationRatePerSecond = static_cast<double>( m_items.size() ) * 1000.0 / static_cast<double>( serializationDuration.count() );
-			SPDLOG_INFO( "Node serialization rate: {:.1f} items/sec", serializationRatePerSecond );
-		}
-
-		if ( emptyOperationsCount > 0 )
-		{
-			SPDLOG_WARN( "{} nodes have no operations defined", emptyOperationsCount );
-		}
-
-		obj.AddMember( rapidjson::StringRef( ITEMS_KEY ), itemsObj, allocator );
-
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - startTime );
-		SPDLOG_INFO( "Successfully serialized GMOD versioning data for VIS {} in {} ms", m_visVersion, duration.count() );
-
-		return obj;
 	}
 }

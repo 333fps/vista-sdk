@@ -68,4 +68,6 @@ build/
 .user
 .config
 
+# Docs directories
+docs/
 

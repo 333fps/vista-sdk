@@ -104,7 +104,7 @@ namespace dnv::vista::sdk
 
 	public:
 		//=====================================================================
-		// Constructors and Special Member Functions
+		// Constructors and Assignment Operators
 		//=====================================================================
 
 		/**
@@ -684,7 +684,7 @@ namespace dnv::vista::sdk
 		 * @param locations The `Locations` object to use for resolving locations.
 		 * @return A `GmodParsePathResult` containing either the parsed `GmodPath` (Ok) or an error message (Err).
 		 */
-		[[nodiscard]] static GmodParsePathResult parseInternal(
+		[[nodiscard]] static std::unique_ptr<GmodParsePathResult> parseInternal(
 			const std::string& item,
 			const Gmod& gmod,
 			const Locations& locations );
@@ -698,7 +698,7 @@ namespace dnv::vista::sdk
 		 * @param locations The `Locations` object to use for resolving locations.
 		 * @return A `GmodParsePathResult` containing either the parsed `GmodPath` (Ok) or an error message (Err).
 		 */
-		[[nodiscard]] static GmodParsePathResult parseFullPathInternal(
+		[[nodiscard]] static std::unique_ptr<GmodParsePathResult> parseFullPathInternal(
 			std::string_view pathStr,
 			const Gmod& gmod,
 			const Locations& locations );
@@ -861,6 +861,10 @@ namespace dnv::vista::sdk
 	class GmodParsePathResult::Ok final : public GmodParsePathResult
 	{
 	public:
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
+
 		/**
 		 * @brief Construct a successful result by moving the path.
 		 * @param p The parsed path to move into the result.
@@ -872,11 +876,17 @@ namespace dnv::vista::sdk
 		/** @brief Deleted copy constructor. */
 		Ok( const Ok& ) = delete;
 
-		/** @brief Deleted copy assignment. */
-		Ok& operator=( const Ok& ) = delete;
-
 		/** @brief Default move constructor. */
 		Ok( Ok&& other ) noexcept;
+
+		virtual ~Ok() = default;
+
+		//----------------------------------------------
+		// Speclial Member Functions
+		//----------------------------------------------
+
+		/** @brief Deleted copy assignment. */
+		Ok& operator=( const Ok& ) = delete;
 
 		/** @brief Default move assignment. */
 		Ok& operator=( Ok&& other ) noexcept = default;
@@ -895,6 +905,10 @@ namespace dnv::vista::sdk
 	class GmodParsePathResult::Err final : public GmodParsePathResult
 	{
 	public:
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
+
 		/**
 		 * @brief Construct an error result.
 		 * @param e The error message string.
@@ -904,11 +918,20 @@ namespace dnv::vista::sdk
 		/** @brief Deleted copy constructor. */
 		Err( const Err& ) = delete;
 
+		/** @brief Default move constructor. */
+		Err( Err&& other ) noexcept;
+
+		virtual ~Err() = default;
+
+		//----------------------------------------------
+		// Speclial Member Functions
+		//----------------------------------------------
+
 		/** @brief Deleted copy assignment. */
 		Err& operator=( const Err& ) = delete;
 
-		/** @brief Default move constructor. */
-		Err( Err&& other ) noexcept;
+		/** @brief Default move assignment. */
+		Err& operator=( Err&& other ) noexcept = default;
 
 		const std::string& error();
 

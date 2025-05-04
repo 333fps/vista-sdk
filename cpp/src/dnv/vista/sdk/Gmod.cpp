@@ -294,6 +294,7 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
 			SPDLOG_ERROR( "Exception in TryGetNode for '{}': {}", code, ex.what() );
 			outNodePtr = nullptr;
 			return false;
@@ -379,6 +380,7 @@ namespace dnv::vista::sdk
 		try
 		{
 			const std::string& code = node.code();
+			(void)code;
 			const int occurrences = context.parents.occurrences( node );
 
 			bool skipOccurrenceCheck = isProductSelectionAssignment( context.parents.lastOrDefault(), &node );
@@ -436,6 +438,8 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
+
 			SPDLOG_ERROR( "Exception during stateless node traversal for node '{}': {}", node.code(), ex.what() );
 			context.parents.pop();
 			return TraversalHandlerResult::Stop;
@@ -511,6 +515,8 @@ namespace dnv::vista::sdk
 		}
 		catch ( const std::exception& ex )
 		{
+			(void)ex;
+
 			SPDLOG_ERROR( "pathExistsBetween: Exception while walking up parent chain from '{}': {}", target.code(), ex.what() );
 			// Re-throwing might be too harsh, depends on desired behavior. Returning false might be safer.
 			// throw std::runtime_error( "Exception while walking up parent chain" );
