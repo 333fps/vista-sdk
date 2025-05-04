@@ -180,7 +180,7 @@ namespace dnv::vista::sdk::tests
 		SPDLOG_INFO( "Testing: {}", input.PrimaryItem );
 
 		auto [vis, gmod] = visAndGmod( input.visVersion );
-		auto codebooks = vis.codebooks( input.visVersion );
+		const auto& codebooks = vis.codebooks( input.visVersion );
 
 		GmodPath primaryPath;
 		ASSERT_TRUE( gmod.tryParsePath( input.PrimaryItem, primaryPath ) );
@@ -221,7 +221,7 @@ namespace dnv::vista::sdk::tests
 	TEST( LocalIdTests, Test_LocalId_Build_AllWithout )
 	{
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
-		auto codebooks = vis.codebooks( VisVersion::v3_4a );
+		const auto& codebooks = vis.codebooks( VisVersion::v3_4a );
 
 		GmodPath primaryPath;
 		GmodPath secondaryPath;
@@ -276,7 +276,6 @@ namespace dnv::vista::sdk::tests
 	class MqttLocalIdValidTest : public ::testing::TestWithParam<std::pair<Input, std::string>>
 	{
 		// TODO Implement when Mqtt will be implemented.
-
 	};
 
 	TEST_P( MqttLocalIdValidTest, Test_Mqtt_LocalId_Build_Valid )

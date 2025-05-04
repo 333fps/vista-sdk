@@ -332,7 +332,7 @@ namespace dnv::vista::sdk
 		 * @param value The string view to check
 		 * @return True if the string view contains only valid ISO characters
 		 */
-		static bool isISOString( const std::string_view value );
+		static bool isISOString( std::string_view value );
 
 		/**
 		 * @brief Check if a string contains only valid ISO characters

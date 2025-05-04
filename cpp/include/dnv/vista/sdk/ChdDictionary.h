@@ -143,6 +143,10 @@ namespace dnv::vista::sdk
 	class ChdDictionary
 	{
 	public:
+		//=====================================================================
+		// Forward declarations
+		//=====================================================================
+
 		class Iterator;
 		/** @brief Alias for Iterator, potentially for compatibility or clearer semantics in some contexts. */
 		using Enumerator = Iterator;

@@ -1,9 +1,11 @@
 /**
  * @file Codebook.h
- * @brief Codebook components for validation and organization of maritime data
+ * @brief Defines classes for managing and validating data against VISTA codebooks.
  *
- * This file defines codebook-related classes used throughout the VISTA SDK for
- * validating and organizing maritime vessel data according to standardized vocabularies.
+ * @details This file provides the core components for interacting with VISTA codebooks,
+ * including enumerations for validation results, containers for standard values and groups,
+ * and the main `Codebook` class for accessing and validating maritime data according
+ * to standardized vocabularies.
  */
 
 #pragma once
@@ -12,52 +14,93 @@
 
 namespace dnv::vista::sdk
 {
+	//=====================================================================
+	// Forward declarations
+	//=====================================================================
+
 	class MetadataTag;
 	enum class CodebookName;
+}
 
-	//-------------------------------------------------------------------
-	// Validation Results
-	//-------------------------------------------------------------------
+namespace dnv::vista::sdk
+{
+	//=====================================================================
+	// Position Validation
+	//=====================================================================
 
 	/**
-	 * @brief Enumeration for validation results of position strings
+	 * @enum PositionValidationResult
+	 * @brief Enumerates the possible outcomes of validating a position string against a codebook.
 	 */
 	enum class PositionValidationResult
 	{
-		/** @brief Position is invalid */
+		/** @brief Position string is fundamentally invalid or does not conform to expected patterns. */
 		Invalid = 0,
 
-		/** @brief Position components are in invalid order */
+		/** @brief Position components are present but appear in an incorrect order. */
 		InvalidOrder,
 
-		/** @brief Position components have invalid grouping */
+		/** @brief Position components are present but grouped incorrectly (e.g., mixing standard and custom). */
 		InvalidGrouping,
 
-		/** @brief Position is valid */
+		/** @brief Position string is valid according to standard codebook rules. */
 		Valid = 100,
 
-		/** @brief Position is valid but custom */
+		/** @brief Position string is valid but contains custom (non-standard) components. */
 		Custom = 101
 	};
 
 	/**
-	 * @brief Utility class for working with position validation results
+	 * @class PositionValidationResults
+	 * @brief Provides utility functions related to `PositionValidationResult`.
+	 * @details This class currently offers conversion from string representations.
 	 */
 	class PositionValidationResults final
 	{
+	private:
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
+
+		/** @brief Default constructor. */
+		PositionValidationResults() = delete;
+
+		/** @brief Copy constructor */
+		PositionValidationResults( const PositionValidationResults& ) = delete;
+
+		/** @brief Move constructor */
+		PositionValidationResults( PositionValidationResults&& ) noexcept = delete;
+
+		/** @brief Destructor */
+		~PositionValidationResults() = default;
+
+		//----------------------------------------------
+		// Special Member Functions
+		//----------------------------------------------
+
+		/** @brief Copy assignment operator */
+		PositionValidationResults& operator=( const PositionValidationResults& ) = delete;
+
+		/** @brief Move assignment operator */
+		PositionValidationResults& operator=( PositionValidationResults&& ) noexcept = delete;
+
 	public:
+		//----------------------------------------------
+		// Public Static Methods
+		//----------------------------------------------
+
 		/**
-		 * @brief Convert a string to a PositionValidationResult enum
-		 * @param name The name of the validation result
-		 * @return The corresponding PositionValidationResult
-		 * @throws std::invalid_argument If the name is unknown
+		 * @brief Converts a string representation to its corresponding `PositionValidationResult` enum value.
+		 * @param[in] name The case-sensitive string name of the validation result (e.g., "Valid", "InvalidOrder").
+		 * @return The matching `PositionValidationResult` enum value.
+		 * @throws std::invalid_argument If the provided `name` does not correspond to any known validation result.
 		 */
 		static PositionValidationResult fromString( const std::string& name );
 	};
 
-	//-------------------------------------------------------------------
+	//=====================================================================
 	// Standard Values Container
-	//-------------------------------------------------------------------
+	//=====================================================================
 
 	/**
 	 * @brief Container for standard values of a codebook
@@ -65,18 +108,18 @@ namespace dnv::vista::sdk
 	class CodebookStandardValues final
 	{
 	public:
-		//=====================================================================
-		// Types
-		//=====================================================================
+		//----------------------------------------------
+		// Public Types
+		//----------------------------------------------
 
 		/**
 		 * @brief Iterator type for traversing standard values
 		 */
 		using iterator = std::unordered_set<std::string>::const_iterator;
 
-		//=====================================================================
+		//----------------------------------------------
 		// Construction / Destruction
-		//=====================================================================
+		//----------------------------------------------
 
 		/**
 		 * @brief Construct with name and values
@@ -89,7 +132,7 @@ namespace dnv::vista::sdk
 		CodebookStandardValues() = default;
 
 		/** @brief Copy constructor */
-		CodebookStandardValues( const CodebookStandardValues& ) = default;
+		CodebookStandardValues( const CodebookStandardValues& ) = delete;
 
 		/** @brief Move constructor */
 		CodebookStandardValues( CodebookStandardValues&& ) noexcept = default;
@@ -97,19 +140,19 @@ namespace dnv::vista::sdk
 		/** @brief Destructor */
 		~CodebookStandardValues() = default;
 
-		//=====================================================================
+		//----------------------------------------------
 		// Special Member Functions
-		//=====================================================================
+		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
-		CodebookStandardValues& operator=( const CodebookStandardValues& ) = default;
+		CodebookStandardValues& operator=( const CodebookStandardValues& ) = delete;
 
 		/** @brief Move assignment operator */
 		CodebookStandardValues& operator=( CodebookStandardValues&& ) noexcept = default;
 
-		//-------------------------------------------------------------------
-		// Capacity
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Public Methods
+		//----------------------------------------------
 
 		/**
 		 * @brief Get the number of standard values
@@ -117,20 +160,16 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] size_t count() const;
 
-		//-------------------------------------------------------------------
-		// Element Access
-		//-------------------------------------------------------------------
-
 		/**
-		 * @brief Check if a value is contained in standard values
+		 * @brief Check if a value is contained in standard values (string_view overload)
 		 * @param tagValue The value to check
 		 * @return True if the value is in standard values or is a numeric position
 		 */
-		bool contains( const std::string& tagValue ) const;
+		bool contains( std::string_view tagValue ) const;
 
-		//-------------------------------------------------------------------
-		// Iterators
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Iteration
+		//----------------------------------------------
 
 		/**
 		 * @brief Get iterator to the beginning
@@ -145,9 +184,9 @@ namespace dnv::vista::sdk
 		[[nodiscard]] iterator end() const;
 
 	private:
-		//-------------------------------------------------------------------
-		// Member Variables
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Private Member Variables
+		//----------------------------------------------
 
 		/** @brief The name of the codebook */
 		CodebookName m_name;
@@ -156,28 +195,30 @@ namespace dnv::vista::sdk
 		std::unordered_set<std::string> m_standardValues;
 	};
 
-	//-------------------------------------------------------------------
+	//=====================================================================
 	// Groups Container
-	//-------------------------------------------------------------------
+	//=====================================================================
 
 	/**
-	 * @brief Container for groups of a codebook
+	 * @class CodebookGroups
+	 * @brief A container managing the set of group names defined within a codebook.
+	 * @details Provides efficient lookup (`contains`) and iteration over the group names.
 	 */
 	class CodebookGroups final
 	{
 	public:
-		//-------------------------------------------------------------------
-		// Types
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Public Types
+		//----------------------------------------------
 
 		/**
 		 * @brief Iterator type for traversing groups
 		 */
 		using Iterator = std::unordered_set<std::string>::const_iterator;
 
-		//=====================================================================
+		//----------------------------------------------
 		// Construction / Destruction
-		//=====================================================================
+		//----------------------------------------------
 
 		/**
 		 * @brief Construct with groups
@@ -189,7 +230,7 @@ namespace dnv::vista::sdk
 		CodebookGroups() = default;
 
 		/** @brief Copy constructor */
-		CodebookGroups( const CodebookGroups& ) = default;
+		CodebookGroups( const CodebookGroups& ) = delete;
 
 		/** @brief Move constructor */
 		CodebookGroups( CodebookGroups&& ) noexcept = default;
@@ -197,19 +238,19 @@ namespace dnv::vista::sdk
 		/** @brief Destructor */
 		~CodebookGroups() = default;
 
-		//=====================================================================
+		//----------------------------------------------
 		// Special Member Functions
-		//=====================================================================
+		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
-		CodebookGroups& operator=( const CodebookGroups& ) = default;
+		CodebookGroups& operator=( const CodebookGroups& ) = delete;
 
 		/** @brief Move assignment operator */
 		CodebookGroups& operator=( CodebookGroups&& ) noexcept = default;
 
-		//-------------------------------------------------------------------
-		// Capacity
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Public Methods
+		//----------------------------------------------
 
 		/**
 		 * @brief Get the number of groups
@@ -217,20 +258,16 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] size_t count() const;
 
-		//-------------------------------------------------------------------
-		// Element Access
-		//-------------------------------------------------------------------
-
 		/**
-		 * @brief Check if a group is contained
-		 * @param group The group to check
+		 * @brief Check if a group is contained (string_view overload)
+		 * @param group The group to check (as a `std::string_view`)
 		 * @return True if the group exists
 		 */
-		bool contains( const std::string& group ) const;
+		bool contains( std::string_view group ) const;
 
-		//-------------------------------------------------------------------
-		// Iterators
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Iteration
+		//----------------------------------------------
 
 		/**
 		 * @brief Get iterator to the beginning
@@ -245,32 +282,31 @@ namespace dnv::vista::sdk
 		[[nodiscard]] Iterator end() const;
 
 	private:
-		//-------------------------------------------------------------------
-		// Member Variables
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Private Member Variables
+		//----------------------------------------------
 
 		/** @brief The set of groups */
 		std::unordered_set<std::string> m_groups;
 	};
 
-	//-------------------------------------------------------------------
+	//=====================================================================
 	// Main Codebook Class
-	//-------------------------------------------------------------------
+	//=====================================================================
 
 	/**
-	 * @brief A codebook containing standard values and their groups
+	 * @class Codebook
+	 * @brief Represents a complete VISTA codebook, containing standard values, groups, and validation logic.
+	 * @details This class aggregates standard values and group information, providing methods
+	 * to validate data, check for the existence of values/groups, and create associated `MetadataTag` objects.
+	 * It is typically constructed from a `CodebookDto` object.
 	 */
 	class Codebook final
 	{
 	public:
-		//-------------------------------------------------------------------
+		//----------------------------------------------
 		// Construction / Destruction
-		//-------------------------------------------------------------------
-
-		/**
-		 * @brief Default constructor
-		 */
-		Codebook() = default;
+		//----------------------------------------------
 
 		/**
 		 * @brief Construct from DTO
@@ -279,9 +315,31 @@ namespace dnv::vista::sdk
 		 */
 		Codebook( const CodebookDto& dto );
 
-		//-------------------------------------------------------------------
-		// Accessors
-		//-------------------------------------------------------------------
+		/** @brief Default constructor. */
+		Codebook() = default;
+
+		/** @brief Copy constructor */
+		Codebook( const Codebook& ) = delete;
+
+		/** @brief Move constructor */
+		Codebook( Codebook&& ) noexcept = default;
+
+		/** @brief Destructor */
+		~Codebook() = default;
+
+		//----------------------------------------------
+		// Special Member Functions
+		//----------------------------------------------
+
+		/** @brief Copy assignment operator */
+		Codebook& operator=( const Codebook& ) = delete;
+
+		/** @brief Move assignment operator */
+		Codebook& operator=( Codebook&& ) noexcept = default;
+
+		//----------------------------------------------
+		// Public Methods
+		//----------------------------------------------
 
 		/**
 		 * @brief Get the codebook name
@@ -307,10 +365,6 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] const std::unordered_map<std::string, std::vector<std::string>>& rawData() const;
 
-		//-------------------------------------------------------------------
-		// Queries
-		//-------------------------------------------------------------------
-
 		/**
 		 * @brief Check if a group exists
 		 * @param group The group to check
@@ -325,16 +379,12 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] bool hasStandardValue( const std::string& value ) const;
 
-		//-------------------------------------------------------------------
-		// Operations
-		//-------------------------------------------------------------------
-
 		/**
 		 * @brief Try to create a metadata tag
 		 * @param value The tag value
 		 * @return The metadata tag, or none if invalid
 		 */
-		[[nodiscard]] std::optional<MetadataTag> tryCreateTag( const std::string_view valueView ) const;
+		[[nodiscard]] std::optional<MetadataTag> tryCreateTag( std::string_view valueView ) const;
 
 		/**
 		 * @brief Create a metadata tag
@@ -345,16 +395,21 @@ namespace dnv::vista::sdk
 		MetadataTag createTag( const std::string& value ) const;
 
 		/**
-		 * @brief Validate a position string
-		 * @param position The position to validate
-		 * @return The validation result
+		 * @brief Validates a position string according to the rules defined for position codebooks.
+		 * @details This method specifically applies validation logic relevant to position data
+		 *          (e.g., ISO string format, hyphen separation, order, grouping).
+		 *          It should only be called on `Codebook` instances representing position codebooks
+		 *          (i.e., where `name()` returns `CodebookName::Position`).
+		 * @param[in] position The position string to validate (as a `std::string_view`).
+		 * @return A `PositionValidationResult` indicating the outcome of the validation.
+		 * @warning Behavior is undefined if called on a non-position codebook.
 		 */
-		PositionValidationResult validatePosition( const std::string& position ) const;
+		PositionValidationResult validatePosition( std::string_view position ) const;
 
 	private:
-		//-------------------------------------------------------------------
-		// Member Variables
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Private Member Variables
+		//----------------------------------------------
 
 		/** @brief The name of this codebook */
 		CodebookName m_name;

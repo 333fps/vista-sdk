@@ -12,9 +12,9 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------
+	//=====================================================================
 	// Constants
-	//-------------------------------------------------------------------
+	//=====================================================================
 
 	namespace
 	{
@@ -24,10 +24,17 @@ namespace dnv::vista::sdk
 
 		constexpr const char* WHITESPACE = " \t\n\r\f\v";
 	}
+}
 
-	//-------------------------------------------------------------------
-	// PositionValidationResults Implementation
-	//-------------------------------------------------------------------
+namespace dnv::vista::sdk
+{
+	//=====================================================================
+	// Position Validation
+	//=====================================================================
+
+	//----------------------------------------------
+	// Public Static Methods
+	//----------------------------------------------
 
 	PositionValidationResult PositionValidationResults::fromString( const std::string& name )
 	{
@@ -48,35 +55,32 @@ namespace dnv::vista::sdk
 		throw std::invalid_argument( "Unknown position validation result: " + name );
 	}
 
-	//-------------------------------------------------------------------
-	// CodebookStandardValues Implementation
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// Standard Values Container
+	//=====================================================================
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Construction / Destruction
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	CodebookStandardValues::CodebookStandardValues( CodebookName name, const std::unordered_set<std::string>& standardValues )
-		: m_name{ name }, m_standardValues{ standardValues }
+		: m_name{ name },
+		  m_standardValues{ standardValues }
 	{
 		SPDLOG_INFO( "CodebookStandardValues constructed for '{}' with {} values",
 			static_cast<int>( m_name ), m_standardValues.size() );
 	}
 
-	//-------------------------------------------------------------------
-	// Capacity
-	//-------------------------------------------------------------------
+	//----------------------------------------------
+	// Public Methods
+	//----------------------------------------------
 
 	size_t CodebookStandardValues::count() const
 	{
 		return m_standardValues.size();
 	}
 
-	//-------------------------------------------------------------------
-	// Element Access
-	//-------------------------------------------------------------------
-
-	bool CodebookStandardValues::contains( const std::string& tagValue ) const
+	bool CodebookStandardValues::contains( std::string_view tagValue ) const
 	{
 		if ( m_name == CodebookName::Position )
 		{
@@ -87,11 +91,13 @@ namespace dnv::vista::sdk
 				return true;
 			}
 		}
-		return m_standardValues.find( tagValue ) != m_standardValues.end();
+
+		return m_standardValues.find( std::string( tagValue ) ) != m_standardValues.end();
 	}
-	//-------------------------------------------------------------------
-	// Iterators
-	//-------------------------------------------------------------------
+
+	//----------------------------------------------
+	// Iteration
+	//----------------------------------------------
 
 	CodebookStandardValues::iterator CodebookStandardValues::begin() const
 	{
@@ -103,13 +109,13 @@ namespace dnv::vista::sdk
 		return m_standardValues.end();
 	}
 
-	//-------------------------------------------------------------------
-	// CodebookGroups Implementation
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// Groups Container
+	//=====================================================================
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Construction / Destruction
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	CodebookGroups::CodebookGroups( const std::unordered_set<std::string>& groups )
 		: m_groups{ groups }
@@ -117,27 +123,23 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "CodebookGroups constructed with {} groups", m_groups.size() );
 	}
 
-	//-------------------------------------------------------------------
-	// Capacity
-	//-------------------------------------------------------------------
+	//----------------------------------------------
+	// Public Methods
+	//----------------------------------------------
 
 	size_t CodebookGroups::count() const
 	{
 		return m_groups.size();
 	}
 
-	//-------------------------------------------------------------------
-	// Element Access
-	//-------------------------------------------------------------------
-
-	bool CodebookGroups::contains( const std::string& group ) const
+	bool CodebookGroups::contains( std::string_view group ) const
 	{
-		return m_groups.find( group ) != m_groups.end();
+		return m_groups.find( std::string( group ) ) != m_groups.end();
 	}
 
-	//-------------------------------------------------------------------
-	// Iterators
-	//-------------------------------------------------------------------
+	//----------------------------------------------
+	// Iteration
+	//----------------------------------------------
 
 	CodebookGroups::Iterator CodebookGroups::begin() const
 	{
@@ -149,13 +151,13 @@ namespace dnv::vista::sdk
 		return m_groups.end();
 	}
 
-	//-------------------------------------------------------------------
-	// Codebook Implementation
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// Main Codebook Class
+	//=====================================================================
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Construction / Destruction
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	Codebook::Codebook( const CodebookDto& dto )
 		: m_name{},
@@ -237,8 +239,8 @@ namespace dnv::vista::sdk
 					groupHasValidValue = true;
 					if ( auto [mapIt, inserted] = m_groupMap.try_emplace( trimmedValue, trimmedGroup ); !inserted )
 					{
-						SPDLOG_WARN( "Duplicate value '{}' found. Keeping group '{}', ignoring group '{}'.", trimmedValue,
-							mapIt->second, trimmedGroup );
+						SPDLOG_WARN( "Duplicate value '{}' found. Keeping group '{}', ignoring group '{}'.",
+							trimmedValue, mapIt->second, trimmedGroup );
 					}
 					valueSet.insert( trimmedValue );
 				}
@@ -259,9 +261,9 @@ namespace dnv::vista::sdk
 			m_groups.count(), m_standardValues.count(), m_rawData.size() );
 	}
 
-	//-------------------------------------------------------------------
-	// Accessors
-	//-------------------------------------------------------------------
+	//----------------------------------------------
+	// Public Methods
+	//----------------------------------------------
 
 	CodebookName Codebook::name() const
 	{
@@ -283,10 +285,6 @@ namespace dnv::vista::sdk
 		return m_rawData;
 	}
 
-	//-------------------------------------------------------------------
-	// Queries
-	//-------------------------------------------------------------------
-
 	bool Codebook::hasGroup( const std::string& group ) const
 	{
 		return m_groups.contains( group );
@@ -297,83 +295,94 @@ namespace dnv::vista::sdk
 		return m_standardValues.contains( value );
 	}
 
-	//-------------------------------------------------------------------
-	// Operations
-	//-------------------------------------------------------------------
-
-	std::optional<MetadataTag> Codebook::tryCreateTag( const std::string_view valueView ) const
+	std::optional<MetadataTag> Codebook::tryCreateTag( std::string_view valueView ) const
 	{
-		if ( valueView.empty() || std::all_of( valueView.begin(), valueView.end(), []( unsigned char c ) { return std::isspace( c ); } ) )
+		SPDLOG_TRACE( "tryCreateTag called for codebook '{}' with value '{}'", CodebookNameExtensions::toString( m_name ), valueView );
+
+		if ( valueView.empty() ||
+			 std::all_of( valueView.begin(), valueView.end(), []( unsigned char c ) { return std::isspace( c ); } ) )
 		{
-			SPDLOG_INFO( "Rejecting empty or whitespace-only value" );
+			SPDLOG_DEBUG( "tryCreateTag failed: Value is empty or whitespace." );
 			return std::nullopt;
 		}
 
-		std::string value{ valueView };
-		bool isCustom{ false };
+		bool isCustom = false;
 
 		if ( m_name == CodebookName::Position )
 		{
-			auto positionValidity{ validatePosition( value ) };
-			if ( static_cast<int>( positionValidity ) < 100 )
+			PositionValidationResult positionValidity = validatePosition( valueView );
+
+			if ( positionValidity < PositionValidationResult::Valid )
 			{
-				SPDLOG_INFO( "Position validation failed with result: {}", static_cast<int>( positionValidity ) );
+				SPDLOG_DEBUG( "tryCreateTag failed for Position: Validation result was {}", PositionValidationResults::toString( positionValidity ) );
 				return std::nullopt;
 			}
 
-			isCustom = ( positionValidity == PositionValidationResult::Custom );
+			if ( positionValidity == PositionValidationResult::Custom )
+			{
+				isCustom = true;
+				SPDLOG_TRACE( "tryCreateTag determined Position value '{}' is Custom", valueView );
+			}
 		}
 		else
 		{
-			if ( !VIS::isISOString( value ) )
+			if ( !VIS::isISOString( valueView ) )
 			{
-				SPDLOG_INFO( "Value is not an ISO string: {}", value );
+				SPDLOG_DEBUG( "tryCreateTag failed: Value '{}' is not an ISO string.", valueView );
 				return std::nullopt;
 			}
 
-			if ( m_name != CodebookName::Detail && !m_standardValues.contains( value ) )
+			if ( m_name != CodebookName::Detail && !m_standardValues.contains( valueView ) )
 			{
 				isCustom = true;
+				SPDLOG_TRACE( "tryCreateTag determined non-Position/non-Detail value '{}' is Custom", valueView );
 			}
 		}
 
-		SPDLOG_INFO( "Creating tag with value: {}, custom: {}", value, isCustom );
+		std::string value{ valueView };
+		SPDLOG_DEBUG( "tryCreateTag succeeded for codebook '{}' with value '{}', isCustom={}", CodebookNameExtensions::toString( m_name ), value, isCustom );
 
-		return MetadataTag{ m_name, value, isCustom };
+		return MetadataTag( m_name, value, isCustom );
 	}
 
 	MetadataTag Codebook::createTag( const std::string& value ) const
 	{
-		auto tag{ tryCreateTag( value ) };
-		if ( !tag.has_value() )
+		auto tagOpt = tryCreateTag( value );
+		if ( !tagOpt )
 		{
 			SPDLOG_ERROR( "Invalid value for metadata tag: codebook={}, value={}", static_cast<int>( m_name ), value );
 			throw std::invalid_argument( "Invalid value for metadata tag: codebook=" + std::to_string( static_cast<int>( m_name ) ) + ", value=" + value );
 		}
-
-		return tag.value();
+		return tagOpt.value();
 	}
 
-	PositionValidationResult Codebook::validatePosition( const std::string& position ) const
+	PositionValidationResult Codebook::validatePosition( std::string_view position ) const
 	{
+		SPDLOG_TRACE( "validatePosition('{}') called", position );
+
 		if ( position.empty() ||
-			 std::all_of( position.begin(), position.end(), []( unsigned char c ) { return std::isspace( c ); } ) ||
-			 !VIS::isISOString( position ) )
+			 std::all_of( position.begin(), position.end(), []( unsigned char c ) { return std::isspace( c ); } ) )
 		{
-			SPDLOG_TRACE( "validatePosition('{}'): Failed initial check (empty, whitespace, or not ISO)", position );
+			SPDLOG_TRACE( "validatePosition('{}'): Failed initial check (empty or whitespace)", position );
 			return PositionValidationResult::Invalid;
 		}
 
-		std::string_view positionView( position );
-		size_t first_char = positionView.find_first_not_of( " \t\n\r\f\v" );
-		size_t last_char = positionView.find_last_not_of( " \t\n\r\f\v" );
+		if ( !VIS::isISOString( position ) )
+		{
+			SPDLOG_TRACE( "validatePosition('{}'): Failed initial check (not ISO)", position );
+			return PositionValidationResult::Invalid;
+		}
+
+		size_t first_char = position.find_first_not_of( WHITESPACE );
+		size_t last_char = position.find_last_not_of( WHITESPACE );
 
 		if ( first_char == std::string_view::npos )
 		{
 			SPDLOG_TRACE( "validatePosition('{}'): Failed trim check (all whitespace?)", position );
 			return PositionValidationResult::Invalid;
 		}
-		std::string_view trimmedView = positionView.substr( first_char, last_char - first_char + 1 );
+
+		std::string_view trimmedView = position.substr( first_char, last_char - first_char + 1 );
 
 		if ( trimmedView.length() != position.length() )
 		{
@@ -381,10 +390,9 @@ namespace dnv::vista::sdk
 			return PositionValidationResult::Invalid;
 		}
 
-		std::string currentPositionStr( trimmedView );
-		if ( m_standardValues.contains( currentPositionStr ) )
+		if ( m_standardValues.contains( trimmedView ) )
 		{
-			SPDLOG_TRACE( "validatePosition('{}'): Matched standard value", currentPositionStr );
+			SPDLOG_TRACE( "validatePosition('{}'): Matched standard value", trimmedView );
 			return PositionValidationResult::Valid;
 		}
 
@@ -392,14 +400,14 @@ namespace dnv::vista::sdk
 		auto result = std::from_chars( trimmedView.data(), trimmedView.data() + trimmedView.size(), parsedValue );
 		if ( result.ec == std::errc() && result.ptr == trimmedView.data() + trimmedView.size() )
 		{
-			SPDLOG_TRACE( "validatePosition('{}'): Matched numeric value", currentPositionStr );
+			SPDLOG_TRACE( "validatePosition('{}'): Matched numeric value", trimmedView );
 			return PositionValidationResult::Valid;
 		}
 
 		size_t hyphenPos = trimmedView.find( '-' );
 		if ( hyphenPos == std::string_view::npos )
 		{
-			SPDLOG_TRACE( "validatePosition('{}'): No hyphen, not standard/numeric -> Custom", currentPositionStr );
+			SPDLOG_TRACE( "validatePosition('{}'): No hyphen, not standard/numeric -> Custom", trimmedView );
 			return PositionValidationResult::Custom;
 		}
 
@@ -419,39 +427,21 @@ namespace dnv::vista::sdk
 
 		for ( const auto& partView : parts )
 		{
-			std::string partStr( partView );
-			PositionValidationResult partValidation = validatePosition( partStr );
+			PositionValidationResult partValidation = validatePosition( partView );
 			validations.push_back( partValidation );
 
-			if ( partValidation == PositionValidationResult::Invalid )
+			if ( partValidation > worstResult )
 			{
-				worstResult = PositionValidationResult::Invalid;
-			}
-			else if ( partValidation == PositionValidationResult::InvalidOrder && worstResult != PositionValidationResult::Invalid )
-			{
-				worstResult = PositionValidationResult::InvalidOrder;
-			}
-			else if ( partValidation == PositionValidationResult::InvalidGrouping &&
-					  worstResult != PositionValidationResult::Invalid &&
-					  worstResult != PositionValidationResult::InvalidOrder )
-			{
-				worstResult = PositionValidationResult::InvalidGrouping;
-			}
-			else if ( partValidation == PositionValidationResult::Custom &&
-					  worstResult != PositionValidationResult::Invalid &&
-					  worstResult != PositionValidationResult::InvalidOrder &&
-					  worstResult != PositionValidationResult::InvalidGrouping )
-			{
-				worstResult = PositionValidationResult::Custom;
+				worstResult = partValidation;
 			}
 		}
-		SPDLOG_TRACE( "validatePosition('{}'): Recursive validation results worst: {}", currentPositionStr, static_cast<int>( worstResult ) );
+		SPDLOG_TRACE( "validatePosition('{}'): Recursive validation results worst: {}", trimmedView, PositionValidationResults::toString( worstResult ) );
 
 		if ( worstResult == PositionValidationResult::Invalid ||
 			 worstResult == PositionValidationResult::InvalidOrder ||
 			 worstResult == PositionValidationResult::InvalidGrouping )
 		{
-			SPDLOG_TRACE( "validatePosition('{}'): Returning early due to invalid sub-part: {}", currentPositionStr, static_cast<int>( worstResult ) );
+			SPDLOG_TRACE( "validatePosition('{}'): Returning early due to invalid sub-part: {}", trimmedView, PositionValidationResults::toString( worstResult ) );
 			return worstResult;
 		}
 
@@ -486,7 +476,7 @@ namespace dnv::vista::sdk
 				notAlphabeticallySorted = true;
 			}
 		}
-		SPDLOG_TRACE( "validatePosition('{}'): Order check: numberNotAtEnd={}, notAlphabetical={}", currentPositionStr, numberNotAtEnd, notAlphabeticallySorted );
+		SPDLOG_TRACE( "validatePosition('{}'): Order check: numberNotAtEnd={}, notAlphabetical={}", trimmedView, numberNotAtEnd, notAlphabeticallySorted );
 
 		if ( numberNotAtEnd || notAlphabeticallySorted )
 		{
@@ -518,8 +508,8 @@ namespace dnv::vista::sdk
 				}
 				else
 				{
-					std::string partStr( partView );
-					auto it = m_groupMap.find( partStr );
+					std::string partStrForLookup( partView );
+					auto it = m_groupMap.find( partStrForLookup );
 					groupName = ( it != m_groupMap.end() ) ? it->second : UNKNOWN_GROUP;
 				}
 
@@ -530,7 +520,7 @@ namespace dnv::vista::sdk
 					hasDefaultGroup = true;
 				}
 			}
-			SPDLOG_TRACE( "validatePosition('{}'): Grouping check: hasDefault={}, uniqueGroups={}, totalGroups={}", currentPositionStr, hasDefaultGroup, uniqueGroups.size(), groups.size() );
+			SPDLOG_TRACE( "validatePosition('{}'): Grouping check: hasDefault={}, uniqueGroups={}, totalGroups={}", trimmedView, hasDefaultGroup, uniqueGroups.size(), groups.size() );
 
 			if ( !hasDefaultGroup && uniqueGroups.size() != groups.size() )
 			{
@@ -538,7 +528,7 @@ namespace dnv::vista::sdk
 			}
 		}
 
-		SPDLOG_DEBUG( "validatePosition('{}'): Passed all checks, returning worst recursive result: {}", currentPositionStr, static_cast<int>( worstResult ) );
+		SPDLOG_DEBUG( "validatePosition('{}'): Passed all checks, returning worst recursive result: {}", trimmedView, PositionValidationResults::toString( worstResult ) );
 		return worstResult;
 	}
 }

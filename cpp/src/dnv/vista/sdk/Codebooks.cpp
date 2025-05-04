@@ -86,7 +86,7 @@ namespace dnv::vista::sdk
 
 				if ( index < NUM_CODEBOOKS )
 				{
-					m_codebooks[index] = codebook;
+					m_codebooks[index] = std::move( codebook );
 					SPDLOG_DEBUG( "Added codebook '{}' at index {}", typeDto.name(), index );
 				}
 				else
@@ -107,7 +107,8 @@ namespace dnv::vista::sdk
 		auto detailIndex = static_cast<size_t>( CodebookName::Detail ) - 1;
 		if ( detailIndex < NUM_CODEBOOKS )
 		{
-			m_codebooks[detailIndex] = detailCodebook;
+			m_codebooks[detailIndex] = std::move( detailCodebook );
+
 			SPDLOG_DEBUG( "Ensured empty Detail codebook exists at index {}", detailIndex );
 		}
 		else

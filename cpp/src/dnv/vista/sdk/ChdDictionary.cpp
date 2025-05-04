@@ -47,13 +47,11 @@ namespace dnv::vista::sdk
 
 		void ThrowHelper::throwKeyNotFoundException( std::string_view key )
 		{
-
 			throw std::out_of_range( "Key not found in dictionary: " + std::string( key ) );
 		}
 
 		void ThrowHelper::throwInvalidOperationException()
 		{
-
 			throw std::invalid_argument( "Invalid operation" );
 		}
 
