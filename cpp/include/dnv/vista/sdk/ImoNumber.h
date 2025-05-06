@@ -1,144 +1,166 @@
+/**
+ * @file ImoNumber.h
+ * @brief Defines the ImoNumber class for representing and validating International Maritime Organization (IMO) numbers.
+ */
+
 #pragma once
 
 namespace dnv::vista::sdk
 {
 	/**
-	 * @brief Represents an International Maritime Organization (IMO) number
+	 * @brief Represents an International Maritime Organization (IMO) number.
 	 *
-	 * An IMO number is a unique seven-digit identifier assigned to maritime vessels
-	 * with a check digit for validation according to the IMO standard.
+	 * An IMO number is a unique seven-digit identifier assigned to maritime vessels,
+	 * featuring a check digit for validation according to the IMO standard.
+	 * This class provides functionality to create, validate, parse, and represent IMO numbers.
+	 * Instances of this class are immutable once constructed.
 	 */
 	class ImoNumber final
 	{
 	public:
-		//-------------------------------------------------------------------------
-		// Constructors
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Construction / Destruction
+		//=====================================================================
 
 		/**
-		 * @brief Default constructor is deleted
-		 */
-		ImoNumber() = delete;
-
-		/**
-		 * @brief Construct from integer value
-		 * @param value The IMO number as integer (without IMO prefix)
-		 * @throws std::invalid_argument If the value is not a valid IMO number
+		 * @brief Constructs an ImoNumber from an integer value.
+		 * @param value The IMO number as an integer (e.g., 9074729).
+		 *              The value must be a 7-digit number and pass checksum validation.
+		 * @throws std::invalid_argument If the provided integer is not a valid IMO number
+		 *         (e.g., incorrect number of digits or failed checksum).
 		 */
 		explicit ImoNumber( int value );
 
 		/**
-		 * @brief Construct from string value
-		 * @param value The IMO number as string (with or without IMO prefix)
-		 * @throws std::invalid_argument If the value is not a valid IMO number
+		 * @brief Constructs an ImoNumber from a string representation.
+		 * @param value The IMO number as a string (e.g., "IMO9074729" or "9074729").
+		 *              The string can optionally be prefixed with "IMO".
+		 * @throws std::invalid_argument If the provided string is not a valid IMO number
+		 *         (e.g., incorrect format, non-numeric characters, or failed checksum).
 		 */
 		explicit ImoNumber( const std::string& value );
 
-		//-------------------------------------------------------------------------
-		// Static Factory Methods
-		//-------------------------------------------------------------------------
+	private:
+		/**
+		 * @brief Private constructor for internal use, typically by tryParse.
+		 * Assumes the integer value has already been validated.
+		 * @param validatedValue The validated IMO number as an integer.
+		 * @param bUnused An unused parameter to differentiate this constructor
+		 *                from the public integer constructor.
+		 */
+		explicit ImoNumber( int value, bool bUnused ) noexcept;
+
+	public:
+		/** @brief Default constructor. */
+		ImoNumber() = delete;
+
+		/** @brief Copy constructor */
+		ImoNumber( const ImoNumber& );
+
+		/** @brief Move constructor */
+		ImoNumber( ImoNumber&& ) noexcept;
+
+		/** @brief Destructor */
+		~ImoNumber() = default;
+
+		//=====================================================================
+		// Assignment Operators
+		//=====================================================================
+
+		/** @brief Copy assignment operator */
+		ImoNumber& operator=( const ImoNumber& ) = default;
+
+		/** @brief Move assignment operator */
+		ImoNumber& operator=( ImoNumber&& ) noexcept = default;
+
+		//=====================================================================
+		// Comparison Operators
+		//=====================================================================
 
 		/**
-		 * @brief Parse a string into an IMO number
-		 * @param value The string to parse
-		 * @return The parsed IMO number
-		 * @throws std::invalid_argument If the value is not a valid IMO number
+		 * @brief Equality comparison operator.
+		 * @param other The ImoNumber object to compare with this object.
+		 * @return True if both ImoNumber objects represent the same IMO number, false otherwise.
 		 */
-		static ImoNumber parse( const std::string& value );
+		bool operator==( const ImoNumber& other ) const;
 
 		/**
-		 * @brief Parse a C-string into an IMO number
-		 * @param value The C-string to parse
-		 * @return The parsed IMO number
-		 * @throws std::invalid_argument If the value is not a valid IMO number
+		 * @brief Inequality comparison operator.
+		 * @param other The ImoNumber object to compare with this object.
+		 * @return True if the ImoNumber objects represent different IMO numbers, false otherwise.
 		 */
-		static ImoNumber parse( const char* value );
+		bool operator!=( const ImoNumber& other ) const;
+
+		//=====================================================================
+		// Conversion Operator
+		//=====================================================================
 
 		/**
-		 * @brief Try to parse a string into an IMO number
-		 * @param value The string to parse
-		 * @return The IMO number if parsing was successful, or nullopt if not
+		 * @brief Explicit conversion to an integer.
+		 * @return The underlying 7-digit integer value of the IMO number.
 		 */
-		static std::optional<ImoNumber> tryParse( const std::string& value );
+		[[nodiscard]] explicit operator int() const;
 
-		/**
-		 * @brief Check if an integer value is a valid IMO number
-		 * @param imoNumber The value to check
-		 * @return True if the value is a valid IMO number, false otherwise
-		 */
-		static bool isValid( int imoNumber );
-
-		//-------------------------------------------------------------------------
-		// Public Methods
-		//-------------------------------------------------------------------------
+		//=====================================================================
+		// Public Member Methods
+		//=====================================================================
 
 		/**
 		 * @brief Get the string representation of this IMO number
 		 * @return String in format "IMO<number>"
 		 */
-		std::string toString() const;
-
-		//-------------------------------------------------------------------------
-		// Operators
-		//-------------------------------------------------------------------------
-
-		/**
-		 * @brief Explicit conversion to integer
-		 * @return The IMO number as integer
-		 */
-		explicit operator int() const;
-
-		/**
-		 * @brief Equality operator
-		 * @param other The other IMO number to compare with
-		 * @return True if the IMO numbers are equal
-		 */
-		bool operator==( const ImoNumber& other ) const;
-
-		//-------------------------------------------------------------------------
-		// Nested Classes
-		//-------------------------------------------------------------------------
+		[[nodiscard]] std::string toString() const;
 
 		/**
 		 * @brief Hash function for ImoNumber
 		 */
-		struct Hash final
-		{
-			/**
-			 * @brief Calculate hash value for an IMO number
-			 * @param imoNumber The IMO number to hash
-			 * @return Hash value
-			 */
-			std::size_t operator()( const ImoNumber& imoNumber ) const noexcept;
-		};
+		[[nodiscard]] size_t hashCode() const noexcept;
+
+		//=====================================================================
+		// Static Public Methods
+		//=====================================================================
+
+		/**
+		 * @brief Checks if an integer value represents a valid IMO number.
+		 *
+		 * This method validates the 7-digit structure and the checksum.
+		 * @param imoNumber The integer value to check (e.g., 9074729).
+		 * @return True if the integer is a valid IMO number, false otherwise.
+		 */
+		[[nodiscard]] static bool isValid( int imoNumber );
+
+		/**
+		 * @brief Parses a string representation into an ImoNumber object.
+		 * @param value The string to parse (e.g., "IMO9074729" or "9074729").
+		 *              Can optionally be prefixed with "IMO".
+		 * @return The parsed ImoNumber object.
+		 * @throws std::invalid_argument If the string is not a valid IMO number.
+		 */
+		[[nodiscard]] static ImoNumber parse( const std::string& value );
+
+		/**
+		 * @brief Parses a C-style string representation into an ImoNumber object.
+		 * @param value The C-style string to parse (e.g., "IMO9074729" or "9074729").
+		 *              Must be null-terminated. Can optionally be prefixed with "IMO".
+		 * @return The parsed ImoNumber object.
+		 * @throws std::invalid_argument If the string is not a valid IMO number or is null.
+		 */
+		[[nodiscard]] static ImoNumber parse( const char* value );
+
+		/**
+		 * @brief Tries to parse a string representation into an ImoNumber object.
+		 * @param value The string_view to parse (e.g., "IMO9074729" or "9074729").
+		 *              Can optionally be prefixed with "IMO".
+		 * @return An std::optional containing the ImoNumber if parsing was successful,
+		 *         or std::nullopt if the string is not a valid IMO number.
+		 */
+		[[nodiscard]] static std::optional<ImoNumber> tryParse( std::string_view value );
 
 	private:
-		//-------------------------------------------------------------------------
-		// Private Constructors
-		//-------------------------------------------------------------------------
-
-		/**
-		 * @brief Private constructor used by tryParse
-		 * @param value The validated IMO number as integer
-		 * @param bUnused Unused parameter to disambiguate from public constructor
-		 */
-		explicit ImoNumber( int value, bool bUnused ) noexcept;
-
-		//-------------------------------------------------------------------------
-		// Private Methods
-		//-------------------------------------------------------------------------
-
-		/**
-		 * @brief Extract digits from an integer into an array
-		 * @param number The number to extract digits from
-		 * @param digits The array to store the digits in (must be at least 7 elements)
-		 */
-		static void digits( int number, unsigned char* digits );
-
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 		// Private Members
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 
-		int m_value; ///< The IMO number as integer
+		int m_value;
 	};
 }
