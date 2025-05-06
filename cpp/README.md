@@ -65,21 +65,21 @@ This C++ implementation follows the same core design principles (Immutability, B
 *   **Builder Pattern:** Objects like `LocalId` are constructed using an immutable builder (`LocalIdBuilder`) where modification methods return new builder instances.
 
 
+
 ## TODO List
 
 *   **Testing:**
-    * Implement test `Test_Location_Builder` when `LocationBuilder` is available.
-    * Implement MQTT-related tests (`Test_LocalId_Mqtt`, `Test_LocalId_Mqtt_Invalid`, `Test_LocalIdBuilder_Mqtt`) when MQTT functionality is added.
+    *   Implement test `Test_Location_Builder` when `LocationBuilder` is available.
+    *   Implement MQTT-related tests (`Test_LocalId_Mqtt`, `Test_LocalId_Mqtt_Invalid`, `Test_LocalIdBuilder_Mqtt`) when MQTT functionality is added.
 *   **Core Implementation:**
-    * Implement `UniversalId` parsing and construction logic.
-    * Implement loading/caching for `UniversalId` when available.
-    * Add validation for MQTT topic format if needed.
+    *   Implement `UniversalId` parsing and construction logic.
+    *   Implement loading/caching for `UniversalId` when available.
+    *   Add validation for MQTT topic format if needed.
 *   **Builders:**
-    * Consider adding more validation for segment values (e.g., allowed characters).
+    *   Consider adding more validation for segment values in builders (e.g., allowed characters, length constraints).
 *   **DTOs & Serialization:**
-    * Review DTO immutability: Consider refactoring DTOs for stricter immutability (e.g., `const` members). This would involve ensuring that objects are only populated during construction (e.g., via static `tryFromJson`/`fromJson` methods) and disabling ADL `from_json` hooks that modify existing instances.
+    *   Review DTO immutability strategy: The current DTOs use non-`const` members to allow population by ADL `from_json` hooks, while deleting assignment operators and providing `const` accessors. For stricter immutability (i.e., `const` members ensuring objects are only ever populated at construction via parameterized constructors or static factory methods), a refactor would be needed. This would likely involve removing or significantly altering the ADL `from_json` hooks that modify existing instances.
 *   **Refactoring & Performance:**
-    * Consider C++20 heterogeneous lookup for `m_standardValues` and `m_groupMap` for potential performance improvement.
-    * Address potential performance issue of creating temporary `std::string` for lookup in `validatePosition`.
-    * Consider adding support for other hash functions or making it configurable.
-
+    *   Investigate C++20 heterogeneous lookup for `std::unordered_map` instances (e.g., `Codebooks::m_standardValues`, `Codebooks::m_groupMap`) for potential performance improvements in lookup operations.
+    *   Address potential performance issue of creating temporary `std::string` for lookup in `Codebook::validatePosition` and similar map lookups using `std::string_view` if feasible.
+    *   Consider adding support for other hash functions in `ChdDictionary` or making the hash function selection configurable.

@@ -20,7 +20,12 @@ struct GmodPathTestItem
 class GmodPathTest : public ::testing::Test
 {
 protected:
-	void SetUp() override
+	GmodPathTest()
+		: m_vis( nullptr )
+	{
+	}
+
+	virtual void SetUp() override
 	{
 		m_vis = &VIS::instance();
 	}

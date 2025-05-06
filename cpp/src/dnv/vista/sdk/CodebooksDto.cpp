@@ -101,10 +101,8 @@ namespace dnv::vista::sdk
 							totalValuesParsed += groupValues.size();
 							tempValues.emplace( groupName, std::move( groupValues ) );
 						}
-						catch ( const nlohmann::json::exception& ex )
+						catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 						{
-							(void)ex;
-
 							SPDLOG_WARN( "Error parsing values for group '{}' in codebook '{}': {}. Skipping group.", groupName, tempName, ex.what() );
 						}
 					}
@@ -125,10 +123,8 @@ namespace dnv::vista::sdk
 
 			return std::optional<CodebookDto>{ std::move( resultDto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			std::string nameHint = "[unknown name]";
 			if ( json.contains( NAME_KEY ) && json.at( NAME_KEY ).is_string() )
 			{
@@ -139,10 +135,8 @@ namespace dnv::vista::sdk
 
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			std::string nameHint = "[unknown name]";
 			if ( json.contains( NAME_KEY ) && json.at( NAME_KEY ).is_string() )
 			{
@@ -331,10 +325,8 @@ namespace dnv::vista::sdk
 
 			return std::optional<CodebooksDto>{ std::move( resultDto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			std::string visHint = "[unknown version]";
 			if ( json.contains( VIS_RELEASE_KEY ) && json.at( VIS_RELEASE_KEY ).is_string() )
 			{
@@ -345,10 +337,8 @@ namespace dnv::vista::sdk
 
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			std::string visHint = "[unknown version]";
 			if ( json.contains( VIS_RELEASE_KEY ) && json.at( VIS_RELEASE_KEY ).is_string() )
 			{

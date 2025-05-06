@@ -385,10 +385,8 @@ namespace dnv::vista::sdk
 	//-------------------------------------------------------------------------
 
 	std::optional<GmodNode> GmodVersioning::convertNodeInternal(
-		VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) const
+		[[maybe_unused]] VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) const
 	{
-		(void)sourceVersion;
-
 		SPDLOG_INFO( "Converting node {} internally from {} to {}",
 			sourceNode.code(),
 			static_cast<int>( sourceVersion ),

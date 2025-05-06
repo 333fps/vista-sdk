@@ -297,12 +297,12 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 	$<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_OFF>
 )
 
-# --- Samples (Optional) ---
+# --- Samples ---
 # if(VISTA_SDK_BUILD_SAMPLES)
 #     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../examples ${CMAKE_CURRENT_BINARY_DIR}/examples)
 # endif()
 
-# Add tests if enabled
+# --- Tests ---
 if(VISTA_SDK_BUILD_TESTS)
 	enable_testing()
 	add_subdirectory(test)

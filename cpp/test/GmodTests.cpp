@@ -398,9 +398,8 @@ namespace dnv::vista::sdk::tests
 
 		bool completed = gmod.traverse<TraversalState>(
 			state,
-			startNode, // Pass the const GmodNode&
-			[]( TraversalState& state, const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
-				(void)node;
+			startNode,
+			[]( TraversalState& state, const std::vector<const GmodNode*>& parents, [[maybe_unused]] const GmodNode& node ) -> Gmod::TraversalHandlerResult {
 				EXPECT_TRUE( parents.empty() || ( parents[0] != nullptr && parents[0]->code() == "400a" ) );
 				++state.NodeCount;
 				return Gmod::TraversalHandlerResult::Continue;

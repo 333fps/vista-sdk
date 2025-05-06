@@ -79,9 +79,9 @@ namespace dnv::vista::sdk
 		return m_nodes;
 	}
 
-	//-------------------------------------------------------------------
-	// Constructors / Destructor
-	//-------------------------------------------------------------------
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	Gmod::Gmod( VisVersion version, const GmodDto& dto )
 		: m_visVersion{ version },
@@ -146,7 +146,7 @@ namespace dnv::vista::sdk
 
 		m_nodeMap = ChdDictionary<GmodNode>( std::move( nodePairs ) );
 
-		size_t dictionarySize = 0;
+		[[maybe_unused]] size_t dictionarySize = 0;
 		if ( m_nodeMap.begin() != m_nodeMap.end() )
 		{
 			dictionarySize = dto.items().size();
@@ -215,29 +215,6 @@ namespace dnv::vista::sdk
 		return *this;
 	}
 
-	/*
-	Gmod& Gmod::operator=( const Gmod& other )
-	{
-		SPDLOG_DEBUG( "Gmod copy assignment." );
-		if ( this != &other )
-		{
-			m_visVersion = other.m_visVersion;
-			m_rootNode = GmodNode( other.m_rootNode, true );
-			m_nodeMap = other.m_nodeMap;
-			if ( other.m_nodeMap.isEmpty() != m_nodeMap.isEmpty() )
-			{
-				SPDLOG_ERROR( "Dictionary copy assignment failed! Source: {}, Target: {}",
-					other.m_nodeMap.isEmpty() ? "empty" : "non-empty",
-					m_nodeMap.isEmpty() ? "empty" : "non-empty" );
-			}
-			if ( m_nodeMap.isEmpty() && !other.m_nodeMap.isEmpty() )
-			{
-				SPDLOG_ERROR( "Dictionary copy assignment failed! Source had data but destination is empty" );
-			}
-		}
-		return *this;
-	}
-*/
 	//-------------------------------------------------------------------
 	// Basic Access Methods
 	//-------------------------------------------------------------------
@@ -292,9 +269,8 @@ namespace dnv::vista::sdk
 			SPDLOG_TRACE( "TryGetNode: Node '{}' found in GMOD", code );
 			return true;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
 			SPDLOG_ERROR( "Exception in TryGetNode for '{}': {}", code, ex.what() );
 			outNodePtr = nullptr;
 			return false;
@@ -379,8 +355,7 @@ namespace dnv::vista::sdk
 
 		try
 		{
-			const std::string& code = node.code();
-			(void)code;
+			[[maybe_unused]] const std::string& code = node.code();
 			const int occurrences = context.parents.occurrences( node );
 
 			bool skipOccurrenceCheck = isProductSelectionAssignment( context.parents.lastOrDefault(), &node );
@@ -436,10 +411,8 @@ namespace dnv::vista::sdk
 			}
 			return result;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Exception during stateless node traversal for node '{}': {}", node.code(), ex.what() );
 			context.parents.pop();
 			return TraversalHandlerResult::Stop;
@@ -452,15 +425,12 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	// ... includes and other methods ...
-
 	bool Gmod::pathExistsBetween( const std::vector<const GmodNode*>& parentsPrefix,
 		const GmodNode& target, std::vector<const GmodNode*>& remainingParents ) const
 	{
 		remainingParents.clear();
 		SPDLOG_DEBUG( "Checking path existence to target node '{}' starting from provided prefix.", target.code() );
 
-		// 1. Get the pointer to the target node within this GMOD instance.
 		const GmodNode* targetNodePtr = nullptr;
 		if ( !tryGetNode( target.code(), targetNodePtr ) || targetNodePtr == nullptr )
 		{
@@ -468,24 +438,21 @@ namespace dnv::vista::sdk
 			return false;
 		}
 
-		// 2. Build the full path (as pointers) from the target node up to the root.
 		std::vector<const GmodNode*> fullPathToRootPtrs;
 		const GmodNode* currentNodePtr = targetNodePtr;
 		bool foundRoot = false;
-		std::unordered_set<const GmodNode*> visited; // To detect cycles
+		std::unordered_set<const GmodNode*> visited;
 
 		try
 		{
 			while ( currentNodePtr != nullptr )
 			{
-				// Check for cycles
 				if ( !visited.insert( currentNodePtr ).second )
 				{
 					SPDLOG_ERROR( "pathExistsBetween: Cycle detected while walking up from '{}'. Node '{}' encountered again.", target.code(), currentNodePtr->code() );
-					return false; // Cycle detected
+					return false;
 				}
 
-				// Insert at the beginning to get root-to-target order eventually
 				fullPathToRootPtrs.insert( fullPathToRootPtrs.begin(), currentNodePtr );
 
 				if ( currentNodePtr->isRoot() )
@@ -497,56 +464,45 @@ namespace dnv::vista::sdk
 				const auto& currentParents = currentNodePtr->parents();
 				if ( currentParents.empty() )
 				{
-					// If not root and no parents, it's an orphaned node (shouldn't happen in valid GMOD)
 					SPDLOG_WARN( "pathExistsBetween: Node '{}' has no parents before reaching root.", currentNodePtr->code() );
-					return false; // Path doesn't reach root
+					return false;
 				}
 				if ( currentParents.size() > 1 )
 				{
-					// Ambiguous path if a node has multiple parents
 					SPDLOG_WARN( "pathExistsBetween: Node '{}' has multiple parents ({}). Cannot determine unique path to root.",
 						currentNodePtr->code(), currentParents.size() );
-					return false; // Ambiguous path
+					return false;
 				}
 
-				// Move to the single parent
-				currentNodePtr = currentParents.front(); // Use front() as size is 1
+				currentNodePtr = currentParents.front();
 			}
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "pathExistsBetween: Exception while walking up parent chain from '{}': {}", target.code(), ex.what() );
-			// Re-throwing might be too harsh, depends on desired behavior. Returning false might be safer.
-			// throw std::runtime_error( "Exception while walking up parent chain" );
+
 			return false;
 		}
 
 		if ( !foundRoot )
 		{
 			SPDLOG_ERROR( "pathExistsBetween: Failed to find root node 'VE' when walking up from '{}'.", target.code() );
-			// This indicates an issue with the GMOD structure or the starting node.
-			// throw std::runtime_error( "Failed to find root node 'VE'" );
+
 			return false;
 		}
 
-		// 3. Validate the provided parentsPrefix against the constructed path to root.
 		if ( parentsPrefix.empty() )
 		{
-			// If no prefix is provided, the path technically exists if we found the root.
-			// The remaining parents are the full path excluding the target itself.
 			SPDLOG_DEBUG( "pathExistsBetween: parentsPrefix is empty. Path considered valid." );
 			if ( fullPathToRootPtrs.size() > 1 )
-			{ // Exclude target if path has more than just target
+			{
 				remainingParents.assign( fullPathToRootPtrs.begin(), fullPathToRootPtrs.end() - 1 );
 			}
-			// else: path is just the target, remainingParents is empty.
+
 			return true;
 		}
 		else
 		{
-			// Check if the path-to-root is long enough to contain the prefix
 			if ( fullPathToRootPtrs.size() < parentsPrefix.size() )
 			{
 				SPDLOG_DEBUG( "pathExistsBetween: Path to root ({}) is shorter than parentsPrefix ({}). Prefix mismatch.",
@@ -554,16 +510,14 @@ namespace dnv::vista::sdk
 				return false;
 			}
 
-			// Compare the prefix element by element
 			for ( size_t i = 0; i < parentsPrefix.size(); ++i )
 			{
-				// Check for null pointers in both vectors
 				if ( !fullPathToRootPtrs[i] || !parentsPrefix[i] )
 				{
 					SPDLOG_DEBUG( "pathExistsBetween: Null pointer encountered during prefix comparison at index {}.", i );
-					return false; // Cannot compare null pointers reliably
+					return false;
 				}
-				// Compare node codes
+
 				if ( parentsPrefix[i]->code() != fullPathToRootPtrs[i]->code() )
 				{
 					SPDLOG_DEBUG( "pathExistsBetween: Prefix mismatch at index {}. Expected '{}', Found '{}'.",
@@ -574,37 +528,30 @@ namespace dnv::vista::sdk
 			SPDLOG_DEBUG( "pathExistsBetween: parentsPrefix matches the path to root." );
 		}
 
-		// 4. Populate remainingParents with the pointers between the prefix and the target.
-		// Start index in fullPathToRootPtrs is the size of the matched prefix.
 		size_t startIndex = parentsPrefix.size();
-		// End index is just before the target node itself (which is the last element).
-		if ( startIndex < fullPathToRootPtrs.size() - 1 ) // Check if there are intermediate nodes
+
+		if ( startIndex < fullPathToRootPtrs.size() - 1 )
 		{
 			remainingParents.reserve( fullPathToRootPtrs.size() - startIndex - 1 );
-			// Iterate from the node after the prefix up to (but not including) the target node.
+
 			for ( size_t i = startIndex; i < fullPathToRootPtrs.size() - 1; ++i )
 			{
-				if ( fullPathToRootPtrs[i] ) // Check for null pointer
+				if ( fullPathToRootPtrs[i] )
 				{
 					remainingParents.emplace_back( fullPathToRootPtrs[i] );
 				}
 				else
 				{
-					// This shouldn't happen if the path-to-root construction was successful, but check defensively.
 					SPDLOG_ERROR( "pathExistsBetween: Encountered null pointer in constructed path to root at index {} while building remaining parents. Aborting.", i );
 					remainingParents.clear();
 					return false;
 				}
 			}
 		}
-		// If startIndex == fullPathToRootPtrs.size() - 1, it means the prefix directly leads to the target,
-		// so remainingParents should be empty, which it already is.
 
 		SPDLOG_INFO( "pathExistsBetween: Path found from prefix to '{}'. Remaining intermediate parents count: {}", target.code(), remainingParents.size() );
 		return true;
 	}
-
-	// ... rest of Gmod.cpp ...
 
 	//-------------------------------------------------------------------
 	// Iterator Methods

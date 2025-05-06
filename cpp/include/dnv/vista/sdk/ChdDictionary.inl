@@ -163,12 +163,10 @@ namespace dnv::vista::sdk
 		m_seeds = std::move( seeds );
 
 		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration<double, std::milli>( end - start ).count();
-		(void)duration;
+		[[maybe_unused]] auto duration = std::chrono::duration<double, std::milli>( end - start ).count();
 		SPDLOG_INFO( "CHD Dictionary construction complete: {} entries, {} seeds in {:.2f}ms", m_table.size(), m_seeds.size(), duration );
 
-		auto memoryUsage = sizeof( typename decltype( m_table )::value_type ) * m_table.capacity() + sizeof( int ) * m_seeds.capacity();
-		(void)memoryUsage;
+		[[maybe_unused]] auto memoryUsage = sizeof( typename decltype( m_table )::value_type ) * m_table.capacity() + sizeof( int ) * m_seeds.capacity();
 		SPDLOG_INFO( "CHD Dictionary memory usage: {:.2f}KB ({:.2f}MB) ({} table entries, {} seeds)", static_cast<float>( memoryUsage ) / 1024.0f, static_cast<float>( memoryUsage ) / ( 1024.0f * 1024.0f ), m_table.size(), m_seeds.size() );
 	}
 
@@ -267,9 +265,8 @@ namespace dnv::vista::sdk
 
 		if ( s_lookupCount > 0 && s_lookupCount % 100000 == 0 )
 		{
-			auto avgDurationNs = s_totalLookupDuration / s_lookupCount;
-			auto avgDurationMs = std::chrono::duration<double, std::milli>( avgDurationNs ).count();
-			(void)avgDurationMs;
+			[[maybe_unused]] auto avgDurationNs = s_totalLookupDuration / s_lookupCount;
+			[[maybe_unused]] auto avgDurationMs = std::chrono::duration<double, std::milli>( avgDurationNs ).count();
 
 			SPDLOG_DEBUG( "Dictionary lookup stats: avg time {:.3f}ms, hit rate {:.1f}%", avgDurationMs, 100.0f * static_cast<float>( s_lookupHits ) / static_cast<float>( s_lookupCount ) );
 		}

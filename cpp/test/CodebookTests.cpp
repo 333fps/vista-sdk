@@ -66,10 +66,11 @@ namespace dnv::vista::sdk
 
 	class CodebookTest : public ::testing::Test
 	{
+	public:
 	protected:
 		CodebookTest()
-			: m_vis( VIS::instance() ),
-			  m_codebooks( m_vis.codebooks( VisVersion::v3_4a ) )
+			: m_vis{ VIS::instance() },
+			  m_codebooks{ m_vis.codebooks( VisVersion::v3_4a ) }
 		{
 		}
 
@@ -182,9 +183,8 @@ namespace dnv::vista::sdk
 		const auto& groups = m_codebooks[CodebookName::Position].groups();
 		int count = 0;
 
-		for ( const auto& group : groups )
+		for ( [[maybe_unused]] const auto& group : groups )
 		{
-			(void)group;
 			count++;
 		}
 
@@ -196,9 +196,8 @@ namespace dnv::vista::sdk
 		const auto& values = m_codebooks[CodebookName::Position].standardValues();
 		int count = 0;
 
-		for ( const auto& value : values )
+		for ( [[maybe_unused]] const auto& value : values )
 		{
-			(void)value;
 			count++;
 		}
 

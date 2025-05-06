@@ -9,61 +9,60 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------------
+	//=====================================================================
 	// Constants
-	//-------------------------------------------------------------------------
+	//=====================================================================
 
 	static constexpr const char* VALUES_KEY = "values";
 	static constexpr const char* TYPE_KEY = "type";
 	static constexpr const char* DESCRIPTION_KEY = "description";
+	//=====================================================================
+	// Helper Functions
+	//=====================================================================
 
-	//-------------------------------------------------------------------------
-	// Utility Functions
-	//-------------------------------------------------------------------------
-
-	namespace
+	static const std::string& internString( const std::string& value )
 	{
-		const std::string& internString( const std::string& value )
+		static std::unordered_map<std::string, std::string> cache;
+		static size_t hits = 0, misses = 0, calls = 0;
+		calls++;
+
+		if ( value.size() > 22 ) // Common SSO threshold
 		{
-			static std::unordered_map<std::string, std::string> cache;
-			static size_t hits = 0, misses = 0, calls = 0;
-			calls++;
-
-			if ( value.size() > 22 ) // Common SSO threshold
+			auto it = cache.find( value );
+			if ( it != cache.end() )
 			{
-				auto it = cache.find( value );
-				if ( it != cache.end() )
+				hits++;
+				if ( calls % 10000 == 0 )
 				{
-					hits++;
-					if ( calls % 10000 == 0 )
-					{
-						SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings",
-							hits * 100.0 / calls, hits, calls, cache.size() );
-					}
-					return it->second;
+					SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings",
+						hits * 100.0 / calls, hits, calls, cache.size() );
 				}
-
-				misses++;
-				return cache.emplace( value, value ).first->first;
+				return it->second;
 			}
 
-			return value;
+			misses++;
+			return cache.emplace( value, value ).first->first;
 		}
 
-		template <typename T>
-		size_t estimateMemoryUsage( const std::vector<T>& collection )
-		{
-			return sizeof( std::vector<T> ) + collection.capacity() * sizeof( T );
-		}
+		return value;
 	}
 
-	//-------------------------------------------------------------------------
-	// DataChannelTypeNameDto Implementation
-	//-------------------------------------------------------------------------
+	template <typename T>
+	size_t estimateMemoryUsage( const std::vector<T>& collection )
+	{
+		return sizeof( std::vector<T> ) + collection.capacity() * sizeof( T );
+	}
+}
 
-	//-------------------------------------------------------------------------
-	// Constructors / Destructor
-	//-------------------------------------------------------------------------
+namespace dnv::vista::sdk
+{
+	//=====================================================================
+	// Single Data Channel Type Data Transfer Objects
+	//=====================================================================
+
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	DataChannelTypeNameDto::DataChannelTypeNameDto( std::string type, std::string description )
 		: m_type{ std::move( type ) },
@@ -72,9 +71,9 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Creating DataChannelTypeNameDto: type={}, description={}", m_type, m_description );
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	const std::string& DataChannelTypeNameDto::type() const
 	{
@@ -86,9 +85,9 @@ namespace dnv::vista::sdk
 		return m_description;
 	}
 
-	//-------------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<DataChannelTypeNameDto> DataChannelTypeNameDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -110,17 +109,13 @@ namespace dnv::vista::sdk
 
 			return std::optional<DataChannelTypeNameDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "nlohmann::json exception during DataChannelTypeNameDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Standard exception during DataChannelTypeNameDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
@@ -160,6 +155,10 @@ namespace dnv::vista::sdk
 			{ DESCRIPTION_KEY, dto.m_description } };
 	}
 
+	//----------------------------------------------
+	// Private Serialization Methods
+	//----------------------------------------------
+
 	void from_json( const nlohmann::json& j, DataChannelTypeNameDto& dto )
 	{
 		if ( !j.contains( TYPE_KEY ) || !j.at( TYPE_KEY ).is_string() )
@@ -189,13 +188,13 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------------
-	// DataChannelTypeNamesDto Implementation
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// Collection of Data Channel Type Data Transfer Objects
+	//=====================================================================
 
-	//-------------------------------------------------------------------------
-	// Constructors / Destructor
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	DataChannelTypeNamesDto::DataChannelTypeNamesDto( std::vector<DataChannelTypeNameDto> values )
 		: m_values{ std::move( values ) }
@@ -203,18 +202,18 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Creating DataChannelTypeNamesDto with {} values", m_values.size() );
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	const std::vector<DataChannelTypeNameDto>& DataChannelTypeNamesDto::values() const
 	{
 		return m_values;
 	}
 
-	//-------------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<DataChannelTypeNamesDto> DataChannelTypeNamesDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -236,17 +235,13 @@ namespace dnv::vista::sdk
 
 			return std::optional<DataChannelTypeNamesDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "nlohmann::json exception during DataChannelTypeNamesDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Standard exception during DataChannelTypeNamesDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
@@ -282,6 +277,10 @@ namespace dnv::vista::sdk
 		return j;
 	}
 
+	//----------------------------------------------
+	// Private Serialization Methods
+	//----------------------------------------------
+
 	void to_json( nlohmann::json& j, const DataChannelTypeNamesDto& dto )
 	{
 		j = nlohmann::json{ { VALUES_KEY, dto.m_values } };
@@ -313,16 +312,12 @@ namespace dnv::vista::sdk
 					dto.m_values.emplace_back( itemJson.get<DataChannelTypeNameDto>() );
 					successCount++;
 				}
-				catch ( const nlohmann::json::exception& ex )
+				catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "Skipping malformed data channel type name at index {}: {}", successCount, ex.what() );
 				}
-				catch ( const std::exception& ex )
+				catch ( [[maybe_unused]] const std::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "Standard exception parsing data channel type name at index {}: {}", successCount, ex.what() );
 				}
 			}
@@ -331,8 +326,7 @@ namespace dnv::vista::sdk
 
 			if ( valueCount > 0 && parseDuration.count() > 0 )
 			{
-				double rate = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
-				(void)rate;
+				[[maybe_unused]] double rate = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
 				SPDLOG_INFO( "Successfully parsed {}/{} data channel type names in {}ms ({:.1f} items/sec)",
 					successCount, valueCount, parseDuration.count(), rate );
 			}
@@ -343,8 +337,7 @@ namespace dnv::vista::sdk
 
 			if ( dto.m_values.size() > 1000 )
 			{
-				size_t approxBytes = estimateMemoryUsage( dto.m_values );
-				(void)approxBytes;
+				[[maybe_unused]] size_t approxBytes = estimateMemoryUsage( dto.m_values );
 				SPDLOG_INFO( "Large collection loaded: {} items, ~{} KB estimated memory", dto.m_values.size(), approxBytes / 1024 );
 			}
 		}
@@ -354,13 +347,13 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------------
-	// FormatDataTypeDto Implementation
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// Single Format Data Type Data Transfer Objects
+	//=====================================================================
 
-	//-------------------------------------------------------------------------
-	// Constructors / Destructor
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	FormatDataTypeDto::FormatDataTypeDto( std::string type, std::string description )
 		: m_type{ std::move( type ) },
@@ -369,9 +362,9 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Creating FormatDataTypeDto: type={}, description={}", m_type, m_description );
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	const std::string& FormatDataTypeDto::type() const
 	{
@@ -383,9 +376,9 @@ namespace dnv::vista::sdk
 		return m_description;
 	}
 
-	//-------------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<FormatDataTypeDto> FormatDataTypeDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -407,17 +400,13 @@ namespace dnv::vista::sdk
 
 			return std::optional<FormatDataTypeDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "nlohmann::json exception during FormatDataTypeDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Standard exception during FormatDataTypeDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
@@ -429,18 +418,14 @@ namespace dnv::vista::sdk
 		{
 			return json.get<FormatDataTypeDto>();
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			std::string errorMsg = fmt::format( "Failed to deserialize FormatDataTypeDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			std::string errorMsg = fmt::format( "Failed to deserialize FormatDataTypeDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
@@ -453,6 +438,10 @@ namespace dnv::vista::sdk
 		nlohmann::json j = *this;
 		return j;
 	}
+
+	//----------------------------------------------
+	// Private Serialization Methods
+	//----------------------------------------------
 
 	void to_json( nlohmann::json& j, const FormatDataTypeDto& dto )
 	{
@@ -489,13 +478,14 @@ namespace dnv::vista::sdk
 			SPDLOG_WARN( "Parsed FormatDataTypeDto has empty type field" );
 		}
 	}
-	//-------------------------------------------------------------------------
-	// FormatDataTypesDto Implementation
-	//-------------------------------------------------------------------------
 
-	//-------------------------------------------------------------------------
-	// Constructors / Destructor
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// Collection of  Format Data Type Data Transfer Objects
+	//=====================================================================
+
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	FormatDataTypesDto::FormatDataTypesDto( std::vector<FormatDataTypeDto> values )
 		: m_values{ std::move( values ) }
@@ -503,18 +493,18 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Creating FormatDataTypesDto with {} values", m_values.size() );
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	const std::vector<FormatDataTypeDto>& FormatDataTypesDto::values() const
 	{
 		return m_values;
 	}
 
-	//-------------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<FormatDataTypesDto> FormatDataTypesDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -536,17 +526,13 @@ namespace dnv::vista::sdk
 
 			return std::optional<FormatDataTypesDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "nlohmann::json exception during FormatDataTypesDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Standard exception during FormatDataTypesDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
@@ -582,6 +568,10 @@ namespace dnv::vista::sdk
 		return j;
 	}
 
+	//----------------------------------------------
+	// Private Serialization Methods
+	//----------------------------------------------
+
 	void to_json( nlohmann::json& j, const FormatDataTypesDto& dto )
 	{
 		j = nlohmann::json{ { VALUES_KEY, dto.m_values } };
@@ -613,16 +603,12 @@ namespace dnv::vista::sdk
 					dto.m_values.emplace_back( itemJson.get<FormatDataTypeDto>() );
 					successCount++;
 				}
-				catch ( const nlohmann::json::exception& ex )
+				catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "Skipping malformed format data type at index {}: {}", successCount, ex.what() );
 				}
-				catch ( const std::exception& ex )
+				catch ( [[maybe_unused]] const std::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "Standard exception parsing format data type at index {}: {}", successCount, ex.what() );
 				}
 			}
@@ -631,8 +617,7 @@ namespace dnv::vista::sdk
 
 			if ( valueCount > 0 && parseDuration.count() > 0 )
 			{
-				double rate = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
-				(void)rate;
+				[[maybe_unused]] double rate = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
 				SPDLOG_INFO( "Successfully parsed {}/{} format data types in {}ms ({:.1f} items/sec)",
 					successCount, valueCount, parseDuration.count(), rate );
 			}
@@ -643,8 +628,7 @@ namespace dnv::vista::sdk
 
 			if ( dto.m_values.size() > 1000 )
 			{
-				size_t approxBytes = estimateMemoryUsage( dto.m_values );
-				(void)approxBytes;
+				[[maybe_unused]] size_t approxBytes = estimateMemoryUsage( dto.m_values );
 				SPDLOG_INFO( "Large collection loaded: {} items, ~{} KB estimated memory", dto.m_values.size(), approxBytes / 1024 );
 			}
 		}

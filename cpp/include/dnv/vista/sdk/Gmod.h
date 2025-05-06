@@ -179,9 +179,9 @@ namespace dnv::vista::sdk
 		};
 
 	public:
-		//-------------------------------------------------------------------
-		// Constructors / Destructor
-		//-------------------------------------------------------------------
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
 
 		/** @brief Default constructor is deleted - Gmod requires initialization data */
 		Gmod() = delete;
@@ -633,8 +633,7 @@ namespace dnv::vista::sdk
 
 		try
 		{
-			const std::string& code = node.code();
-			(void)code;
+			[[maybe_unused]] const std::string& code = node.code();
 			const int occurrences = context.parents.occurrences( node );
 
 			bool skipOccurrenceCheck = isProductSelectionAssignment( context.parents.lastOrDefault(), &node );
@@ -692,9 +691,8 @@ namespace dnv::vista::sdk
 
 			return result;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
 			SPDLOG_ERROR( "Exception during stateful node traversal for node '{}': {}", node.code(), ex.what() );
 			if ( !context.parents.nodePointers().empty() && context.parents.lastOrDefault() == &node )
 			{

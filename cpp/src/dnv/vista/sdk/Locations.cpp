@@ -489,9 +489,8 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "Successfully parsed integer: {}", number );
 			return true;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
 			SPDLOG_ERROR( "Failed to parse integer: {}", ex.what() );
 			return false;
 		}

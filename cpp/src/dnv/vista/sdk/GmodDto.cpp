@@ -31,29 +31,26 @@ namespace dnv::vista::sdk
 	// Helper Functions
 	//=====================================================================
 
-	namespace
+	/**
+	 * @brief Interns short strings to reduce memory usage for commonly repeated values
+	 * @param value The string to be interned
+	 * @return A reference to the cached string instance
+	 */
+	static const std::string& internString( const std::string& value )
 	{
-		/**
-		 * @brief Interns short strings to reduce memory usage for commonly repeated values
-		 * @param value The string to be interned
-		 * @return A reference to the cached string instance
-		 */
-		static const std::string& internString( const std::string& value )
+		static std::unordered_map<std::string, std::string> cache;
+		if ( value.length() > 30 )
 		{
-			static std::unordered_map<std::string, std::string> cache;
-			if ( value.length() > 30 )
-			{
-				return value;
-			}
-
-			auto it = cache.find( value );
-			if ( it != cache.end() )
-			{
-				return it->second;
-			}
-
-			return cache.emplace( value, value ).first->first;
+			return value;
 		}
+
+		auto it = cache.find( value );
+		if ( it != cache.end() )
+		{
+			return it->second;
+		}
+
+		return cache.emplace( value, value ).first->first;
 	}
 }
 
@@ -238,10 +235,8 @@ namespace dnv::vista::sdk
 							SPDLOG_DEBUG( "Parsed {} normal assignment name mappings for code='{}'", normalAssignmentNames->size(), code );
 						}
 					}
-					catch ( const nlohmann::json::exception& ex )
+					catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 					{
-						(void)ex;
-
 						SPDLOG_WARN( "GMOD Node code='{}' failed to parse '{}' object: {}", code, NORMAL_ASSIGNMENT_NAMES_KEY, ex.what() );
 					}
 				}
@@ -267,10 +262,8 @@ namespace dnv::vista::sdk
 
 			return std::optional<GmodNodeDto>{ std::move( resultDto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			std::string codeHint = "[unknown code]";
 			try
 			{
@@ -286,10 +279,8 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "nlohmann::json exception during GmodNodeDto parsing (hint: code='{}'): {}", codeHint, ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			std::string codeHint = "[unknown code]";
 			try
 			{
@@ -440,9 +431,8 @@ namespace dnv::vista::sdk
 						dto.m_normalAssignmentNames = std::move( assignments );
 					}
 				}
-				catch ( const nlohmann::json::exception& ex )
+				catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 				{
-					(void)ex;
 					SPDLOG_WARN( "GMOD Node code='{}' failed to parse '{}' object in from_json: {}", dto.m_code, NORMAL_ASSIGNMENT_NAMES_KEY, ex.what() );
 				}
 			}
@@ -611,12 +601,8 @@ namespace dnv::vista::sdk
 
 			if ( items.size() > 10000 )
 			{
-				const size_t approxMemoryUsage =
-					( items.size() * sizeof( GmodNodeDto ) + relations.size() * 24 ) / ( 1024 * 1024 );
-				(void)approxMemoryUsage;
-
-				SPDLOG_INFO( "Large GMOD model loaded: ~{} MB estimated memory usage",
-					approxMemoryUsage );
+				[[maybe_unused]] const size_t approxMemoryUsage = ( items.size() * sizeof( GmodNodeDto ) + relations.size() * 24 ) / ( 1024 * 1024 );
+				SPDLOG_INFO( "Large GMOD model loaded: ~{} MB estimated memory usage", approxMemoryUsage );
 			}
 
 			GmodDto resultDto( std::move( visVersion ), std::move( items ), std::move( relations ) );
@@ -627,10 +613,8 @@ namespace dnv::vista::sdk
 
 			return std::optional<GmodDto>{ std::move( resultDto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			std::string visHint = "[unknown version]";
 			try
 			{
@@ -645,9 +629,8 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "nlohmann::json exception during GmodDto parsing (hint: visRelease='{}'): {}", visHint, ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
 			std::string visHint = "[unknown version]";
 			try
 			{

@@ -109,7 +109,7 @@ namespace dnv::vista::sdk
 
 		if ( !context.errors.empty() )
 		{
-			for ( const auto& [localId, error] : context.errors )
+			for ( [[maybe_unused]] const auto& [localId, error] : context.errors )
 			{
 				SPDLOG_ERROR( "Failed to parse {} with error {}", localId, error.has_value() ? *error : "Not a match" );
 			}

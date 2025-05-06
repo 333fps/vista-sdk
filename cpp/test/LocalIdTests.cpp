@@ -127,17 +127,13 @@ namespace dnv::vista::sdk::tests
 				builder = builder.withPosition( codebooks.codebook( CodebookName::Position ).createTag( input.Position.value() ) );
 			}
 		}
-		catch ( const std::invalid_argument& ex )
+		catch ( [[maybe_unused]] const std::invalid_argument& ex )
 		{
-			(void)ex;
-
 			SPDLOG_WARN( "buildLocalIdFromInput: Failed to create metadata tag - {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::out_of_range& ex )
+		catch ( [[maybe_unused]] const std::out_of_range& ex )
 		{
-			(void)ex;
-
 			SPDLOG_WARN( "buildLocalIdFromInput: Failed to find codebook - {}", ex.what() );
 			return std::nullopt;
 		}
@@ -147,27 +143,50 @@ namespace dnv::vista::sdk::tests
 
 	std::vector<std::pair<Input, std::string>> validTestData()
 	{
-		return {
-			{ Input( "411.1/C101.31-2" ), "/dnv-v2/vis-3-4a/411.1/C101.31-2/meta" },
-			{ Input( "411.1/C101.31-2", std::nullopt, "temperature", "exhaust.gas", "inlet" ),
-				"/dnv-v2/vis-3-4a/411.1/C101.31-2/meta/qty-temperature/cnt-exhaust.gas/pos-inlet" },
-			{ Input( "411.1/C101.63/S206", std::nullopt, "temperature", "exhaust.gas", "inlet", VisVersion::v3_4a, true ),
-				"/dnv-v2/vis-3-4a/411.1/C101.63/S206/~propulsion.engine/~cooling.system/meta/qty-temperature/cnt-exhaust.gas/pos-inlet" },
-			{ Input( "411.1/C101.63/S206", "411.1/C101.31-5", "temperature", "exhaust.gas", "inlet", VisVersion::v3_4a, true ),
-				"/dnv-v2/vis-3-4a/411.1/C101.63/S206/sec/411.1/C101.31-5/~propulsion.engine/~cooling.system/~for.propulsion.engine/~cylinder.5/meta/qty-temperature/cnt-exhaust.gas/pos-inlet" },
-			{ Input( "511.11/C101.67/S208", std::nullopt, "pressure", "starting.air", "inlet", VisVersion::v3_6a, true ),
-				"/dnv-v2/vis-3-6a/511.11/C101.67/S208/~main.generator.engine/~starting.system.pneumatic/meta/qty-pressure/cnt-starting.air/pos-inlet" } };
+		std::vector<std::pair<Input, std::string>> data;
+		data.reserve( 5 );
+
+		data.emplace_back(
+			Input( "411.1/C101.31-2" ),
+			"/dnv-v2/vis-3-4a/411.1/C101.31-2/meta" );
+
+		data.emplace_back(
+			Input( "411.1/C101.31-2", std::nullopt, "temperature", "exhaust.gas", "inlet" ),
+			"/dnv-v2/vis-3-4a/411.1/C101.31-2/meta/qty-temperature/cnt-exhaust.gas/pos-inlet" );
+
+		data.emplace_back(
+			Input( "411.1/C101.63/S206", std::nullopt, "temperature", "exhaust.gas", "inlet", VisVersion::v3_4a, true ),
+			"/dnv-v2/vis-3-4a/411.1/C101.63/S206/~propulsion.engine/~cooling.system/meta/qty-temperature/cnt-exhaust.gas/pos-inlet" );
+
+		data.emplace_back(
+			Input( "411.1/C101.63/S206", "411.1/C101.31-5", "temperature", "exhaust.gas", "inlet", VisVersion::v3_4a, true ),
+			"/dnv-v2/vis-3-4a/411.1/C101.63/S206/sec/411.1/C101.31-5/~propulsion.engine/~cooling.system/~for.propulsion.engine/~cylinder.5/meta/qty-temperature/cnt-exhaust.gas/pos-inlet" );
+
+		data.emplace_back(
+			Input( "511.11/C101.67/S208", std::nullopt, "pressure", "starting.air", "inlet", VisVersion::v3_6a, true ),
+			"/dnv-v2/vis-3-6a/511.11/C101.67/S208/~main.generator.engine/~starting.system.pneumatic/meta/qty-pressure/cnt-starting.air/pos-inlet" );
+
+		return data;
 	}
 
 	std::vector<std::pair<Input, std::string>> validMqttTestData()
 	{
-		return {
-			{ Input( "411.1/C101.31-2", std::nullopt, "temperature", "exhaust.gas", "inlet" ),
-				"dnv-v2/vis-3-4a/411.1_C101.31-2/_/qty-temperature/cnt-exhaust.gas/_/_/_/_/pos-inlet/_" },
-			{ Input( "411.1/C101.63/S206", std::nullopt, "temperature", "exhaust.gas", "inlet" ),
-				"dnv-v2/vis-3-4a/411.1_C101.63_S206/_/qty-temperature/cnt-exhaust.gas/_/_/_/_/pos-inlet/_" },
-			{ Input( "411.1/C101.63/S206", "411.1/C101.31-5", "temperature", "exhaust.gas", "inlet" ),
-				"dnv-v2/vis-3-4a/411.1_C101.63_S206/411.1_C101.31-5/qty-temperature/cnt-exhaust.gas/_/_/_/_/pos-inlet/_" } };
+		std::vector<std::pair<Input, std::string>> data;
+		data.reserve( 3 );
+
+		data.emplace_back(
+			Input( "411.1/C101.31-2", std::nullopt, "temperature", "exhaust.gas", "inlet" ),
+			"dnv-v2/vis-3-4a/411.1_C101.31-2/_/qty-temperature/cnt-exhaust.gas/_/_/_/_/pos-inlet/_" );
+
+		data.emplace_back(
+			Input( "411.1/C101.63/S206", std::nullopt, "temperature", "exhaust.gas", "inlet" ),
+			"dnv-v2/vis-3-4a/411.1_C101.63_S206/_/qty-temperature/cnt-exhaust.gas/_/_/_/_/pos-inlet/_" );
+
+		data.emplace_back(
+			Input( "411.1/C101.63/S206", "411.1/C101.31-5", "temperature", "exhaust.gas", "inlet" ),
+			"dnv-v2/vis-3-4a/411.1_C101.63_S206/411.1_C101.31-5/qty-temperature/cnt-exhaust.gas/_/_/_/_/pos-inlet/_" );
+
+		return data;
 	}
 
 	class LocalIdValidTest : public ::testing::TestWithParam<std::pair<Input, std::string>>
@@ -371,7 +390,6 @@ namespace dnv::vista::sdk::tests
 		EXPECT_EQ( builder1, builder2 );
 		EXPECT_NE( builder2, modifiedBuilder2 );
 
-		// Declare and initialize restoredBuilder2 directly using the conditional operator
 		LocalIdBuilder restoredBuilder2 = builder1.position().has_value() ? modifiedBuilder2.withPosition( *builder1.position() ) : modifiedBuilder2.withoutPosition();
 
 		EXPECT_EQ( builder1, restoredBuilder2 );
@@ -584,7 +602,7 @@ namespace dnv::vista::sdk::tests
 			}
 
 			std::vector<std::string> actualErrorMessages;
-			for ( const auto& [errorType, errorMessage] : errorBuilder )
+			for ( [[maybe_unused]] const auto& [errorType, errorMessage] : errorBuilder )
 			{
 				actualErrorMessages.push_back( errorMessage );
 			}

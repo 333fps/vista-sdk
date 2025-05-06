@@ -384,10 +384,8 @@ namespace dnv::vista::sdk
 			VisVersion version = VisVersionExtensions::parse( visVersionStr );
 			return withVisVersion( version );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Invalid VisVersion string '{}': {}", visVersionStr, ex.what() );
 			throw std::invalid_argument( "Invalid VisVersion format: " + visVersionStr );
 		}
@@ -439,10 +437,8 @@ namespace dnv::vista::sdk
 
 			return tryWithVisVersion( std::make_optional( version ), succeeded );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_WARN( "Failed to parse VisVersion string '{}' in tryWithVisVersion: {}", *visVersionStr, ex.what() );
 			succeeded = false;
 			return std::move( *this );
@@ -499,10 +495,8 @@ namespace dnv::vista::sdk
 			succeeded = true;
 			return result;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Failed during tryWithPrimaryItem: {}", ex.what() );
 			return std::move( *this );
 		}
@@ -576,10 +570,8 @@ namespace dnv::vista::sdk
 			succeeded = true;
 			return result;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Failed during tryWithSecondaryItem(GmodPath&&): {}", ex.what() );
 			return std::move( *this );
 		}
@@ -673,10 +665,8 @@ namespace dnv::vista::sdk
 			succeeded = true;
 			return result;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_WARN( "Failed to set metadata tag in tryWithMetadataTag: {}", ex.what() );
 			return std::move( *this );
 		}
@@ -1061,10 +1051,8 @@ namespace dnv::vista::sdk
 						advanceParser( currentIndex, segment, currentState, LocalIdParsingState::PrimaryItem );
 						primaryItemParseStart = currentIndex;
 					}
-					catch ( const std::exception& ex )
+					catch ( [[maybe_unused]] const std::exception& ex )
 					{
-						(void)ex;
-
 						SPDLOG_ERROR( "Parsing failed: Error processing VIS version '{}': {}", segment, ex.what() );
 						addError( errorBuilder, currentState, "Error processing VIS version: " + std::string( segment ) );
 						return false;

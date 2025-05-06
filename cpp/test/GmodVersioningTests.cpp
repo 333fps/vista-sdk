@@ -28,10 +28,8 @@ namespace dnv::vista::sdk::tests
 					m_gmodVersioning = std::make_unique<GmodVersioning>( versioningData );
 					SPDLOG_INFO( "Successfully loaded versioning data with {} entries", versioningData.size() );
 				}
-				catch ( const std::exception& ex )
+				catch ( [[maybe_unused]] const std::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "Failed to load versioning data: {}", ex.what() );
 					std::unordered_map<std::string, GmodVersioningDto> emptyDto;
 					m_gmodVersioning = std::make_unique<GmodVersioning>( emptyDto );
@@ -50,10 +48,8 @@ namespace dnv::vista::sdk::tests
 
 				m_setupSuccess = true;
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Test setup failed: {}", ex.what() );
 				m_setupSuccess = false;
 			}

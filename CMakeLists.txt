@@ -13,7 +13,6 @@ project(vista-sdk-cpp
 )
 
 # --- Build Configuration ---
-# Prevent in-source builds to keep the source directory clean.
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 	message(FATAL_ERROR "In-source builds are not allowed. Please use a separate build directory.")
 endif()

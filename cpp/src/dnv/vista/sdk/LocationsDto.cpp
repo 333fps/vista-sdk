@@ -9,9 +9,9 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------------
+	//=====================================================================
 	// Constants
-	//-------------------------------------------------------------------------
+	//=====================================================================
 
 	static constexpr const char* CODE_KEY = "code";
 	static constexpr const char* NAME_KEY = "name";
@@ -19,53 +19,53 @@ namespace dnv::vista::sdk
 	static constexpr const char* VIS_RELEASE_KEY = "visRelease";
 	static constexpr const char* ITEMS_KEY = "items";
 
-	//-------------------------------------------------------------------------
-	// Utility Functions
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// Helper Functions
+	//=====================================================================
 
-	namespace
+	static const std::string& internString( const std::string& value )
 	{
-		const std::string& internString( const std::string& value )
+		static std::unordered_map<std::string, std::string> cache;
+		static size_t hits = 0, misses = 0, calls = 0;
+		calls++;
+
+		if ( value.size() > 22 ) // Common SSO threshold
 		{
-			static std::unordered_map<std::string, std::string> cache;
-			static size_t hits = 0, misses = 0, calls = 0;
-			calls++;
-
-			if ( value.size() > 22 ) // Common SSO threshold
+			auto it = cache.find( value );
+			if ( it != cache.end() )
 			{
-				auto it = cache.find( value );
-				if ( it != cache.end() )
+				hits++;
+				if ( calls % 10000 == 0 )
 				{
-					hits++;
-					if ( calls % 10000 == 0 )
-					{
-						SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings",
-							hits * 100.0 / calls, hits, calls, cache.size() );
-					}
-					return it->second;
+					SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings",
+						hits * 100.0 / calls, hits, calls, cache.size() );
 				}
-
-				misses++;
-				return cache.emplace( value, value ).first->first;
+				return it->second;
 			}
 
-			return value;
+			misses++;
+			return cache.emplace( value, value ).first->first;
 		}
 
-		template <typename T>
-		size_t estimateMemoryUsage( const std::vector<T>& collection )
-		{
-			return sizeof( std::vector<T> ) + collection.capacity() * sizeof( T );
-		}
+		return value;
 	}
 
-	//-------------------------------------------------------------------------
-	// RelativeLocationsDto Implementation
-	//-------------------------------------------------------------------------
+	template <typename T>
+	size_t estimateMemoryUsage( const std::vector<T>& collection )
+	{
+		return sizeof( std::vector<T> ) + collection.capacity() * sizeof( T );
+	}
+}
 
-	//-------------------------------------------------------------------------
-	// Constructors / Destructor
-	//-------------------------------------------------------------------------
+namespace dnv::vista::sdk
+{
+	//=====================================================================
+	// Relative Location Data Transfer Objects
+	//=====================================================================
+
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	RelativeLocationsDto::RelativeLocationsDto( char code, std::string name, std::optional<std::string> definition )
 		: m_code{ code },
@@ -76,9 +76,9 @@ namespace dnv::vista::sdk
 			m_code, m_name, m_definition.has_value() );
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	char RelativeLocationsDto::code() const
 	{
@@ -95,9 +95,9 @@ namespace dnv::vista::sdk
 		return m_definition;
 	}
 
-	//-------------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<RelativeLocationsDto> RelativeLocationsDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -119,17 +119,13 @@ namespace dnv::vista::sdk
 
 			return std::optional<RelativeLocationsDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "nlohmann::json exception during RelativeLocationsDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Standard exception during RelativeLocationsDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
@@ -154,6 +150,10 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( errorMsg );
 		}
 	}
+
+	//----------------------------------------------
+	// Private Serialization Methods
+	//---------------------------------------------
 
 	nlohmann::json RelativeLocationsDto::toJson() const
 	{
@@ -213,13 +213,13 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------------
-	// LocationsDto Implementation
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// Location Data Transfer Objects
+	//=====================================================================
 
-	//-------------------------------------------------------------------------
-	// Constructors / Destructor
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	LocationsDto::LocationsDto( std::string visVersion, std::vector<RelativeLocationsDto> items )
 		: m_visVersion{ std::move( visVersion ) },
@@ -229,9 +229,9 @@ namespace dnv::vista::sdk
 			m_visVersion, m_items.size() );
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	const std::string& LocationsDto::visVersion() const
 	{
@@ -243,9 +243,9 @@ namespace dnv::vista::sdk
 		return m_items;
 	}
 
-	//-------------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<LocationsDto> LocationsDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -267,17 +267,13 @@ namespace dnv::vista::sdk
 
 			return std::optional<LocationsDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "nlohmann::json exception during LocationsDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Standard exception during LocationsDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
@@ -312,6 +308,10 @@ namespace dnv::vista::sdk
 		SPDLOG_DEBUG( "Serialized {} locations in {}ms", m_items.size(), duration.count() );
 		return j;
 	}
+
+	//----------------------------------------------
+	// Private Serialization Methods
+	//----------------------------------------------
 
 	void to_json( nlohmann::json& j, const LocationsDto& dto )
 	{
@@ -351,16 +351,12 @@ namespace dnv::vista::sdk
 				dto.m_items.emplace_back( itemJson.get<RelativeLocationsDto>() );
 				successCount++;
 			}
-			catch ( const nlohmann::json::exception& ex )
+			catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Skipping malformed location item at index {}: {}", successCount, ex.what() );
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Standard exception parsing location item at index {}: {}", successCount, ex.what() );
 			}
 		}
@@ -369,9 +365,7 @@ namespace dnv::vista::sdk
 
 		if ( itemCount > 0 && parseDuration.count() > 0 )
 		{
-			double rate = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
-			(void)rate;
-
+			[[maybe_unused]] double rate = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
 			SPDLOG_INFO( "Successfully parsed {}/{} locations in {}ms ({:.1f} items/sec)",
 				successCount, itemCount, parseDuration.count(), rate );
 		}
@@ -382,9 +376,7 @@ namespace dnv::vista::sdk
 
 		if ( dto.m_items.size() > 1000 )
 		{
-			size_t approxBytes = estimateMemoryUsage( dto.m_items );
-			(void)approxBytes;
-
+			[[maybe_unused]] size_t approxBytes = estimateMemoryUsage( dto.m_items );
 			SPDLOG_INFO( "Large location collection loaded: {} items, ~{} KB estimated memory", dto.m_items.size(), approxBytes / 1024 );
 		}
 

@@ -687,9 +687,8 @@ namespace dnv::vista::sdk
 				return true;
 			}
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
 			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing: {}", ex.what() );
 		}
 
@@ -728,10 +727,8 @@ namespace dnv::vista::sdk
 
 			return tryParseFullPath( pathStr, gmod, locations, path );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing full path: {}", ex.what() );
 			return false;
 		}
@@ -751,10 +748,8 @@ namespace dnv::vista::sdk
 
 			return tryParseFullPath( pathStr, gmod, locations, path );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_WARN( "Failed to load GMOD/Locations data for parsing full path: {}", ex.what() );
 			return false;
 		}
@@ -813,10 +808,8 @@ namespace dnv::vista::sdk
 			}
 			return false;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Exception during tryParse: {}", ex.what() ); // Changed message slightly
 			return false;
 		}
@@ -850,10 +843,8 @@ namespace dnv::vista::sdk
 
 			return false;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Exception during tryParseFullPath: {}", ex.what() );
 			return false;
 		}

@@ -96,9 +96,8 @@ namespace dnv::vista::sdk
 					SPDLOG_WARN( "Invalid codebook index calculated: {} for name: {}", index, typeDto.name() );
 				}
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
 				SPDLOG_ERROR( "Error processing codebook DTO '{}': {}", typeDto.name(), ex.what() );
 			}
 		}
@@ -181,17 +180,13 @@ namespace dnv::vista::sdk
 
 			return result;
 		}
-		catch ( const std::invalid_argument& ex )
+		catch ( [[maybe_unused]] const std::invalid_argument& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Invalid codebook name '{}' provided to tryCreateTag: {}", static_cast<int>( name ), ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Exception during tryCreateTag for '{}' in codebook '{}': {}", value, CodebookNames::toPrefix( name ), ex.what() );
 			return std::nullopt;
 		}

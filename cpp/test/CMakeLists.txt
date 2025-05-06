@@ -1,7 +1,6 @@
 # ==============================================================================
 # VISTA-SDK-CPP - Test Suite CMake Configuration
 # ==============================================================================
-# Defines test executables and configures CTest using GoogleTest discovery.
 
 cmake_minimum_required(VERSION 3.20)
 
@@ -54,18 +53,18 @@ foreach(test_source ${TEST_SOURCES})
 
 		set(TARGET_OUTPUT_DIR "$<TARGET_FILE_DIR:${test_target}>")
 
-		# Discover tests using GoogleTest.
+		# Discover tests.
 		gtest_discover_tests(${test_target}
 			WORKING_DIRECTORY ${TARGET_OUTPUT_DIR}
 			DISCOVERY_VERBOSE_OUTPUT TRUE
 		)
 
-		# Apply MSVC-specific warning suppressions if needed.
+		# Apply MSVC-specific warning suppressions.
 		if(MSVC)
 			target_compile_options(${test_target} PRIVATE
 				/wd4625 # copy constructor was implicitly defined as deleted
-				/wd4626 # assignment operator was implicitly defined as deleted
-				/wd4868 # compiler may not enforce left-to-right evaluation order in braced initializer list
+				/wd4626 # assignement operator was implicitly defined as deleted
+				/wd4702 # unreachable code
 				/wd5026 # move constructor was implicitly defined as deleted
 				/wd5027 # move assignment operator was implicitly defined as deleted
 			)

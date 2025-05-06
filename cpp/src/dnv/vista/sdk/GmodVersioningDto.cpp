@@ -9,9 +9,9 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------
+	//=====================================================================
 	// Constants
-	//-------------------------------------------------------------------
+	//=====================================================================
 
 	static constexpr const char* VIS_RELEASE_KEY = "visRelease";
 	static constexpr const char* ITEMS_KEY = "items";
@@ -25,46 +25,46 @@ namespace dnv::vista::sdk
 	static constexpr const char* SOURCE_KEY = "source";
 	static constexpr const char* TARGET_KEY = "target";
 
-	//-------------------------------------------------------------------
-	// Utility Functions
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// Helper Functions
+	//=====================================================================
 
-	namespace
+	static const std::string& internString( const std::string& value )
 	{
-		const std::string& internString( const std::string& value )
+		static std::unordered_map<std::string, std::string> cache;
+		static size_t hits = 0, misses = 0, calls = 0;
+		calls++;
+
+		if ( value.size() > 30 )
 		{
-			static std::unordered_map<std::string, std::string> cache;
-			static size_t hits = 0, misses = 0, calls = 0;
-			calls++;
-
-			if ( value.size() > 30 )
-			{
-				return value;
-			}
-
-			auto it = cache.find( value );
-			if ( it != cache.end() )
-			{
-				hits++;
-				if ( calls % 10000 == 0 )
-				{
-					SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings", hits * 100.0 / calls, hits, calls, cache.size() );
-				}
-				return it->second;
-			}
-
-			misses++;
-			return cache.emplace( value, value ).first->first;
+			return value;
 		}
+
+		auto it = cache.find( value );
+		if ( it != cache.end() )
+		{
+			hits++;
+			if ( calls % 10000 == 0 )
+			{
+				SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings", hits * 100.0 / calls, hits, calls, cache.size() );
+			}
+			return it->second;
+		}
+
+		misses++;
+		return cache.emplace( value, value ).first->first;
 	}
+}
 
-	//-------------------------------------------------------------------
-	// GmodVersioningAssignmentChangeDto Implementation
-	//-------------------------------------------------------------------
+namespace dnv::vista::sdk
+{
+	//=====================================================================
+	// GMOD Versioning Data Transfer Objects
+	//=====================================================================
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Construction / Destruction
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	GmodVersioningAssignmentChangeDto::GmodVersioningAssignmentChangeDto( std::string oldAssignment, std::string currentAssignment )
 		: m_oldAssignment{ std::move( oldAssignment ) },
@@ -73,9 +73,9 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Created GmodVersioningAssignmentChangeDto: {} → {}", m_oldAssignment, m_currentAssignment );
 	}
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	const std::string& GmodVersioningAssignmentChangeDto::oldAssignment() const
 	{
@@ -87,9 +87,9 @@ namespace dnv::vista::sdk
 		return m_currentAssignment;
 	}
 
-	//-------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<GmodVersioningAssignmentChangeDto> GmodVersioningAssignmentChangeDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -111,17 +111,13 @@ namespace dnv::vista::sdk
 
 			return std::optional<GmodVersioningAssignmentChangeDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "nlohmann::json exception during GmodVersioningAssignmentChangeDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Standard exception during GmodVersioningAssignmentChangeDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
@@ -152,6 +148,10 @@ namespace dnv::vista::sdk
 		SPDLOG_DEBUG( "Serializing GmodVersioningAssignmentChangeDto to nlohmann::json: {} -> {}", m_oldAssignment, m_currentAssignment );
 		return *this;
 	}
+
+	//----------------------------------------------
+	// Private Serialization Methods
+	//----------------------------------------------
 
 	void to_json( nlohmann::json& j, const GmodVersioningAssignmentChangeDto& dto )
 	{
@@ -184,13 +184,13 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------
-	// GmodNodeConversionDto Implementation
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// GMOD Node Conversion Transfer Object
+	//=====================================================================
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Construction / Destruction
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	GmodNodeConversionDto::GmodNodeConversionDto(
 		OperationSet operations, std::string source,
@@ -206,9 +206,9 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Created GmodNodeConversionDto: source={}, target={}, operations={}", m_source, m_target, m_operations.size() );
 	}
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	const GmodNodeConversionDto::OperationSet& GmodNodeConversionDto::operations() const
 	{
@@ -240,9 +240,9 @@ namespace dnv::vista::sdk
 		return m_deleteAssignment;
 	}
 
-	//-------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<GmodNodeConversionDto> GmodNodeConversionDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -264,17 +264,13 @@ namespace dnv::vista::sdk
 
 			return std::optional<GmodNodeConversionDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "nlohmann::json exception during GmodNodeConversionDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Standard exception during GmodNodeConversionDto parsing: {}", ex.what() );
 			return std::nullopt;
 		}
@@ -309,6 +305,10 @@ namespace dnv::vista::sdk
 		SPDLOG_DEBUG( "Serialized node conversion in {} µs", duration.count() );
 		return j;
 	}
+
+	//----------------------------------------------
+	// Private Serialization Methods
+	//----------------------------------------------
 
 	void to_json( nlohmann::json& j, const GmodNodeConversionDto& dto )
 	{
@@ -381,7 +381,7 @@ namespace dnv::vista::sdk
 			{
 				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' is not a string", OLD_ASSIGNMENT_KEY ), nullptr );
 			}
-			dto.m_oldAssignment = j.at( OLD_ASSIGNMENT_KEY ).get<std::string>();
+			dto.m_oldAssignment = internString( j.at( OLD_ASSIGNMENT_KEY ).get<std::string>() );
 		}
 		else
 		{
@@ -395,7 +395,7 @@ namespace dnv::vista::sdk
 			{
 				throw nlohmann::json::type_error::create( 302, fmt::format( "GmodNodeConversionDto JSON field '{}' is not a string", NEW_ASSIGNMENT_KEY ), nullptr );
 			}
-			dto.m_newAssignment = j.at( NEW_ASSIGNMENT_KEY ).get<std::string>();
+			dto.m_newAssignment = internString( j.at( NEW_ASSIGNMENT_KEY ).get<std::string>() );
 		}
 		else
 		{
@@ -427,13 +427,13 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------
-	// GmodVersioningDto Implementation
-	//-------------------------------------------------------------------
+	//=====================================================================
+	// GMOD Versioning Data Transfer Object
+	//=====================================================================
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Construction / Destruction
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	GmodVersioningDto::GmodVersioningDto( std::string visVersion, ItemsMap items )
 		: m_visVersion{ std::move( visVersion ) },
@@ -442,9 +442,9 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Created GmodVersioningDto for VIS version: {}", m_visVersion );
 	}
 
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 	// Accessors
-	//-------------------------------------------------------------------
+	//----------------------------------------------
 
 	const std::string& GmodVersioningDto::visVersion() const
 	{
@@ -456,9 +456,9 @@ namespace dnv::vista::sdk
 		return m_items;
 	}
 
-	//-------------------------------------------------------------------
-	// Public Interface - Serialization Methods
-	//-------------------------------------------------------------------
+	//----------------------------------------------
+	// Serialization
+	//----------------------------------------------
 
 	std::optional<GmodVersioningDto> GmodVersioningDto::tryFromJson( const nlohmann::json& json )
 	{
@@ -480,10 +480,8 @@ namespace dnv::vista::sdk
 
 			return std::optional<GmodVersioningDto>{ std::move( dto ) };
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			std::string visHint = "[unknown version]";
 			try
 			{
@@ -498,10 +496,8 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "nlohmann::json exception during GmodVersioningDto parsing (hint: visRelease='{}'): {}", visHint, ex.what() );
 			return std::nullopt;
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			std::string visHint = "[unknown version]";
 			try
 			{
@@ -570,6 +566,10 @@ namespace dnv::vista::sdk
 		return j;
 	}
 
+	//----------------------------------------------
+	// Private Serialization Methods
+	//----------------------------------------------
+
 	void to_json( nlohmann::json& j, const GmodVersioningDto& dto )
 	{
 		j = nlohmann::json{
@@ -577,8 +577,7 @@ namespace dnv::vista::sdk
 
 		if ( !dto.m_items.empty() )
 		{
-			auto serializationStartTime = std::chrono::steady_clock::now();
-			(void)serializationStartTime;
+			[[maybe_unused]] auto serializationStartTime = std::chrono::steady_clock::now();
 
 			j[ITEMS_KEY] = dto.m_items;
 
@@ -588,8 +587,7 @@ namespace dnv::vista::sdk
 
 			if ( !dto.m_items.empty() && serializationDuration.count() > 0 )
 			{
-				double serializationRatePerSecond = static_cast<double>( dto.m_items.size() ) * 1000.0 / static_cast<double>( serializationDuration.count() );
-				(void)serializationRatePerSecond;
+				[[maybe_unused]] double serializationRatePerSecond = static_cast<double>( dto.m_items.size() ) * 1000.0 / static_cast<double>( serializationDuration.count() );
 				SPDLOG_INFO( "Node serialization rate: {:.1f} items/sec", serializationRatePerSecond );
 			}
 			else if ( !dto.m_items.empty() )
@@ -660,16 +658,12 @@ namespace dnv::vista::sdk
 						emptyOperationsCount++;
 					}
 				}
-				catch ( const nlohmann::json::exception& ex )
+				catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "Error parsing conversion item '{}': {}", key, ex.what() );
 				}
-				catch ( const std::exception& ex )
+				catch ( [[maybe_unused]] const std::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "Standard exception parsing conversion item '{}': {}", key, ex.what() );
 				}
 			}
@@ -679,8 +673,7 @@ namespace dnv::vista::sdk
 
 			if ( parseDuration.count() > 0 )
 			{
-				double parseRatePerSecond = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
-				(void)parseRatePerSecond;
+				[[maybe_unused]] double parseRatePerSecond = static_cast<double>( successCount ) * 1000.0 / static_cast<double>( parseDuration.count() );
 				SPDLOG_INFO( "Successfully parsed {}/{} node conversion items ({} with empty operations), rate: {:.1f} items/sec",
 					successCount, itemCount, emptyOperationsCount, parseRatePerSecond );
 			}
@@ -703,8 +696,7 @@ namespace dnv::vista::sdk
 
 		if ( dto.m_items.size() > 1000 )
 		{
-			size_t approxMemoryBytes = dto.m_items.size() * ( sizeof( GmodNodeConversionDto ) + sizeof( std::string ) * 4 + 32 );
-			(void)approxMemoryBytes;
+			[[maybe_unused]] size_t approxMemoryBytes = dto.m_items.size() * ( sizeof( GmodNodeConversionDto ) + sizeof( std::string ) * 4 + 32 );
 			SPDLOG_INFO( "Large versioning dataset loaded: {} items, ~{} MB estimated memory", dto.m_items.size(), approxMemoryBytes / ( 1024 * 1024 ) );
 		}
 	}

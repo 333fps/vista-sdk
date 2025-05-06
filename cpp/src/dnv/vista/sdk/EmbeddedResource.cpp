@@ -48,21 +48,16 @@ namespace dnv::vista::sdk
 						SPDLOG_WARN( "GMOD resource {} missing or has invalid '{}' field.", resourceName, VIS_RELEASE_KEY );
 					}
 				}
-				catch ( const nlohmann::json::parse_error& ex )
+				catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
 				{
-					(void)ex;
 					SPDLOG_ERROR( "JSON parse error in resource {}: {}", resourceName, ex.what() );
 				}
-				catch ( const nlohmann::json::exception& ex )
+				catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "JSON error processing resource {}: {}", resourceName, ex.what() );
 				}
-				catch ( const std::exception& ex )
+				catch ( [[maybe_unused]] const std::exception& ex )
 				{
-					(void)ex;
-
 					SPDLOG_ERROR( "Error reading/decompressing resource {} for version extraction: {}", resourceName, ex.what() );
 				}
 			}
@@ -153,22 +148,16 @@ namespace dnv::vista::sdk
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const nlohmann::json::parse_error& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON parse error in GMOD resource {}: {}", *it, ex.what() );
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON validation/deserialization error in GMOD resource {}: {}", *it, ex.what() );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Error processing GMOD resource {}: {}", *it, ex.what() );
 		}
 
@@ -245,22 +234,16 @@ namespace dnv::vista::sdk
 					SPDLOG_WARN( "GMOD Versioning resource {} missing or has invalid '{}' field.", resourceName, VIS_RELEASE_KEY );
 				}
 			}
-			catch ( const nlohmann::json::parse_error& ex )
+			catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "JSON parse error in GMOD Versioning resource {}: {}", resourceName, ex.what() );
 			}
-			catch ( const nlohmann::json::exception& ex )
+			catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "JSON validation/deserialization error in GMOD Versioning resource {}: {}", resourceName, ex.what() );
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Error processing GMOD Versioning resource {}: {}", resourceName, ex.what() );
 			}
 		}
@@ -332,22 +315,16 @@ namespace dnv::vista::sdk
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const nlohmann::json::parse_error& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON parse error in Codebooks resource {}: {}", *it, ex.what() );
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON validation/deserialization error in Codebooks resource {}: {}", *it, ex.what() );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Error processing Codebooks resource {}: {}", *it, ex.what() );
 		}
 
@@ -406,22 +383,16 @@ namespace dnv::vista::sdk
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const nlohmann::json::parse_error& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON parse error in Locations resource {}: {}", *it, ex.what() );
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON validation/deserialization error in Locations resource {}: {}", *it, ex.what() );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Error processing Locations resource {}: {}", *it, ex.what() );
 		}
 
@@ -481,22 +452,16 @@ namespace dnv::vista::sdk
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const nlohmann::json::parse_error& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON parse error in DataChannelTypeNames resource {}: {}", *it, ex.what() );
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON validation/deserialization error in DataChannelTypeNames resource {}: {}", *it, ex.what() );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Error processing DataChannelTypeNames resource {}: {}", *it, ex.what() );
 		}
 
@@ -556,22 +521,16 @@ namespace dnv::vista::sdk
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( const nlohmann::json::parse_error& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON parse error in FormatDataTypes resource {}: {}", *it, ex.what() );
 		}
-		catch ( const nlohmann::json::exception& ex )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "JSON validation/deserialization error in FormatDataTypes resource {}: {}", *it, ex.what() );
 		}
-		catch ( const std::exception& ex )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			(void)ex;
-
 			SPDLOG_ERROR( "Error processing FormatDataTypes resource {}: {}", *it, ex.what() );
 		}
 
@@ -652,25 +611,20 @@ namespace dnv::vista::sdk
 					SPDLOG_DEBUG( "No resources found in directory: {}", dir.string() );
 				}
 			}
-			catch ( const std::filesystem::filesystem_error& ex )
+			catch ( [[maybe_unused]] const std::filesystem::filesystem_error& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Filesystem error scanning directory {}: {}", dir.string(), ex.what() );
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Error scanning directory {}: {}", dir.string(), ex.what() );
 			}
 		}
 
 		if ( !foundNames.empty() )
 		{
-			for ( const auto& n : foundNames )
+			for ( [[maybe_unused]] const auto& n : foundNames )
 			{
-				(void)n;
 				SPDLOG_DEBUG( "Found resource: {}", n );
 			}
 		}
@@ -762,10 +716,8 @@ namespace dnv::vista::sdk
 		auto endTime = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
 
-		double ratio = ( totalCompressedRead > 0 ) ? static_cast<double>( totalDecompressedWritten ) / static_cast<double>( totalCompressedRead ) : 0.0;
-		(void)ratio;
-		double compressionPercent = ( totalDecompressedWritten > 0 ) ? ( static_cast<double>( totalCompressedRead ) * 100.0 ) / static_cast<double>( totalDecompressedWritten ) : 0.0;
-		(void)compressionPercent;
+		[[maybe_unused]] double ratio = ( totalCompressedRead > 0 ) ? static_cast<double>( totalDecompressedWritten ) / static_cast<double>( totalCompressedRead ) : 0.0;
+		[[maybe_unused]] double compressionPercent = ( totalDecompressedWritten > 0 ) ? ( static_cast<double>( totalCompressedRead ) * 100.0 ) / static_cast<double>( totalDecompressedWritten ) : 0.0;
 
 		SPDLOG_INFO( "Decompressed resource '{}' in {} ms. Read: {} bytes, Wrote: {} bytes. Ratio: {:.2f}x. Compression: {:.1f}%.",
 			resourceName, duration.count(), totalCompressedRead, totalDecompressedWritten, ratio, compressionPercent );
@@ -860,15 +812,12 @@ namespace dnv::vista::sdk
 					}
 				}
 			}
-			catch ( const std::filesystem::filesystem_error& ex )
+			catch ( [[maybe_unused]] const std::filesystem::filesystem_error& ex )
 			{
-				(void)ex;
 				SPDLOG_ERROR( "Filesystem error accessing path '{}': {}", path.string(), ex.what() );
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Error checking/opening path '{}': {}", path.string(), ex.what() );
 			}
 		}

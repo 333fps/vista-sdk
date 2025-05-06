@@ -29,10 +29,9 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Created IMO number: {} from string '{}'", m_value, value );
 	}
 
-	ImoNumber::ImoNumber( int value, bool bUnused ) noexcept
+	ImoNumber::ImoNumber( int value, [[maybe_unused]] bool bUnused ) noexcept
 		: m_value( value )
 	{
-		(void)bUnused;
 		SPDLOG_INFO( "Created pre-validated IMO number: {}", m_value );
 	}
 

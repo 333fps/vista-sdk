@@ -126,10 +126,8 @@ namespace dnv::vista::sdk
 			{
 				result.emplace( version, &codebooks( version ) );
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Failed to get codebooks for version {}: {}",
 					VisVersionExtensions::toVersionString( version ), ex.what() );
 			}
@@ -150,10 +148,8 @@ namespace dnv::vista::sdk
 			{
 				result.emplace( version, &gmod( version ) );
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Failed to get GMOD for version {}: {}",
 					VisVersionExtensions::toVersionString( version ), ex.what() );
 			}
@@ -174,10 +170,8 @@ namespace dnv::vista::sdk
 			{
 				result.emplace( version, &locations( version ) );
 			}
-			catch ( const std::exception& ex )
+			catch ( [[maybe_unused]] const std::exception& ex )
 			{
-				(void)ex;
-
 				SPDLOG_ERROR( "Failed to get locations for version {}: {}",
 					VisVersionExtensions::toVersionString( version ), ex.what() );
 			}
