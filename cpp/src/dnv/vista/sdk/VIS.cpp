@@ -19,25 +19,34 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------------
+	//=====================================================================
 	// Constants
-	//-------------------------------------------------------------------------
+	//=====================================================================
 
-	const VisVersion VIS::LatestVisVersion = VisVersionExtensions::latestVersion();
-	const std::string VIS::m_versioning = "versioning";
+	namespace
+	{
+		constexpr const char* VERSIONING = "<versioning>";
+	}
+}
 
-	//-------------------------------------------------------------------------
-	// Constructors & Assignment Operators
-	//-------------------------------------------------------------------------
+namespace dnv::vista::sdk
+{
+	//=====================================================================
+	// VIS Singleton
+	//=====================================================================
+
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	VIS::VIS() : IVIS{}
 	{
 		SPDLOG_INFO( "Initializing VIS singleton with empty caches" );
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Singleton Access
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	VIS& VIS::instance()
 	{
@@ -45,9 +54,31 @@ namespace dnv::vista::sdk
 		return instance;
 	}
 
-	//-------------------------------------------------------------------------
-	// IVIS Interface Implementation
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Accessors
+	//----------------------------------------------
+
+	std::vector<VisVersion> VIS::visVersions()
+	{
+		SPDLOG_INFO( "Getting all VIS versions" );
+		return VisVersionExtensions::allVersions();
+	}
+
+	GmodVersioning VIS::gmodVersioning()
+	{
+		SPDLOG_INFO( "Getting GMOD versioning" );
+
+		return m_gmodVersioningCache.getOrCreate( VERSIONING, [this]() {
+			auto dto = gmodVersioningDto();
+			SPDLOG_INFO( "Successfully loaded GMOD versioning data with {} entries", dto.size() );
+			return GmodVersioning( dto );
+		} );
+	}
+
+	VisVersion IVIS::latestVisVersion() const
+	{
+		return VisVersionExtensions::latestVersion();
+	}
 
 	const Gmod& VIS::gmod( VisVersion visVersion ) const
 	{
@@ -118,20 +149,22 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_INFO( "Getting codebooks map for {} versions", visVersions.size() );
 
+		for ( auto version : visVersions )
+		{
+			if ( !VisVersionExtensions::isValid( version ) )
+			{
+				SPDLOG_ERROR( "Invalid VIS version provided in map request: {}", VisVersionExtensions::toVersionString( version ) );
+				throw std::invalid_argument( "Invalid VIS version provided: " + VisVersionExtensions::toVersionString( version ) );
+			}
+		}
+
 		std::unordered_map<VisVersion, const Codebooks*> result;
 		result.reserve( visVersions.size() );
 		for ( auto version : visVersions )
 		{
-			try
-			{
-				result.emplace( version, &codebooks( version ) );
-			}
-			catch ( [[maybe_unused]] const std::exception& ex )
-			{
-				SPDLOG_ERROR( "Failed to get codebooks for version {}: {}",
-					VisVersionExtensions::toVersionString( version ), ex.what() );
-			}
+			result.emplace( version, &codebooks( version ) );
 		}
+
 		return result;
 	}
 
@@ -140,20 +173,22 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_INFO( "Getting GMOD map for {} versions", visVersions.size() );
 
+		for ( auto version : visVersions )
+		{
+			if ( !VisVersionExtensions::isValid( version ) )
+			{
+				SPDLOG_ERROR( "Invalid VIS version provided in map request: {}", VisVersionExtensions::toVersionString( version ) );
+				throw std::invalid_argument( "Invalid VIS version provided: " + VisVersionExtensions::toVersionString( version ) );
+			}
+		}
+
 		std::unordered_map<VisVersion, const Gmod*> result;
 		result.reserve( visVersions.size() );
 		for ( auto version : visVersions )
 		{
-			try
-			{
-				result.emplace( version, &gmod( version ) );
-			}
-			catch ( [[maybe_unused]] const std::exception& ex )
-			{
-				SPDLOG_ERROR( "Failed to get GMOD for version {}: {}",
-					VisVersionExtensions::toVersionString( version ), ex.what() );
-			}
+			result.emplace( version, &gmod( version ) );
 		}
+
 		return result;
 	}
 
@@ -166,66 +201,15 @@ namespace dnv::vista::sdk
 		result.reserve( visVersions.size() );
 		for ( auto version : visVersions )
 		{
-			try
-			{
-				result.emplace( version, &locations( version ) );
-			}
-			catch ( [[maybe_unused]] const std::exception& ex )
-			{
-				SPDLOG_ERROR( "Failed to get locations for version {}: {}",
-					VisVersionExtensions::toVersionString( version ), ex.what() );
-			}
+			result.emplace( version, &locations( version ) );
 		}
+
 		return result;
 	}
 
-	std::vector<VisVersion> VIS::visVersions()
-	{
-		SPDLOG_INFO( "Getting all VIS versions" );
-		return VisVersionExtensions::allVersions();
-	}
-
-	std::optional<GmodNode> VIS::convertNode( VisVersion sourceVersion, const GmodNode& sourceNode,
-		VisVersion targetVersion )
-	{
-		return gmodVersioning().convertNode( sourceVersion, sourceNode, targetVersion );
-	}
-
-	std::optional<GmodPath> VIS::convertPath( VisVersion sourceVersion, const GmodPath& sourcePath,
-		VisVersion targetVersion )
-	{
-		return gmodVersioning().convertPath( sourceVersion, sourcePath, targetVersion );
-	}
-
-	//-------------------------------------------------------------------------
-	// Extended Conversion Methods
-	//-------------------------------------------------------------------------
-
-	std::optional<GmodNode> VIS::convertNode( const GmodNode& sourceNode, VisVersion targetVersion,
-		[[maybe_unused]] const GmodNode* sourceParent )
-	{
-		return convertNode( sourceNode.visVersion(), sourceNode, targetVersion );
-	}
-
-	std::optional<GmodPath> VIS::convertPath( const GmodPath& sourcePath, VisVersion targetVersion )
-	{
-		return convertPath( sourcePath.visVersion(), sourcePath, targetVersion );
-	}
-
-	std::optional<LocalIdBuilder> VIS::convertLocalId( const LocalIdBuilder& sourceLocalId,
-		VisVersion targetVersion )
-	{
-		return gmodVersioning().convertLocalId( sourceLocalId, targetVersion );
-	}
-
-	std::optional<LocalId> VIS::convertLocalId( const LocalId& sourceLocalId, VisVersion targetVersion )
-	{
-		return gmodVersioning().convertLocalId( sourceLocalId, targetVersion );
-	}
-
-	//-------------------------------------------------------------------------
-	// DTO Access Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// DTO Accessors
+	//----------------------------------------------
 
 	GmodDto VIS::gmodDto( VisVersion visVersion ) const
 	{
@@ -256,7 +240,7 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_INFO( "Getting GMOD versioning DTO" );
 
-		return m_gmodVersioningDtoCache.getOrCreate( m_versioning, []() {
+		return m_gmodVersioningDtoCache.getOrCreate( VERSIONING, []() {
 			auto dto = EmbeddedResource::gmodVersioning();
 			if ( !dto )
 			{
@@ -264,17 +248,6 @@ namespace dnv::vista::sdk
 				throw std::runtime_error( "Failed to load GMOD versioning data" );
 			}
 			return *dto;
-		} );
-	}
-
-	GmodVersioning VIS::gmodVersioning()
-	{
-		SPDLOG_INFO( "Getting GMOD versioning" );
-
-		return m_gmodVersioningCache.getOrCreate( m_versioning, [this]() {
-			auto dto = gmodVersioningDto();
-			SPDLOG_INFO( "Successfully loaded GMOD versioning data with {} entries", dto.size() );
-			return GmodVersioning( dto );
 		} );
 	}
 
@@ -312,9 +285,47 @@ namespace dnv::vista::sdk
 		} );
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Conversion
+	//----------------------------------------------
+
+	std::optional<GmodNode> VIS::convertNode( VisVersion sourceVersion, const GmodNode& sourceNode,
+		VisVersion targetVersion )
+	{
+		return gmodVersioning().convertNode( sourceVersion, sourceNode, targetVersion );
+	}
+
+	std::optional<GmodPath> VIS::convertPath( VisVersion sourceVersion, const GmodPath& sourcePath,
+		VisVersion targetVersion )
+	{
+		return gmodVersioning().convertPath( sourceVersion, sourcePath, targetVersion );
+	}
+
+	std::optional<GmodNode> VIS::convertNode( const GmodNode& sourceNode, VisVersion targetVersion,
+		[[maybe_unused]] const GmodNode* sourceParent )
+	{
+		return convertNode( sourceNode.visVersion(), sourceNode, targetVersion );
+	}
+
+	std::optional<GmodPath> VIS::convertPath( const GmodPath& sourcePath, VisVersion targetVersion )
+	{
+		return convertPath( sourcePath.visVersion(), sourcePath, targetVersion );
+	}
+
+	std::optional<LocalIdBuilder> VIS::convertLocalId( const LocalIdBuilder& sourceLocalId,
+		VisVersion targetVersion )
+	{
+		return gmodVersioning().convertLocalId( sourceLocalId, targetVersion );
+	}
+
+	std::optional<LocalId> VIS::convertLocalId( const LocalId& sourceLocalId, VisVersion targetVersion )
+	{
+		return gmodVersioning().convertLocalId( sourceLocalId, targetVersion );
+	}
+
+	//----------------------------------------------
 	// ISO String Validation Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	bool VIS::matchISOLocalIdString( const std::string& value )
 	{
@@ -361,14 +372,6 @@ namespace dnv::vista::sdk
 		return true;
 	}
 
-	bool VIS::isISOString( char c )
-	{
-		// ISO 10303-21 syntax requires specific character codes
-		return matchAsciiDecimal( static_cast<int>( c ) ) &&
-			   c != '/' && c != '*' && c != '\\' && c != '!' &&
-			   c != '\'' && c != '"' && c != ';' && c != '(' && c != ')';
-	}
-
 	bool VIS::isISOString( std::string_view value )
 	{
 		SPDLOG_DEBUG( "Checking if string_view is ISO compliant: '{}'", value );
@@ -410,18 +413,32 @@ namespace dnv::vista::sdk
 		return !value.empty() && matchISOLocalIdString( value );
 	}
 
+	bool VIS::isISOString( char c )
+	{
+		return matchAsciiDecimal( static_cast<int>( c ) );
+	}
+
 	bool VIS::matchAsciiDecimal( int code )
 	{
-		// Numbers (48-57)
+		/* Numbers (48-57) */
 		if ( code >= 48 && code <= 57 )
+		{
 			return true;
-		// Uppercase A-Z (65-90)
+		}
+
+		/* Uppercase A-Z (65-90) */
 		if ( code >= 65 && code <= 90 )
+		{
 			return true;
-		// Lowercase a-z (97-122)
+		}
+
+		/* Lowercase a-z (97-122) */
 		if ( code >= 97 && code <= 122 )
+		{
 			return true;
-		// Special chars: "-", ".", "_", "~"
+		}
+
+		/* Special chars: "-", ".", "_", "~" */
 		return ( code == 45 || code == 46 || code == 95 || code == 126 );
 	}
 }

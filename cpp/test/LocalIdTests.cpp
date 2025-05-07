@@ -596,7 +596,7 @@ namespace dnv::vista::sdk::tests
 			EXPECT_TRUE( errorBuilder.hasErrors() );
 
 			SPDLOG_INFO( "Errors for LocalId: {}", testCase.localIdStr );
-			for ( const auto& [errorType, errorMessage] : errorBuilder )
+			for ( [[maybe_unused]] const auto& [errorType, errorMessage] : errorBuilder )
 			{
 				SPDLOG_INFO( "Error Type: {}, message: {}", errorType, errorMessage );
 			}

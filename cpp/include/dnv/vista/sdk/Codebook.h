@@ -330,7 +330,7 @@ namespace dnv::vista::sdk
 		Codebook& operator=( Codebook&& ) noexcept = default;
 
 		//----------------------------------------------
-		// Public Methods
+		// Accessors
 		//----------------------------------------------
 
 		/**
