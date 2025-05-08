@@ -65,6 +65,7 @@ foreach(test_source ${TEST_SOURCES})
 				/wd4625 # copy constructor was implicitly defined as deleted
 				/wd4626 # assignement operator was implicitly defined as deleted
 				/wd4702 # unreachable code
+				/wd4834 # discarding return value of function with [[nodiscard]] attribute
 				/wd5026 # move constructor was implicitly defined as deleted
 				/wd5027 # move assignment operator was implicitly defined as deleted
 			)

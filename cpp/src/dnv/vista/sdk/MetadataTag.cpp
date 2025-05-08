@@ -1,9 +1,18 @@
+/**
+ * @file MetadataTag.cpp
+ * @brief Implementation of the MetadataTag class
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/MetadataTag.h"
 
 namespace dnv::vista::sdk
 {
+	//-------------------------------------------------------------------------
+	// Construction / Destruction
+	//-------------------------------------------------------------------------
+
 	MetadataTag::MetadataTag( CodebookName name, const std::string& value, bool isCustom )
 		: m_name{ name }, m_value{ value }, m_custom{ isCustom }
 	{
@@ -11,30 +20,9 @@ namespace dnv::vista::sdk
 			static_cast<int>( name ), value, isCustom );
 	}
 
-	CodebookName MetadataTag::name() const
-	{
-		return m_name;
-	}
-
-	const std::string& MetadataTag::value() const
-	{
-		return m_value;
-	}
-
-	bool MetadataTag::isCustom() const
-	{
-		return m_custom;
-	}
-
-	char MetadataTag::prefix() const
-	{
-		return m_custom ? '~' : '-';
-	}
-
-	MetadataTag::operator std::string() const
-	{
-		return m_value;
-	}
+	//-------------------------------------------------------------------------
+	// Operators
+	//-------------------------------------------------------------------------
 
 	bool MetadataTag::operator==( const MetadataTag& other ) const
 	{
@@ -54,10 +42,43 @@ namespace dnv::vista::sdk
 		return !( *this == other );
 	}
 
+	MetadataTag::operator std::string() const
+	{
+		return m_value;
+	}
+
+	//-------------------------------------------------------------------------
+	// Accessors
+	//-------------------------------------------------------------------------
+
+	CodebookName MetadataTag::name() const noexcept
+	{
+		return m_name;
+	}
+
+	const std::string& MetadataTag::value() const noexcept
+	{
+		return m_value;
+	}
+
+	bool MetadataTag::isCustom() const noexcept
+	{
+		return m_custom;
+	}
+
+	char MetadataTag::prefix() const noexcept
+	{
+		return m_custom ? '~' : '-';
+	}
+
 	size_t MetadataTag::hashCode() const
 	{
 		return std::hash<std::string>{}( m_value );
 	}
+
+	//-------------------------------------------------------------------------
+	// String Conversion Methods
+	//-------------------------------------------------------------------------
 
 	std::string MetadataTag::toString() const
 	{

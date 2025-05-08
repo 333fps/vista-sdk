@@ -140,15 +140,15 @@ if(MSVC)
 	#add_compile_options(/wd4061) # switch not handled
 	#add_compile_options(/wd4100) # unreferenced formal parameter
 	#add_compile_options(/wd4189) # local variable is initialized but not referenced
-	#add_compile_options(/wd4244) # 'conversion' conversion from 'type1' to 'type2', possible loss of data
+	#add_compile_options(/wd4244) # conversion from 'type1' to 'type2', possible loss of data
 	#add_compile_options(/wd4267) # conversion from 'size_t' to 'type', possible loss of data
 	#add_compile_options(/wd4365) # conversion signed/unsigned mismatch
 	#add_compile_options(/wd4388) # signed/unsigned mismatch
 	#add_compile_options(/wd4456) # declaration hides previous local declaration
-	#add_compile_options(/wd4514) # 'function' : unreferenced inline function has been removed
+	#add_compile_options(/wd4514) # unreferenced inline function has been removed
 	#add_compile_options(/wd4625) # copy constructor was implicitly defined as deleted
 	#add_compile_options(/wd4626) # assignement operator was implicitly defined as deleted
-	add_compile_options(/wd4710) # 'function' : function not inlined
+	add_compile_options(/wd4710) # function not inlined
 	add_compile_options(/wd4711) # function 'function' selected for inline expansion
 	add_compile_options(/wd4820) # padding
 	#add_compile_options(/wd4868) # compiler may not enforce left-to-right evaluation order in braced initializer list
@@ -159,7 +159,7 @@ if(MSVC)
 	#add_compile_options(/wd5267) # definition of implicit copy constructor/assignment operator is deprecated because it has a user-provided assignment operator/copy constructor
 	#add_compile_options(/wd6246) # local declaration of 'variable' hides declaration of same name in outer scope
 	#add_compile_options(/wd6326) # potential comparison of a constant with another constant
-	#add_compile_options(/wd6387) # 'argument' may be 'value': this does not adhere to the specification for the function
+	#add_compile_options(/wd6387) # this does not adhere to the specification for the function
 
 	add_compile_options(/arch:AVX)
 	add_compile_options(/arch:AVX2)

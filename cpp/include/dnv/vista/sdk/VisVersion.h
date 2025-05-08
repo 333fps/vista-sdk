@@ -8,6 +8,7 @@ namespace dnv::vista::sdk
 	enum class VisVersion
 	{
 		Unknown = 0,
+
 		v3_4a = 3400,
 		v3_5a = 3500,
 		v3_6a = 3600,

@@ -1,3 +1,8 @@
+/**
+ * @file Locations.cpp
+ * @brief Implements the Locations, Location, RelativeLocation, and related helper classes.
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/Locations.h"
@@ -6,6 +11,10 @@
 
 namespace dnv::vista::sdk
 {
+	//=====================================================================
+	// LocationParsingErrorBuilder
+	//=====================================================================
+
 	struct LocationParsingErrorBuilder
 	{
 		static LocationParsingErrorBuilder Empty;
@@ -21,6 +30,13 @@ namespace dnv::vista::sdk
 	};
 
 	LocationParsingErrorBuilder LocationParsingErrorBuilder::Empty;
+}
+
+namespace dnv::vista::sdk
+{
+	//=====================================================================
+	// Location Class
+	//=====================================================================
 
 	Location::Location( const std::string& value )
 		: m_value( value )
@@ -28,20 +44,9 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Created Location: '{}'", value );
 	}
 
-	const std::string& Location::value() const
-	{
-		return m_value;
-	}
-
-	std::string Location::toString() const
-	{
-		return m_value;
-	}
-
-	Location::operator std::string() const
-	{
-		return m_value;
-	}
+	//----------------------------------------------
+	// Comparison Operators
+	//----------------------------------------------
 
 	bool Location::operator==( const Location& other ) const
 	{
@@ -53,6 +58,37 @@ namespace dnv::vista::sdk
 		return !( m_value == other.m_value );
 	}
 
+	//----------------------------------------------
+	// Conversion Operators
+	//----------------------------------------------
+
+	Location::operator std::string() const noexcept
+	{
+		return m_value;
+	}
+
+	//----------------------------------------------
+	// Accessors
+	//----------------------------------------------
+
+	const std::string& Location::value() const noexcept
+	{
+		return m_value;
+	}
+
+	//----------------------------------------------
+	// Conversion
+	//----------------------------------------------
+
+	std::string Location::toString() const noexcept
+	{
+		return m_value;
+	}
+
+	//=====================================================================
+	// RelativeLocation Class
+	//=====================================================================
+
 	RelativeLocation::RelativeLocation( char code, const std::string& name,
 		const Location& location,
 		const std::optional<std::string> definition )
@@ -61,30 +97,9 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Created RelativeLocation: code={}, name={}", code, name );
 	}
 
-	char RelativeLocation::code() const
-	{
-		return m_code;
-	}
-
-	const std::string& RelativeLocation::name() const
-	{
-		return m_name;
-	}
-
-	std::optional<std::string> RelativeLocation::definition() const
-	{
-		return m_definition;
-	}
-
-	const Location& RelativeLocation::location() const
-	{
-		return m_location;
-	}
-
-	size_t RelativeLocation::hashCode() const
-	{
-		return std::hash<char>{}( m_code );
-	}
+	//----------------------------------------------
+	// Comparison Operators
+	//----------------------------------------------
 
 	bool RelativeLocation::operator==( const RelativeLocation& other ) const
 	{
@@ -96,6 +111,43 @@ namespace dnv::vista::sdk
 		return !( m_code == other.m_code );
 	}
 
+	//----------------------------------------------
+	// Public Methods
+	//----------------------------------------------
+
+	size_t RelativeLocation::hashCode() const noexcept
+	{
+		return std::hash<char>{}( m_code );
+	}
+
+	//----------------------------------------------
+	// Accessors
+	//----------------------------------------------
+
+	char RelativeLocation::code() const noexcept
+	{
+		return m_code;
+	}
+
+	const std::string& RelativeLocation::name() const noexcept
+	{
+		return m_name;
+	}
+
+	const std::optional<std::string>& RelativeLocation::definition() const noexcept
+	{
+		return m_definition;
+	}
+
+	const Location& RelativeLocation::location() const noexcept
+	{
+		return m_location;
+	}
+
+	//=====================================================================
+	// LocationCharDict Class
+	//=====================================================================
+
 	LocationCharDict::LocationCharDict()
 	{
 		for ( auto& item : m_table )
@@ -105,6 +157,10 @@ namespace dnv::vista::sdk
 
 		SPDLOG_INFO( "Initialized LocationCharDict with {} groups", m_table.size() );
 	}
+
+	//----------------------------------------------
+	// Lookup Operators
+	//----------------------------------------------
 
 	std::optional<char>& LocationCharDict::operator[]( LocationGroup key )
 	{
@@ -123,6 +179,10 @@ namespace dnv::vista::sdk
 		return m_table[index];
 	}
 
+	//----------------------------------------------
+	// Public Methods
+	//----------------------------------------------
+
 	bool LocationCharDict::tryAdd( LocationGroup key, char value, std::optional<char>& existingValue )
 	{
 		auto& v = ( *this )[key];
@@ -139,6 +199,10 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Added '{}' for group {}", value, static_cast<int>( key ) );
 		return true;
 	}
+
+	//=====================================================================
+	// Locations Class
+	//=====================================================================
 
 	Locations::Locations( VisVersion version, const LocationsDto& dto )
 		: m_visVersion( version )
@@ -216,20 +280,28 @@ namespace dnv::vista::sdk
 			m_relativeLocations.size(), m_groups.size() );
 	}
 
-	VisVersion Locations::visVersion() const
+	//----------------------------------------------
+	// Accessors
+	//----------------------------------------------
+
+	VisVersion Locations::visVersion() const noexcept
 	{
 		return m_visVersion;
 	}
 
-	const std::vector<RelativeLocation>& Locations::relativeLocations() const
+	const std::vector<RelativeLocation>& Locations::relativeLocations() const noexcept
 	{
 		return m_relativeLocations;
 	}
 
-	const std::unordered_map<LocationGroup, std::vector<RelativeLocation>>& Locations::groups() const
+	const std::unordered_map<LocationGroup, std::vector<RelativeLocation>>& Locations::groups() const noexcept
 	{
 		return m_groups;
 	}
+
+	//----------------------------------------------
+	// Public Methods - Parsing
+	//----------------------------------------------
 
 	Location Locations::parse( const std::string& locationStr )
 	{
@@ -271,7 +343,7 @@ namespace dnv::vista::sdk
 		return tryParseInternal( value.value(), value, location, errorBuilder );
 	}
 
-	bool Locations::tryParse( const std::optional<std::string>& value, Location& location, ParsingErrors& errors )
+	bool Locations::tryParse( const std::optional<std::string>& value, Location& location, ParsingErrors& errors ) const
 	{
 		if ( !value.has_value() )
 		{
@@ -299,7 +371,7 @@ namespace dnv::vista::sdk
 		return tryParseInternal( value, std::nullopt, location, errorBuilder );
 	}
 
-	bool Locations::tryParse( std::string_view value, Location& location, ParsingErrors& errors )
+	bool Locations::tryParse( std::string_view value, Location& location, ParsingErrors& errors ) const
 	{
 		LocationParsingErrorBuilder errorBuilder;
 		bool result = tryParseInternal( value, std::nullopt, location, errorBuilder );
@@ -310,6 +382,10 @@ namespace dnv::vista::sdk
 		return result;
 	}
 
+	//----------------------------------------------
+	// Private Static Helper Methods
+	//----------------------------------------------
+
 	void Locations::addError( LocationParsingErrorBuilder& errorBuilder,
 		LocationValidationResult name,
 		const std::string& message )
@@ -318,6 +394,35 @@ namespace dnv::vista::sdk
 			static_cast<int>( name ), message );
 		errorBuilder.addError( name, message );
 	}
+
+	bool Locations::tryParseInt( std::string_view span, int start, int length, int& number )
+	{
+		SPDLOG_INFO( "Parsing integer from position {} with length {}", start, length );
+		if ( start < 0 || length <= 0 || static_cast<size_t>( start + length ) > span.length() )
+		{
+			SPDLOG_ERROR( "Invalid range for integer parsing: start={}, length={}, span length={}",
+				start, length, span.length() );
+
+			return false;
+		}
+		const char* begin = span.data() + start;
+		const char* end = begin + length;
+		auto result = std::from_chars( begin, end, number );
+		if ( result.ec == std::errc() && result.ptr == end )
+		{
+			SPDLOG_INFO( "Successfully parsed integer: {}", number );
+
+			return true;
+		}
+
+		SPDLOG_ERROR( "Failed to parse integer from string_view segment." );
+
+		return false;
+	}
+
+	//----------------------------------------------
+	// Private Methods
+	//----------------------------------------------
 
 	bool Locations::tryParseInternal( std::string_view span,
 		const std::optional<std::string>& originalStr,
@@ -471,31 +576,9 @@ namespace dnv::vista::sdk
 		return true;
 	}
 
-	bool Locations::tryParseInt( std::string_view span, int start, int length, int& number )
-	{
-		SPDLOG_INFO( "Parsing integer from position {} with length {}", start, length );
-
-		if ( start < 0 || length <= 0 || start + length > static_cast<int>( span.length() ) )
-		{
-			SPDLOG_ERROR( "Invalid range for integer parsing: start={}, length={}, span length={}",
-				start, length, span.length() );
-			return false;
-		}
-
-		try
-		{
-			std::string numStr( span.substr( static_cast<size_t>( start ), static_cast<size_t>( length ) ) );
-			number = std::stoi( numStr );
-			SPDLOG_INFO( "Successfully parsed integer: {}", number );
-			return true;
-		}
-		catch ( [[maybe_unused]] const std::exception& ex )
-		{
-			SPDLOG_ERROR( "Failed to parse integer: {}", ex.what() );
-			return false;
-		}
-	}
-
+	//----------------------------------------------
+	// LocationParsingErrorBuilder
+	//----------------------------------------------
 	LocationParsingErrorBuilder LocationParsingErrorBuilder::create()
 	{
 		LocationParsingErrorBuilder builder;
