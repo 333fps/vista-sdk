@@ -42,10 +42,7 @@ namespace dnv::vista::sdk
 			{ POSITION_PREFIX, CodebookName::Position },
 			{ DETAIL_PREFIX, CodebookName::Detail } };
 	}
-}
 
-namespace dnv::vista::sdk
-{
 	//=====================================================================
 	// Public Methods
 	//=====================================================================

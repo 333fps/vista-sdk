@@ -39,9 +39,9 @@ namespace dnv::vista::sdk
 				return "Unknown";
 			default:
 			{
-				SPDLOG_ERROR( "Invalid VIS version: {}", static_cast<int>( version ) );
-				throw std::invalid_argument( "Invalid VIS version: " +
-											 std::to_string( static_cast<int>( version ) ) );
+				auto errorMsg = "Invalid VIS version: " + std::to_string( static_cast<int>( version ) );
+				SPDLOG_ERROR( errorMsg );
+				throw std::invalid_argument( errorMsg );
 			}
 		}
 	}

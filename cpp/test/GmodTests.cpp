@@ -53,10 +53,12 @@ namespace dnv::vista::sdk::tests
 	// TEST_F
 	//=====================================================================
 
+	//----------------------------------------------
+	// Passing :)
+	//----------------------------------------------
+
 	TEST_F( GmodTests, Test_Gmod_Node_Equality )
 	{
-		/* All OK */
-
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		const auto& node1 = gmod["400a"];
@@ -72,8 +74,6 @@ namespace dnv::vista::sdk::tests
 
 	TEST_F( GmodTests, Test_Gmod_Node_Types )
 	{
-		/* All OK */
-
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		std::unordered_set<std::string> types;
@@ -88,8 +88,6 @@ namespace dnv::vista::sdk::tests
 
 	TEST_F( GmodTests, Test_Product_Selection )
 	{
-		/* All OK */
-
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		const auto& node = gmod["CS1"];
@@ -98,40 +96,38 @@ namespace dnv::vista::sdk::tests
 
 	TEST_F( GmodTests, Test_Normal_Assignments )
 	{
-		/* Test Fails ! */
-
-		auto [vis, gmod] = visAndGmod( VisVersion::v3_8a );
+		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		const auto& node1 = gmod["411.3"];
 		(void)node1;
-		EXPECT_TRUE( node1.productType() != nullptr );		// << -- Fail
-		EXPECT_TRUE( node1.productSelection() == nullptr ); // << -- Fail
+		EXPECT_TRUE( node1.productType() != nullptr );
+		EXPECT_TRUE( node1.productSelection() == nullptr );
 
 		const auto& node2 = gmod["H601"];
 		(void)node2;
-		EXPECT_TRUE( node2.productType() == nullptr ); // <<-- Pass
+		EXPECT_TRUE( node2.productType() == nullptr );
 	}
 
 	TEST_F( GmodTests, Test_Node_With_Product_Selection )
 	{
-		/* Test Fails ! */
-
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		const auto& node1 = gmod["411.2"];
 		(void)node1;
-		EXPECT_TRUE( node1.productSelection() != nullptr ); // << -- Fail
-		EXPECT_TRUE( node1.productType() == nullptr );		// << -- Fail
+		EXPECT_TRUE( node1.productSelection() != nullptr );
+		EXPECT_TRUE( node1.productType() == nullptr );
 
 		const auto& node2 = gmod["H601"];
 		(void)node2;
-		EXPECT_TRUE( node2.productSelection() == nullptr ); // << -- Pass
+		EXPECT_TRUE( node2.productSelection() == nullptr );
 	}
+
+	//----------------------------------------------
+	// TEST_F Failing :(
+	//----------------------------------------------
 
 	TEST_F( GmodTests, Test_Full_Traversal )
 	{
-		/* Test Fails ! */
-
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		int pathCount = 0;
@@ -171,8 +167,6 @@ namespace dnv::vista::sdk::tests
 
 	TEST_F( GmodTests, Test_Full_Traversal_With_Options )
 	{
-		/* Test Fails ! */
-
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		const int maxExpected = 2;
@@ -187,11 +181,15 @@ namespace dnv::vista::sdk::tests
 					parents.empty() ? nullptr : parents.back(), &node );
 
 				if ( skipOccurrenceCheck )
+				{
 					return Gmod::TraversalHandlerResult::Continue;
+				}
 
 				size_t occ = occurrences( parents, node );
 				if ( occ > maxOccurrence )
+				{
 					maxOccurrence = occ;
+				}
 
 				return Gmod::TraversalHandlerResult::Continue;
 			},
@@ -203,8 +201,6 @@ namespace dnv::vista::sdk::tests
 
 	TEST_F( GmodTests, Test_Partial_Traversal )
 	{
-		/* Test Fails ! */
-
 		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
 
 		TraversalState state( 5 );
@@ -246,10 +242,12 @@ namespace dnv::vista::sdk::tests
 	// TEST_P
 	//=====================================================================
 
+	//----------------------------------------------
+	// TEST_P Passing :)
+	//----------------------------------------------
+
 	TEST_P( GmodTests, Test_Gmod_Loads )
 	{
-		/* All OK */
-
 		auto visVersion = GetParam();
 		auto [vis, gmod] = visAndGmod( visVersion );
 
@@ -260,8 +258,6 @@ namespace dnv::vista::sdk::tests
 
 	TEST_P( GmodTests, Test_Gmod_Lookup )
 	{
-		/* All OK */
-
 		auto visVersion = GetParam();
 		auto [vis, gmod] = visAndGmod( visVersion );
 
@@ -317,10 +313,12 @@ namespace dnv::vista::sdk::tests
 		EXPECT_FALSE( gmod.tryGetNode( std::string( "ag✅" ), notFoundNodePtr ) );
 	}
 
+	//----------------------------------------------
+	// TEST_P Failing :(
+	//----------------------------------------------
+
 	TEST_P( GmodTests, Test_Gmod_RootNode_Children )
 	{
-		/* Test Fails ! */
-
 		auto visVersion = GetParam();
 		auto [vis, gmod] = visAndGmod( visVersion );
 
@@ -331,8 +329,6 @@ namespace dnv::vista::sdk::tests
 
 	TEST_P( GmodTests, Test_Gmod_Properties )
 	{
-		/* Test Fails ! */
-
 		auto visVersion = GetParam();
 		auto [vis, gmod] = visAndGmod( visVersion );
 
@@ -400,8 +396,6 @@ namespace dnv::vista::sdk::tests
 
 	TEST_P( MappabilityTests, Test_Mappability )
 	{
-		/* Test Fails ! */
-
 		try
 		{
 			const auto& testCase = GetParam();

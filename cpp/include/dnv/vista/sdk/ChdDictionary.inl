@@ -45,9 +45,9 @@ namespace dnv::vista::sdk
 		for ( size_t i{ 0 }; i < items.size(); ++i )
 		{
 			const auto& key{ items[i].first };
-			auto hashValue{ hash( key ) };
+			uint32_t hashValue{ hash( key ) };
 			auto index{ hashValue & ( size - 1 ) };
-			hashBuckets[index].emplace_back( static_cast<unsigned>( i + 1 ), hashValue );
+			hashBuckets[index].emplace_back( static_cast<unsigned int>( i + 1 ), hashValue );
 		}
 
 		std::sort( hashBuckets.begin(), hashBuckets.end(), []( const auto& a, const auto& b ) {
@@ -62,7 +62,7 @@ namespace dnv::vista::sdk
 		for ( ; index < hashBuckets.size() && hashBuckets[index].size() > 1; ++index )
 		{
 			const auto& subKeys{ hashBuckets[index] };
-			auto entries{ std::unordered_map<uint32_t, unsigned>() };
+			auto entries{ std::unordered_map<size_t, unsigned>() };
 			entries.reserve( subKeys.size() );
 			uint32_t seed{ 0 };
 
@@ -179,8 +179,8 @@ namespace dnv::vista::sdk
 	{
 		if ( m_table.empty() || m_seeds.empty() )
 		{
-			SPDLOG_ERROR( "Attempted to access empty dictionary with key '{}'", key );
-			internal::ThrowHelper::throwInvalidOperationException();
+			SPDLOG_ERROR( "Attempted to access empty dictionary with key '{}' using operator[]", key );
+			internal::ThrowHelper::throwKeyNotFoundException( key );
 		}
 
 		const TValue* valuePtr = nullptr;
@@ -191,6 +191,74 @@ namespace dnv::vista::sdk
 		}
 
 		return *valuePtr;
+	}
+
+	template <typename TValue>
+	TValue& ChdDictionary<TValue>::at( std::string_view key )
+	{
+		if ( m_table.empty() || m_seeds.empty() )
+		{
+			SPDLOG_ERROR( "Key '{}' not found in dictionary (dictionary empty or seeds missing).", key );
+			internal::ThrowHelper::throwKeyNotFoundException( key );
+		}
+
+		uint32_t primaryHash = hash( key );
+		size_t seedVectorIdx = primaryHash & ( m_seeds.size() - 1 );
+
+		int storedSeedValue = m_seeds[seedVectorIdx];
+		size_t tableIndex;
+		if ( storedSeedValue < 0 )
+		{
+			tableIndex = static_cast<size_t>( -storedSeedValue - 1 );
+		}
+		else
+		{
+			tableIndex = internal::Hashing::seed( static_cast<uint32_t>( storedSeedValue ), primaryHash, static_cast<uint64_t>( m_table.size() ) );
+		}
+
+		if ( tableIndex < m_table.size() && stringsEqual( key, m_table[tableIndex].first ) )
+		{
+			return m_table[tableIndex].second;
+		}
+		SPDLOG_WARN( "Key '{}' not found after lookup (tableIndex: {}, key match failed or index out of bounds).", key, tableIndex );
+		internal::ThrowHelper::throwKeyNotFoundException( key );
+	}
+
+	template <typename TValue>
+	const TValue& ChdDictionary<TValue>::at( std::string_view key ) const
+	{
+		if ( m_table.empty() || m_seeds.empty() )
+		{
+			SPDLOG_ERROR( "Key '{}' not found in const dictionary (dictionary empty or seeds missing).", key );
+			internal::ThrowHelper::throwKeyNotFoundException( key );
+		}
+
+		uint32_t primaryHash = hash( key );
+		size_t seedVectorIdx = primaryHash & ( m_seeds.size() - 1 );
+
+		if ( seedVectorIdx >= m_seeds.size() )
+		{
+			SPDLOG_ERROR( "Key '{}' not found in const dictionary: invalid seed_vector_idx {}.", key, seedVectorIdx );
+			internal::ThrowHelper::throwKeyNotFoundException( key );
+		}
+
+		int storedSeedValue = m_seeds[seedVectorIdx];
+		size_t tableIndex;
+		if ( storedSeedValue < 0 )
+		{
+			tableIndex = static_cast<size_t>( -storedSeedValue - 1 );
+		}
+		else
+		{
+			tableIndex = internal::Hashing::seed( static_cast<uint32_t>( storedSeedValue ), primaryHash, static_cast<uint64_t>( m_table.size() ) );
+		}
+
+		if ( tableIndex < m_table.size() && stringsEqual( key, m_table[tableIndex].first ) )
+		{
+			return m_table[tableIndex].second;
+		}
+		SPDLOG_WARN( "Key '{}' not found in const dictionary after lookup (tableIndex: {}, key match failed or index out of bounds).", key, tableIndex );
+		internal::ThrowHelper::throwKeyNotFoundException( key );
 	}
 
 	//=====================================================================
@@ -215,7 +283,7 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "Dictionary performance: {} lookups, hit rate: {:.1f}%", s_lookupCount, 100.0f * static_cast<float>( s_lookupHits ) / static_cast<float>( s_lookupCount ) );
 		}
 
-		auto hashValue{ hash( key ) };
+		uint32_t hashValue{ hash( key ) };
 		auto size{ m_table.size() };
 		auto index{ hashValue & ( size - 1 ) }; /* Use bitwise AND as fast modulo since size is power of 2 */
 		int seed{ m_seeds[index] };
@@ -238,7 +306,7 @@ namespace dnv::vista::sdk
 		else
 		{
 			/* Positive seed requires secondary hash calculation */
-			finalIndex = internal::Hashing::seed( static_cast<uint32_t>( seed ), hashValue, size );
+			finalIndex = internal::Hashing::seed( static_cast<uint32_t>( seed ), hashValue, static_cast<uint64_t>( size ) );
 			if ( finalIndex >= m_table.size() )
 			{
 				SPDLOG_WARN( "Invalid positive seed index {} for key '{}'", finalIndex, key );
@@ -344,8 +412,9 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	typename ChdDictionary<TValue>::Iterator::reference ChdDictionary<TValue>::Iterator::operator*() const
 	{
-		if ( static_cast<size_t>( m_index ) >= m_table->size() )
+		if ( m_index >= m_table->size() )
 		{
+			SPDLOG_ERROR( "Iterator: Dereference out of bounds (index: {}, table size: {}).", m_index, m_table->size() );
 			internal::ThrowHelper::throwInvalidOperationException();
 		}
 
@@ -355,11 +424,11 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	typename ChdDictionary<TValue>::Iterator::pointer ChdDictionary<TValue>::Iterator::operator->() const
 	{
-		if ( static_cast<size_t>( m_index ) >= m_table->size() )
+		if ( m_index >= m_table->size() )
 		{
+			SPDLOG_ERROR( "Iterator: Arrow operator out of bounds (index: {}, table size: {}).", m_index, m_table->size() );
 			internal::ThrowHelper::throwInvalidOperationException();
 		}
-
 		return &( ( *m_table )[m_index] );
 	}
 
@@ -549,6 +618,22 @@ namespace dnv::vista::sdk
 		}
 
 		return std::memcmp( a.data(), b.data(), aLen ) == 0;
+	}
+
+	//=====================================================================
+	// Capacity / State
+	//=====================================================================
+
+	template <typename TValue>
+	bool ChdDictionary<TValue>::isEmpty() const
+	{
+		return m_table.empty();
+	}
+
+	template <typename TValue>
+	size_t ChdDictionary<TValue>::size() const
+	{
+		return m_table.size();
 	}
 
 	//=====================================================================

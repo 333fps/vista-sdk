@@ -11,13 +11,18 @@
 
 namespace dnv::vista::sdk
 {
+	//=====================================================================
+	// Forward declarations
+	//=====================================================================
+
 	class IUniversalIdBuilder;
 	class LocalId;
 	class ParsingErrors;
-}
 
-namespace dnv::vista::sdk
-{
+	//=====================================================================
+	// UniversalId Class
+	//=====================================================================
+
 	class UniversalId final : public IUniversalId
 	{
 	public:

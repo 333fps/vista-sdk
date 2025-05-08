@@ -60,9 +60,9 @@ namespace dnv::vista::sdk
 			[[noreturn]] static void throwKeyNotFoundException( std::string_view key );
 
 			/**
-			 * @brief Throws a `std::invalid_argument` exception indicating an invalid operation.
+			 * @brief Throws a `std::logic_error` exception indicating an invalid operation.
 			 * @details Typically used when attempting operations on an uninitialized or invalid dictionary state.
-			 * @throws std::invalid_argument Always.
+			 * @throws std::logic_error Always.
 			 */
 			[[noreturn]] static void throwInvalidOperationException();
 		};
@@ -99,9 +99,9 @@ namespace dnv::vista::sdk
 			/**
 			 * @brief Computes the final table index using the seed mixing function for the CHD algorithm.
 			 * @param[in] seed The seed value associated with the hash bucket.
-			 * @param[in] hash The hash value of the key.
-			 * @param[in] size The size of the dictionary's main table.
-			 * @return The final table index for the key.
+			 * @param[in] hash The 32-bit hash value of the key.
+			 * @param[in] size The total size (capacity) of the dictionary's main table. Must be a power of 2.
+			 * @return The final table index for the key (as size_t).
 			 * @see https://en.wikipedia.org/wiki/Perfect_hash_function#CHD_algorithm
 			 */
 			static uint32_t seed( uint32_t seed, uint32_t hash, uint64_t size );
@@ -187,6 +187,22 @@ namespace dnv::vista::sdk
 		ChdDictionary& operator=( ChdDictionary&& other ) noexcept = default;
 
 		//=====================================================================
+		// Capacity / State
+		//=====================================================================
+
+		/**
+		 * @brief Checks if the dictionary is empty.
+		 * @return `true` if the dictionary contains no elements, `false` otherwise.
+		 */
+		[[nodiscard]] bool isEmpty() const;
+
+		/**
+		 * @brief Returns the number of elements in the dictionary.
+		 * @return The number of key-value pairs stored in the dictionary.
+		 */
+		[[nodiscard]] size_t size() const;
+
+		//=====================================================================
 		// Lookup Operators
 		//=====================================================================
 
@@ -206,6 +222,24 @@ namespace dnv::vista::sdk
 		 * @throws std::out_of_range if the `key` is not found in the dictionary or if the dictionary is empty.
 		 */
 		[[nodiscard]] const TValue& operator[]( std::string_view key ) const;
+
+		/**
+		 * @brief Accesses the value associated with the specified key (non-const version).
+		 * @details Provides read-write access to the value. Performs a lookup using the perfect hash function.
+		 * @param[in] key The key whose associated value is to be retrieved.
+		 * @return A reference to the value associated with `key`.
+		 * @throws std::out_of_range if the `key` is not found in the dictionary or if the dictionary is empty.
+		 */
+		[[nodiscard]] TValue& at( std::string_view key );
+
+		/**
+		 * @brief Accesses the value associated with the specified key (const version).
+		 * @details Provides read-only access to the value. Performs a lookup using the perfect hash function.
+		 * @param[in] key The key whose associated value is to be retrieved.
+		 * @return A constant reference to the value associated with `key`.
+		 * @throws std::out_of_range if the `key` is not found in the dictionary or if the dictionary is empty.
+		 */
+		[[nodiscard]] const TValue& at( std::string_view key ) const;
 
 		//=====================================================================
 		// Lookup Methods

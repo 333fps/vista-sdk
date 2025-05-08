@@ -17,10 +17,11 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	class UniversalIdBuilder;
-}
 
-namespace dnv::vista::sdk
-{
+	//=====================================================================
+	// IUniversalIdBuilder Class
+	//=====================================================================
+
 	/**
 	 * @class IUniversalIdBuilder
 	 * @brief Abstract base class defining the contract for Universal ID builders.

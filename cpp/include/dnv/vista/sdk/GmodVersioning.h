@@ -1,3 +1,13 @@
+/**
+ * @file GmodNode.h
+ * @brief Generic Model (GMOD) node and metadata classes.
+ * @details This file defines the GmodNode and GmodNodeMetadata classes which represent
+ *          the fundamental building blocks of the Generic Product Model as defined in
+ *          ISO 19848. These classes provide the node structure, relationships, and
+ *          type classification used throughout the VISTA SDK.
+ * @see ISO 19848 - Ships and marine technology - Standard data for shipboard machinery and equipment
+ */
+
 #pragma once
 
 #include "GmodVersioningDto.h"
@@ -7,9 +17,17 @@
 
 namespace dnv::vista::sdk
 {
+	//=====================================================================
+	// Forward declarations
+	//=====================================================================
+
 	class GmodNode;
 	class LocalIdBuilder;
 	enum class VisVersion;
+
+	//=====================================================================
+	// GmodVersioning Class
+	//=====================================================================
 
 	/**
 	 * @brief Class responsible for converting GMOD objects to a higher version
@@ -17,6 +35,9 @@ namespace dnv::vista::sdk
 	class GmodVersioning final
 	{
 	public:
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
 		/**
 		 * @brief Constructor
 		 *
@@ -24,9 +45,31 @@ namespace dnv::vista::sdk
 		 */
 		explicit GmodVersioning( const std::unordered_map<std::string, GmodVersioningDto>& dto );
 
-		//-------------------------------------------------------------------------
-		// Public Conversion Methods
-		//-------------------------------------------------------------------------
+		/** @brief Default constructor. */
+		GmodVersioning() = delete;
+
+		/** @brief Copy constructor */
+		GmodVersioning( const GmodVersioning& ) = default;
+
+		/** @brief Move constructor */
+		GmodVersioning( GmodVersioning&& ) noexcept = default;
+
+		/** @brief Destructor */
+		~GmodVersioning() = default;
+
+		//----------------------------------------------
+		// Assignment Operators
+		//----------------------------------------------
+
+		/** @brief Copy assignment operator */
+		GmodVersioning& operator=( const GmodVersioning& ) = delete;
+
+		/** @brief Move assignment operator */
+		GmodVersioning& operator=( GmodVersioning&& ) noexcept = delete;
+
+		//----------------------------------------------
+		// Conversion
+		//----------------------------------------------
 
 		/**
 		 * @brief Convert a GmodNode from one version to a higher version
@@ -43,7 +86,6 @@ namespace dnv::vista::sdk
 		 * @return An optional containing the converted GmodPath if successful, otherwise std::nullopt.
 		 * @throws std::invalid_argument if source or target versions are invalid or source >= target.
 		 */
-		// CHANGE return type from GmodPath to std::optional<GmodPath>
 		[[nodiscard]] std::optional<GmodPath> convertPath(
 			VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const;
 
@@ -58,9 +100,9 @@ namespace dnv::vista::sdk
 		std::optional<LocalId> convertLocalId( const LocalId& sourceLocalId, VisVersion targetVersion ) const;
 
 	private:
-		//-------------------------------------------------------------------------
-		// Private Type Definitions
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
+		// Private Types
+		//----------------------------------------------
 
 		/**
 		 * @brief Enumeration of conversion operation types
@@ -87,17 +129,50 @@ namespace dnv::vista::sdk
 			std::optional<bool> deleteAssignment;
 		};
 
+		//----------------------------------------------
+		// GmodVersioningNode Class
+		//----------------------------------------------
+
 		/**
 		 * @brief Class representing versioning information for a specific VIS version
 		 */
 		class GmodVersioningNode final
 		{
 		public:
+			//----------------------------------------------
+			// Construction / Destruction
+			//----------------------------------------------
 			/**
 			 * @brief Constructor for GmodVersioningNode
 			 */
 			GmodVersioningNode( VisVersion visVersion,
 				const std::unordered_map<std::string, GmodNodeConversionDto>& dto );
+
+			/** @brief Default constructor. */
+			GmodVersioningNode() = delete;
+
+			/** @brief Copy constructor */
+			GmodVersioningNode( const GmodVersioningNode& ) = default;
+
+			/** @brief Move constructor */
+			GmodVersioningNode( GmodVersioningNode&& ) noexcept = default;
+
+			/** @brief Destructor */
+			~GmodVersioningNode() = default;
+
+			//----------------------------------------------
+			// Assignment Operators
+			//----------------------------------------------
+
+			/** @brief Copy assignment operator */
+			GmodVersioningNode& operator=( const GmodVersioningNode& ) = delete;
+
+			/** @brief Move assignment operator */
+			GmodVersioningNode& operator=( GmodVersioningNode&& ) noexcept = delete;
+
+			//----------------------------------------------
+			// Accessors
+			//----------------------------------------------
 
 			/**
 			 * @brief Get the VIS version of this versioning node
@@ -110,19 +185,22 @@ namespace dnv::vista::sdk
 			bool tryGetCodeChanges( const std::string& code, GmodNodeConversion& nodeChanges ) const;
 
 		private:
+			//----------------------------------------------
+			// Private Member Variables
+			//----------------------------------------------
 			VisVersion m_visVersion;
 			std::unordered_map<std::string, GmodNodeConversion> m_versioningNodeChanges;
 		};
 
-		//-------------------------------------------------------------------------
-		// Private Data Members
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
+		// Private Member Variables
+		//----------------------------------------------
 
 		std::unordered_map<VisVersion, GmodVersioningNode> m_versioningsMap;
 
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 		// Private Helper Methods
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 
 		/**
 		 * @brief Internal implementation for converting a node between adjacent versions
@@ -133,11 +211,11 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Try to get a versioning node for a specific VIS version
 		 */
-		[[nodiscard]] const GmodVersioningNode* tryGetVersioningNode( VisVersion visVersion ) const;
+		[[nodiscard]] const GmodVersioningNode* tryGetVersioningNode( VisVersion visVersion ) const noexcept;
 
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 		// Private Validation Methods
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 
 		/**
 		 * @brief Validate source and target versions
@@ -149,9 +227,9 @@ namespace dnv::vista::sdk
 		 */
 		void validateSourceAndTargetVersionPair( VisVersion sourceVersion, VisVersion targetVersion ) const;
 
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 		// Private Static Utility Methods
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 
 		/**
 		 * @brief Parse a conversion type from a string

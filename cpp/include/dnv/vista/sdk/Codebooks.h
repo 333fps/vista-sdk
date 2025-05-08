@@ -33,10 +33,7 @@ namespace dnv::vista::sdk
 	 *          The value is derived from the last enumerator in CodebookName.
 	 */
 	static constexpr size_t NUM_CODEBOOKS = static_cast<size_t>( CodebookName::Detail );
-}
 
-namespace dnv::vista::sdk
-{
 	/**
 	 * @class Codebooks
 	 * @brief Container for all codebooks in a specific VIS version.

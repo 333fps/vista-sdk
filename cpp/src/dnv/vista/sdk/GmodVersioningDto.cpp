@@ -9,55 +9,55 @@
 
 namespace dnv::vista::sdk
 {
-	//=====================================================================
-	// Constants
-	//=====================================================================
-
-	static constexpr const char* VIS_RELEASE_KEY = "visRelease";
-	static constexpr const char* ITEMS_KEY = "items";
-
-	static constexpr const char* OLD_ASSIGNMENT_KEY = "oldAssignment";
-	static constexpr const char* CURRENT_ASSIGNMENT_KEY = "currentAssignment";
-	static constexpr const char* NEW_ASSIGNMENT_KEY = "newAssignment";
-	static constexpr const char* DELETE_ASSIGNMENT_KEY = "deleteAssignment";
-
-	static constexpr const char* OPERATIONS_KEY = "operations";
-	static constexpr const char* SOURCE_KEY = "source";
-	static constexpr const char* TARGET_KEY = "target";
-
-	//=====================================================================
-	// Helper Functions
-	//=====================================================================
-
-	static const std::string& internString( const std::string& value )
+	namespace
 	{
-		static std::unordered_map<std::string, std::string> cache;
-		static size_t hits = 0, misses = 0, calls = 0;
-		calls++;
+		//=====================================================================
+		// Constants
+		//=====================================================================
 
-		if ( value.size() > 30 )
-		{
-			return value;
-		}
+		static constexpr const char* VIS_RELEASE_KEY = "visRelease";
+		static constexpr const char* ITEMS_KEY = "items";
 
-		auto it = cache.find( value );
-		if ( it != cache.end() )
+		static constexpr const char* OLD_ASSIGNMENT_KEY = "oldAssignment";
+		static constexpr const char* CURRENT_ASSIGNMENT_KEY = "currentAssignment";
+		static constexpr const char* NEW_ASSIGNMENT_KEY = "newAssignment";
+		static constexpr const char* DELETE_ASSIGNMENT_KEY = "deleteAssignment";
+
+		static constexpr const char* OPERATIONS_KEY = "operations";
+		static constexpr const char* SOURCE_KEY = "source";
+		static constexpr const char* TARGET_KEY = "target";
+
+		//=====================================================================
+		// Helper Functions
+		//=====================================================================
+
+		static const std::string& internString( const std::string& value )
 		{
-			hits++;
-			if ( calls % 10000 == 0 )
+			static std::unordered_map<std::string, std::string> cache;
+			static size_t hits = 0, misses = 0, calls = 0;
+			calls++;
+
+			if ( value.size() > 30 )
 			{
-				SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings", hits * 100.0 / calls, hits, calls, cache.size() );
+				return value;
 			}
-			return it->second;
+
+			auto it = cache.find( value );
+			if ( it != cache.end() )
+			{
+				hits++;
+				if ( calls % 10000 == 0 )
+				{
+					SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings", hits * 100.0 / calls, hits, calls, cache.size() );
+				}
+				return it->second;
+			}
+
+			misses++;
+			return cache.emplace( value, value ).first->first;
 		}
-
-		misses++;
-		return cache.emplace( value, value ).first->first;
 	}
-}
 
-namespace dnv::vista::sdk
-{
 	//=====================================================================
 	// GMOD Versioning Data Transfer Objects
 	//=====================================================================

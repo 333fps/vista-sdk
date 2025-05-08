@@ -7,15 +7,30 @@
 
 #include "dnv/vista/sdk/GmodNode.h"
 
-#include "dnv/vista/sdk/Gmod.h"
-#include "dnv/vista/sdk/GmodDto.h"
-#include "dnv/vista/sdk/GmodPath.h"
-#include "dnv/vista/sdk/ParsingErrors.h"
 #include "dnv/vista/sdk/VIS.h"
 #include "dnv/vista/sdk/VisVersion.h"
 
 namespace dnv::vista::sdk
 {
+	namespace
+	{
+		//=====================================================================
+		// Constants
+		//=====================================================================
+
+		static constexpr const char* NODE_CATEGORY_PRODUCT = "PRODUCT";
+		static constexpr const char* NODE_CATEGORY_ASSET = "ASSET";
+		static constexpr const char* NODE_CATEGORY_PRODUCT_FUNCTION = "PRODUCT FUNCTION";
+		static constexpr const char* NODE_CATEGORY_ASSET_FUNCTION = "ASSET FUNCTION";
+
+		static constexpr const char* NODE_TYPE_SELECTION = "SELECTION";
+		static constexpr const char* NODE_TYPE_GROUP = "GROUP";
+		static constexpr const char* NODE_TYPE_COMPOSITION = "COMPOSITION";
+
+		static constexpr const char* NODE_TYPE_VALUE_TYPE = "TYPE";
+		static constexpr const char* NODE_CATEGORY_VALUE_FUNCTION = "FUNCTION";
+	}
+
 	//=====================================================================
 	// GmodNodeMetadata Class
 	//=====================================================================
@@ -136,7 +151,7 @@ namespace dnv::vista::sdk
 		SPDLOG_TRACE( "Created empty GmodNode" );
 	}
 
-	GmodNode::GmodNode( const GmodNode& other, bool )
+	GmodNode::GmodNode( const GmodNode& other, [[maybe_unused]] bool b )
 		: m_code{ other.m_code },
 		  m_location{ other.m_location },
 		  m_visVersion{ other.m_visVersion },
@@ -145,7 +160,7 @@ namespace dnv::vista::sdk
 		  m_parents{},
 		  m_childrenSet{}
 	{
-		SPDLOG_INFO( "Copied GmodNode {} for location modification", m_code );
+		SPDLOG_TRACE( "Copied GmodNode {} for location modification", m_code );
 	}
 
 	GmodNode::GmodNode( VisVersion version, const GmodNodeDto& dto )
@@ -165,7 +180,34 @@ namespace dnv::vista::sdk
 		  m_parents{},
 		  m_childrenSet{}
 	{
-		SPDLOG_DEBUG( "Created GmodNode with code: {}", m_code );
+		SPDLOG_TRACE( "Created GmodNode with code: {}", m_code );
+	}
+
+	//----------------------------------------------
+	// Assignment Operators
+	//----------------------------------------------
+
+	GmodNode& GmodNode::operator=( const GmodNode& other )
+	{
+		if ( this == &other )
+		{
+			return *this;
+		}
+
+		m_code = other.m_code;
+		m_location = other.m_location;
+		m_visVersion = other.m_visVersion;
+
+		if ( m_metadata != other.m_metadata )
+		{
+			m_metadata = GmodNodeMetadata( other.m_metadata );
+		}
+
+		m_children.clear();
+		m_parents.clear();
+		m_childrenSet.clear();
+
+		return *this;
 	}
 
 	//----------------------------------------------
@@ -214,17 +256,6 @@ namespace dnv::vista::sdk
 	//----------------------------------------------
 	// Accessors
 	//----------------------------------------------
-
-	GmodNode::GmodNode( GmodNode&& other ) noexcept
-		: m_code( std::move( other.m_code ) ),
-		  m_location( std::move( other.m_location ) ),
-		  m_visVersion( other.m_visVersion ),
-		  m_metadata( std::move( other.m_metadata ) ),
-		  m_children( std::move( other.m_children ) ),
-		  m_parents( std::move( other.m_parents ) ),
-		  m_childrenSet( std::move( other.m_childrenSet ) )
-	{
-	}
 
 	const std::string& GmodNode::code() const
 	{
@@ -280,7 +311,7 @@ namespace dnv::vista::sdk
 			return nullptr;
 		}
 
-		if ( m_metadata.category().find( "FUNCTION" ) == std::string::npos )
+		if ( m_metadata.category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
 		{
 			SPDLOG_WARN( "Product type check failed: expected FUNCTION category, found {}",
 				m_metadata.category() );
@@ -294,14 +325,14 @@ namespace dnv::vista::sdk
 			return nullptr;
 		}
 
-		if ( child->m_metadata.category() != "PRODUCT" )
+		if ( child->m_metadata.category() != NODE_CATEGORY_PRODUCT )
 		{
 			SPDLOG_WARN( "Product type check failed: expected PRODUCT category, found {}",
 				child->m_metadata.category() );
 			return nullptr;
 		}
 
-		if ( child->m_metadata.type() != "TYPE" )
+		if ( child->m_metadata.type() != NODE_TYPE_VALUE_TYPE )
 		{
 			SPDLOG_WARN( "Product type check failed: expected TYPE type, found {}",
 				child->m_metadata.type() );
@@ -322,7 +353,7 @@ namespace dnv::vista::sdk
 			return nullptr;
 		}
 
-		if ( m_metadata.category().find( "FUNCTION" ) == std::string::npos )
+		if ( m_metadata.category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
 		{
 			SPDLOG_WARN( "Product selection check failed: expected FUNCTION category, found {}",
 				m_metadata.category() );
@@ -338,15 +369,29 @@ namespace dnv::vista::sdk
 			return nullptr;
 		}
 
-		if ( child->m_metadata.category().find( "PRODUCT" ) == std::string::npos )
+		if ( child )
 		{
+			SPDLOG_INFO( "Child node code: {}", child->code() );
+
+			const auto& childCategory = child->metadata().category();
+			SPDLOG_INFO( "Child category: '{}'", childCategory );
+			if ( childCategory.empty() )
+			{
+				SPDLOG_ERROR( "Child node '{}' has an empty category!", child->code() );
+				return nullptr;
+			}
+		}
+
+		if ( child->m_metadata.category().find( NODE_CATEGORY_PRODUCT ) == std::string::npos )
+		{
+			SPDLOG_CRITICAL( "22" );
+
 			SPDLOG_WARN( "Product selection check failed: expected PRODUCT category, found {}",
 				child->m_metadata.category() );
 
 			return nullptr;
 		}
-
-		if ( child->m_metadata.type() != "SELECTION" )
+		if ( child->m_metadata.type() != NODE_TYPE_SELECTION )
 		{
 			SPDLOG_WARN( "Product selection check failed: expected SELECTION type, found {}",
 				child->m_metadata.type() );
@@ -455,70 +500,103 @@ namespace dnv::vista::sdk
 
 	bool GmodNode::isIndividualizable( bool isTargetNode, bool isInSet ) const
 	{
-		if ( m_metadata.type() == "GROUP" )
+		if ( m_metadata.type() == NODE_TYPE_GROUP )
 		{
 			SPDLOG_DEBUG( "Node is a group, not individualizable: {}", m_code );
+
 			return false;
 		}
-		if ( m_metadata.type() == "SELECTION" )
+		if ( m_metadata.type() == NODE_TYPE_SELECTION )
 		{
 			SPDLOG_DEBUG( "Node is a selection, not individualizable: {}", m_code );
+
 			return false;
 		}
 		if ( isProductType() )
 		{
 			SPDLOG_DEBUG( "Node is a product type, not individualizable: {}", m_code );
+
 			return false;
 		}
-		if ( m_metadata.category() == "ASSET" && m_metadata.type() == "TYPE" )
+		if ( m_metadata.category() == NODE_CATEGORY_ASSET && m_metadata.type() == NODE_TYPE_VALUE_TYPE )
 		{
 			SPDLOG_DEBUG( "Node is an asset type, not individualizable: {}", m_code );
+
 			return false;
 		}
 		if ( isFunctionComposition() )
 		{
 			SPDLOG_DEBUG( "Node is a function composition, checking special conditions" );
+			if ( m_code.empty() )
+			{
+				SPDLOG_WARN( "isIndividualizable: Code is empty, cannot check last character for 'i'. Node: {}", m_code );
+
+				return false;
+			}
+
 			return m_code.back() == 'i' || isInSet || isTargetNode;
 		}
 
 		SPDLOG_DEBUG( "Node is individualizable: {}", m_code );
+
 		return true;
 	}
 
 	bool GmodNode::isFunctionComposition() const
 	{
-		return ( m_metadata.category() == "ASSET FUNCTION" || m_metadata.category() == "PRODUCT FUNCTION" ) &&
-			   m_metadata.type() == "COMPOSITION";
+		return ( m_metadata.category() == NODE_CATEGORY_ASSET_FUNCTION ||
+				   m_metadata.category() == NODE_CATEGORY_PRODUCT_FUNCTION ) &&
+			   m_metadata.type() == NODE_TYPE_COMPOSITION;
 	}
 
-	bool GmodNode::isMappable() const
+	bool GmodNode::isMappable() const noexcept
 	{
 		if ( productType() != nullptr )
 		{
 			SPDLOG_DEBUG( "Node is a product type, not mappable: {}", m_code );
+
 			return false;
 		}
 		if ( productSelection() != nullptr )
 		{
 			SPDLOG_DEBUG( "Node is a product selection, not mappable: {}", m_code );
+
 			return false;
 		}
 		if ( isProductSelection() )
 		{
 			SPDLOG_DEBUG( "Node is a product selection, not mappable: {}", m_code );
+
 			return false;
 		}
 		if ( isAsset() )
 		{
 			SPDLOG_DEBUG( "Node is an asset, not mappable: {}", m_code );
+
 			return false;
 		}
 
-		SPDLOG_DEBUG( "Node is mappable: {}", m_code );
+		if ( m_code.empty() )
+		{
+			SPDLOG_WARN( "isMappable: Code is empty, cannot check last character. Node: {}", m_code );
+
+			return false;
+		}
+
 		char lastChar = m_code.back();
 		SPDLOG_DEBUG( "Last character of code: {}", lastChar );
 
-		return lastChar != 'a' && lastChar != 's';
+		bool result = ( lastChar != 'a' && lastChar != 's' );
+		if ( result )
+		{
+			SPDLOG_DEBUG( "Node is mappable based on last char: {}", m_code );
+		}
+		else
+		{
+			SPDLOG_DEBUG( "Node is NOT mappable based on last char: {}", m_code );
+		}
+
+		return result;
 	}
 
 	bool GmodNode::isProductSelection() const
@@ -551,7 +629,7 @@ namespace dnv::vista::sdk
 		return Gmod::isAssetFunctionNode( m_metadata );
 	}
 
-	bool GmodNode::isRoot() const
+	bool GmodNode::isRoot() const noexcept
 	{
 		return m_code == "VE";
 	}
@@ -569,6 +647,7 @@ namespace dnv::vista::sdk
 	{
 		bool found = m_childrenSet.find( code ) != m_childrenSet.end();
 		SPDLOG_DEBUG( "Node {} isChild check for {}: {}", m_code, code, found );
+
 		return found;
 	}
 
@@ -581,18 +660,18 @@ namespace dnv::vista::sdk
 		if ( m_code.empty() )
 		{
 			SPDLOG_DEBUG( "GmodNode code is empty, returning empty string" );
+
 			return "";
 		}
 
 		if ( m_location.has_value() )
 		{
 			SPDLOG_DEBUG( "Converting GmodNode to string with location" );
-			std::string locString = m_location->toString();
-			std::string result;
-			result.reserve( m_code.length() + 1 + locString.length() );
-			result = m_code;
+			std::string result = m_code;
+			result.reserve( m_code.length() + 1 + m_location->toString().length() );
 			result += '-';
-			result += locString;
+			result += m_location->toString();
+
 			return result;
 		}
 
@@ -658,10 +737,7 @@ namespace dnv::vista::sdk
 
 		for ( const auto* child : m_children )
 		{
-			if ( child )
-			{
-				m_childrenSet.insert( child->code() );
-			}
+			m_childrenSet.insert( child->code() );
 		}
 
 		auto end = std::chrono::high_resolution_clock::now();

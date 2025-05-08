@@ -9,18 +9,18 @@
 
 namespace dnv::vista::sdk
 {
-	//=====================================================================
-	// Constants
-	//=====================================================================
+	namespace
+	{
+		//=====================================================================
+		// Constants
+		//=====================================================================
 
-	static constexpr const char* NAME_KEY = "name";
-	static constexpr const char* VALUES_KEY = "values";
-	static constexpr const char* ITEMS_KEY = "items";
-	static constexpr const char* VIS_RELEASE_KEY = "visRelease";
-}
+		static constexpr const char* NAME_KEY = "name";
+		static constexpr const char* VALUES_KEY = "values";
+		static constexpr const char* ITEMS_KEY = "items";
+		static constexpr const char* VIS_RELEASE_KEY = "visRelease";
+	}
 
-namespace dnv::vista::sdk
-{
 	//=====================================================================
 	// Codebook Data Transfer Object
 	//=====================================================================

@@ -9,53 +9,52 @@
 
 namespace dnv::vista::sdk
 {
-	//=====================================================================
-	// Constants
-	//=====================================================================
-
-	static constexpr const char* VALUES_KEY = "values";
-	static constexpr const char* TYPE_KEY = "type";
-	static constexpr const char* DESCRIPTION_KEY = "description";
-	//=====================================================================
-	// Helper Functions
-	//=====================================================================
-
-	static const std::string& internString( const std::string& value )
+	namespace
 	{
-		static std::unordered_map<std::string, std::string> cache;
-		static size_t hits = 0, misses = 0, calls = 0;
-		calls++;
+		//=====================================================================
+		// Constants
+		//=====================================================================
 
-		if ( value.size() > 22 ) // Common SSO threshold
+		static constexpr const char* VALUES_KEY = "values";
+		static constexpr const char* TYPE_KEY = "type";
+		static constexpr const char* DESCRIPTION_KEY = "description";
+		//=====================================================================
+		// Helper Functions
+		//=====================================================================
+
+		static const std::string& internString( const std::string& value )
 		{
-			auto it = cache.find( value );
-			if ( it != cache.end() )
+			static std::unordered_map<std::string, std::string> cache;
+			static size_t hits = 0, misses = 0, calls = 0;
+			calls++;
+
+			if ( value.size() > 22 ) // Common SSO threshold
 			{
-				hits++;
-				if ( calls % 10000 == 0 )
+				auto it = cache.find( value );
+				if ( it != cache.end() )
 				{
-					SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings",
-						hits * 100.0 / calls, hits, calls, cache.size() );
+					hits++;
+					if ( calls % 10000 == 0 )
+					{
+						SPDLOG_DEBUG( "String interning stats: {:.1f}% hit rate ({}/{}), {} unique strings",
+							hits * 100.0 / calls, hits, calls, cache.size() );
+					}
+					return it->second;
 				}
-				return it->second;
+
+				misses++;
+				return cache.emplace( value, value ).first->first;
 			}
 
-			misses++;
-			return cache.emplace( value, value ).first->first;
+			return value;
 		}
 
-		return value;
+		template <typename T>
+		size_t estimateMemoryUsage( const std::vector<T>& collection )
+		{
+			return sizeof( std::vector<T> ) + collection.capacity() * sizeof( T );
+		}
 	}
-
-	template <typename T>
-	size_t estimateMemoryUsage( const std::vector<T>& collection )
-	{
-		return sizeof( std::vector<T> ) + collection.capacity() * sizeof( T );
-	}
-}
-
-namespace dnv::vista::sdk
-{
 	//=====================================================================
 	// Single Data Channel Type Data Transfer Objects
 	//=====================================================================

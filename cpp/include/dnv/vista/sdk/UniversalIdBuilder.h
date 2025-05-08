@@ -14,10 +14,11 @@ namespace dnv::vista::sdk
 	class UniversalId;
 	class LocalIdParsingErrorBuilder;
 	enum class LocalIdParsingState;
-}
 
-namespace dnv::vista::sdk
-{
+	//=====================================================================
+	// UniversalIdBuilder Class
+	//=====================================================================
+
 	class UniversalIdBuilder final : public IUniversalIdBuilder
 	{
 	public:

@@ -19,10 +19,7 @@ namespace dnv::vista::sdk
 	class ParsingErrors;
 	enum class VisVersion;
 	enum class CodebookName;
-}
 
-namespace dnv::vista::sdk
-{
 	/**
 	 * @interface ILocalIdBuilder
 	 * @brief Abstract interface for building Local IDs using an immutable fluent pattern.

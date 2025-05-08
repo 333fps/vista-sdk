@@ -24,10 +24,7 @@ namespace dnv::vista::sdk
 
 		constexpr const char* WHITESPACE = " \t\n\r\f\v";
 	}
-}
 
-namespace dnv::vista::sdk
-{
 	//=====================================================================
 	// Position Validation
 	//=====================================================================

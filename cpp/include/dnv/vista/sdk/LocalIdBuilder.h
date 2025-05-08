@@ -26,10 +26,11 @@ namespace dnv::vista::sdk
 
 	class LocalIdParsingErrorBuilder;
 	enum class LocalIdParsingState;
-}
 
-namespace dnv::vista::sdk
-{
+	//=====================================================================
+	// LocalIdBuilder Class
+	//=====================================================================
+
 	/**
 	 * @class LocalIdBuilder
 	 * @brief Concrete builder class for `LocalId` objects.

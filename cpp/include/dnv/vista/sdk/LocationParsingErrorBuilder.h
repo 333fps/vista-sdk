@@ -32,10 +32,11 @@ namespace dnv::vista::sdk
 		NullOrWhiteSpace,
 		Valid
 	};
-}
 
-namespace dnv::vista::sdk
-{
+	//=====================================================================
+	// LocationParsingErrorBuilder Class
+	//=====================================================================
+
 	/**
 	 * @class LocationParsingErrorBuilder
 	 * @brief A builder class for accumulating errors encountered during Location string parsing.

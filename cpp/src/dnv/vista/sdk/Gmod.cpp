@@ -8,28 +8,214 @@
 
 namespace dnv::vista::sdk
 {
-	namespace dnv::vista::sdk
+	namespace
 	{
 		//=====================================================================
 		// Constants
 		//=====================================================================
 
-		namespace
-		{
-		}
+		static constexpr const char* NODE_CATEGORY_PRODUCT = "PRODUCT";
+		static constexpr const char* NODE_CATEGORY_ASSET = "ASSET";
+		static constexpr const char* NODE_CATEGORY_ASSET_FUNCTION = "ASSET FUNCTION";
+
+		static constexpr const char* NODE_TYPE_SELECTION = "SELECTION";
+		static constexpr const char* NODE_TYPE_VALUE_TYPE = "TYPE";
+
+		static constexpr const char* NODE_CATEGORY_VALUE_FUNCTION = "FUNCTION";
+
+		/** List of node types classified as leaf nodes */
+		static const std::unordered_set<std::string> s_leafTypesSet = { "ASSET FUNCTION LEAF", "PRODUCT FUNCTION LEAF" };
+
+		/** List of node types classified as function nodes */
+		static const std::unordered_set<std::string> s_potentialParentScopeTypes = { "SELECTION", "GROUP", "LEAF" };
 	}
 
-	const std::unordered_set<std::string> Gmod::s_leafTypesSet = { "ASSET FUNCTION LEAF", "PRODUCT FUNCTION LEAF" };
-	const std::unordered_set<std::string> Gmod::s_potentialParentScopeTypes = { "SELECTION", "GROUP", "LEAF" };
-}
+	namespace
+	{
+		struct PathExistsContext
+		{
+			const GmodNode& m_to;
+			std::vector<const GmodNode*> m_fromPath;
+			std::vector<const GmodNode*> m_remainingParents;
 
-namespace dnv::vista::sdk
-{
+			PathExistsContext( const GmodNode& toNode, const std::vector<const GmodNode*>& fp )
+				: m_to{ toNode },
+				  m_fromPath{ fp }
+			{
+				SPDLOG_INFO( "PathExistsContext created: Target='{}', FromPath size={}", m_to.code(), m_fromPath.size() );
+			}
+
+			PathExistsContext( const PathExistsContext& ) = delete;
+			PathExistsContext( PathExistsContext&& ) noexcept = delete;
+			PathExistsContext& operator=( const PathExistsContext& ) = delete;
+			PathExistsContext& operator=( PathExistsContext&& ) = delete;
+		};
+
+		Gmod::TraversalHandlerResult pathExistsHandler(
+			PathExistsContext& context,
+			const std::vector<const GmodNode*>& currentPathFromTraversalStart,
+			const GmodNode& currentNode )
+		{
+			SPDLOG_INFO( "pathExistsHandler: CurrentNode='{}', TargetNode='{}', PathFromTraversalStart size={}",
+				currentNode.code(), context.m_to.code(), currentPathFromTraversalStart.size() );
+
+			if ( currentNode.code() != context.m_to.code() )
+			{
+				SPDLOG_INFO( "pathExistsHandler: CurrentNode '{}' is not the target node '{}'. Continuing traversal.", currentNode.code(), context.m_to.code() );
+				return Gmod::TraversalHandlerResult::Continue;
+			}
+
+			SPDLOG_INFO( "pathExistsHandler: Target node '{}' reached. Reconstructing full path.", currentNode.code() );
+
+			std::vector<const GmodNode*> fullPathToCurrentNode = currentPathFromTraversalStart;
+
+			if ( fullPathToCurrentNode.empty() )
+			{
+				SPDLOG_INFO( "pathExistsHandler: Initial path from traversal start is empty." );
+				if ( currentNode.isRoot() )
+				{
+					fullPathToCurrentNode.push_back( &currentNode );
+					SPDLOG_INFO( "pathExistsHandler: Current node is GMOD root and initial path was empty. Full path set to just root: '{}'.", currentNode.code() );
+				}
+				else
+				{
+					SPDLOG_INFO( "pathExistsHandler: Initial path to non-root current node '{}' is empty. Full path remains empty if not root, or contains only root.", currentNode.code() );
+					if ( !currentNode.isRoot() )
+					{
+					}
+					else
+					{
+					}
+				}
+			}
+			else if ( !fullPathToCurrentNode.front()->isRoot() )
+			{
+				SPDLOG_DEBUG( "pathExistsHandler: Path (head='{}', size={}) does not begin at GMOD root. Prepending path to root.",
+					fullPathToCurrentNode.front()->code(), fullPathToCurrentNode.size() );
+
+				std::vector<const GmodNode*> prependedPathSegment;
+				const GmodNode* ascender = fullPathToCurrentNode.front();
+				std::unordered_set<const GmodNode*> visitedInAscent;
+
+				while ( ascender != nullptr && !ascender->isRoot() )
+				{
+					if ( !visitedInAscent.insert( ascender ).second )
+					{
+						SPDLOG_WARN( "pathExistsHandler: Cycle detected at node '{}' during upward path reconstruction to GMOD root. Aborting path validation.", ascender->code() );
+						return Gmod::TraversalHandlerResult::Continue;
+					}
+
+					const auto& ascenderParents = ascender->parents();
+					if ( ascenderParents.size() != 1 )
+					{
+						std::string errMsg = fmt::format( "Invalid state - node '{}' has {} parents (expected 1 for unambiguous path to GMOD root).", ascender->code(), ascenderParents.size() );
+						SPDLOG_ERROR( "pathExistsHandler: {}", errMsg );
+						throw std::runtime_error( errMsg );
+					}
+
+					const GmodNode* actualParent = ascenderParents.front();
+					if ( !actualParent )
+					{
+						std::string errMsg = fmt::format( "Null parent found for node '{}' during upward path reconstruction to GMOD root.", ascender->code() );
+						SPDLOG_ERROR( "pathExistsHandler: {}", errMsg );
+						throw std::runtime_error( errMsg );
+					}
+					prependedPathSegment.insert( prependedPathSegment.begin(), actualParent );
+					SPDLOG_INFO( "pathExistsHandler: Prepended '{}' to path segment during ascent.", actualParent->code() );
+					ascender = actualParent;
+				}
+
+				if ( ascender == nullptr && ( prependedPathSegment.empty() || !prependedPathSegment.front()->isRoot() ) )
+				{
+					SPDLOG_WARN( "pathExistsHandler: Ascent to GMOD root failed to complete (ascender is null or prepended path does not start with root). Path may be detached from root." );
+					return Gmod::TraversalHandlerResult::Continue;
+				}
+
+				fullPathToCurrentNode.insert( fullPathToCurrentNode.begin(), prependedPathSegment.begin(), prependedPathSegment.end() );
+				if ( !fullPathToCurrentNode.empty() )
+				{
+					SPDLOG_INFO( "pathExistsHandler: Path reconstruction complete after prepending. Full path size: {}. Head: '{}'", fullPathToCurrentNode.size(), fullPathToCurrentNode.front()->code() );
+				}
+				else
+				{
+					SPDLOG_WARN( "pathExistsHandler: Path became empty after prepending attempt. This is unexpected." );
+					return Gmod::TraversalHandlerResult::Continue;
+				}
+			}
+			else
+			{
+				SPDLOG_INFO( "pathExistsHandler: Path (head='{}', size={}) already begins at GMOD root. No prepending needed.",
+					fullPathToCurrentNode.front()->code(), fullPathToCurrentNode.size() );
+			}
+
+			SPDLOG_INFO( "pathExistsHandler: Validating reconstructed path (size {}) against FromPath (size {}).", fullPathToCurrentNode.size(), context.m_fromPath.size() );
+
+			if ( fullPathToCurrentNode.size() < context.m_fromPath.size() )
+			{
+				SPDLOG_INFO( "pathExistsHandler: Reconstructed path is shorter than FromPath. No match." );
+				return Gmod::TraversalHandlerResult::Continue;
+			}
+
+			bool match = true;
+			for ( size_t i = 0; i < context.m_fromPath.size(); ++i )
+			{
+				const GmodNode* fromPathNode = context.m_fromPath[i];
+				const GmodNode* actualPathNode = ( i < fullPathToCurrentNode.size() ) ? fullPathToCurrentNode[i] : nullptr;
+
+				if ( !fromPathNode || !actualPathNode )
+				{
+					SPDLOG_WARN( "pathExistsHandler: Null node or out-of-bounds access during path comparison. FromPath[{}]={}, ActualPath[{}]={}. No match.",
+						i, (void*)fromPathNode, i, (void*)actualPathNode );
+					match = false;
+					break;
+				}
+				SPDLOG_INFO( "pathExistsHandler: Comparing FromPath[{}] ('{}') with ActualPath[{}] ('{}')",
+					i, fromPathNode->code(), i, actualPathNode->code() );
+
+				if ( fromPathNode->code() != actualPathNode->code() )
+				{
+					SPDLOG_INFO( "pathExistsHandler: Path mismatch at index {}: FromPath='{}', ActualPath='{}'. No match.", i, fromPathNode->code(), actualPathNode->code() );
+					match = false;
+					break;
+				}
+			}
+
+			if ( match )
+			{
+				SPDLOG_INFO( "pathExistsHandler: Path prefix match successful for target '{}'. Populating remaining parents.", currentNode.code() );
+				context.m_remainingParents.clear();
+
+				std::unordered_set<std::string> fromPathNodeCodes;
+				for ( const auto* fpNode : context.m_fromPath )
+				{
+					if ( fpNode )
+						fromPathNodeCodes.insert( fpNode->code() );
+				}
+
+				for ( const auto* pNode : fullPathToCurrentNode )
+				{
+					if ( pNode && fromPathNodeCodes.find( pNode->code() ) == fromPathNodeCodes.end() )
+					{
+						context.m_remainingParents.push_back( pNode );
+						SPDLOG_INFO( "pathExistsHandler: Added '{}' to remaining parents.", pNode->code() );
+					}
+				}
+
+				SPDLOG_INFO( "pathExistsHandler: Remaining parents populated ({} nodes). Stopping traversal.", context.m_remainingParents.size() );
+				return Gmod::TraversalHandlerResult::Stop;
+			}
+			else
+			{
+				SPDLOG_INFO( "pathExistsHandler: Path prefix did not match. Continuing traversal." );
+				return Gmod::TraversalHandlerResult::Continue;
+			}
+		}
+	}
 	//-------------------------------------------------------------------
 	// Parents Implementation
 	//-------------------------------------------------------------------
 
-	void Parents::push( const GmodNode* parent )
+	void Gmod::Parents::push( const GmodNode* parent )
 	{
 		if ( !parent )
 		{
@@ -51,10 +237,12 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	void Parents::pop()
+	void Gmod::Parents::pop()
 	{
 		if ( m_nodes.empty() )
+		{
 			return;
+		}
 		const GmodNode* parent = m_nodes.back();
 		const std::string& code = parent->code();
 		auto it = m_occurrences.find( code );
@@ -75,7 +263,7 @@ namespace dnv::vista::sdk
 		m_nodes.pop_back();
 	}
 
-	int Parents::occurrences( const GmodNode& node ) const
+	int Gmod::Parents::occurrences( const GmodNode& node ) const
 	{
 		auto it = m_occurrences.find( node.code() );
 		int count = ( it != m_occurrences.end() ) ? it->second : 0;
@@ -83,12 +271,12 @@ namespace dnv::vista::sdk
 		return count;
 	}
 
-	const GmodNode* Parents::lastOrDefault() const
+	const GmodNode* Gmod::Parents::lastOrDefault() const
 	{
 		return m_nodes.empty() ? nullptr : m_nodes.back();
 	}
 
-	const std::vector<const GmodNode*>& Parents::nodePointers() const
+	const std::vector<const GmodNode*>& Gmod::Parents::nodePointers() const
 	{
 		return m_nodes;
 	}
@@ -101,16 +289,28 @@ namespace dnv::vista::sdk
 		: m_visVersion{ version },
 		  m_rootNode{}
 	{
-		std::unordered_map<std::string, GmodNode> tempNodeMap;
-		tempNodeMap.reserve( dto.items().size() );
+		SPDLOG_INFO( "Gmod constructor: Starting for VIS version {}", dto.visVersion() );
 
+		std::vector<std::pair<std::string, GmodNode>> nodePairs;
+		nodePairs.reserve( dto.items().size() );
 		for ( const auto& nodeDto : dto.items() )
 		{
-			tempNodeMap.emplace( std::piecewise_construct,
-				std::forward_as_tuple( nodeDto.code() ),
-				std::forward_as_tuple( version, nodeDto ) );
+			nodePairs.emplace_back( nodeDto.code(), GmodNode( version, nodeDto ) );
+		}
+		SPDLOG_INFO( "Gmod constructor: Created {} initial GmodNode objects for VIS version {}.", nodePairs.size(), VisVersionExtensions::toVersionString( version ) );
+
+		size_t numItemsForChd = nodePairs.size();
+
+		m_nodeMap = ChdDictionary<GmodNode>( std::move( nodePairs ) );
+		SPDLOG_INFO( "Gmod constructor: ChdDictionary m_nodeMap constructed with an expected {} items.", numItemsForChd );
+
+		if ( ( m_nodeMap.begin() == m_nodeMap.end() ) && !dto.items().empty() )
+		{
+			SPDLOG_ERROR( "Gmod constructor: m_nodeMap is empty after construction despite non-empty DTO items for VIS version {}. Aborting further GMOD initialization.", VisVersionExtensions::toVersionString( version ) );
+			return;
 		}
 
+		SPDLOG_INFO( "Gmod constructor: Starting pointer fix-up for children and parents within m_nodeMap..." );
 		for ( const auto& relation : dto.relations() )
 		{
 			if ( relation.size() >= 2 )
@@ -118,64 +318,87 @@ namespace dnv::vista::sdk
 				const std::string& parentCode = relation[0];
 				const std::string& childCode = relation[1];
 
-				auto parentIt = tempNodeMap.find( parentCode );
-				auto childIt = tempNodeMap.find( childCode );
+				try
+				{
+					GmodNode& parentNode = m_nodeMap.at( parentCode );
+					try
+					{
+						GmodNode& childNode = m_nodeMap.at( childCode );
 
-				if ( parentIt != tempNodeMap.end() && childIt != tempNodeMap.end() )
-				{
-					parentIt->second.addChild( &childIt->second );
-					childIt->second.addParent( &parentIt->second );
+						parentNode.addChild( &childNode );
+						childNode.addParent( &parentNode );
+					}
+					catch ( [[maybe_unused]] const std::out_of_range& oorChild )
+					{
+						SPDLOG_WARN( "Gmod constructor (linking): Child node '{}' (for parent '{}') not found in m_nodeMap. Relation skipped. Error: {}", childCode, parentCode, oorChild.what() );
+					}
+					catch ( [[maybe_unused]] const std::exception& exChildOrLink )
+					{
+						SPDLOG_ERROR( "Gmod constructor (linking): Exception while processing child '{}' or linking for parent '{}'. Error: {}", childCode, parentCode, exChildOrLink.what() );
+					}
 				}
-				else
+				catch ( [[maybe_unused]] const std::out_of_range& oorParent )
 				{
-					if ( parentIt == tempNodeMap.end() )
-					{
-						SPDLOG_WARN( "Relation skipped: Parent node '{}' not found.", parentCode );
-					}
-					if ( childIt == tempNodeMap.end() )
-					{
-						SPDLOG_WARN( "Relation skipped: Child node '{}' not found.", childCode );
-					}
+					SPDLOG_WARN( "Gmod constructor (linking): Parent node '{}' (for child '{}') not found in m_nodeMap. Relation skipped. Error: {}", parentCode, childCode, oorParent.what() );
+				}
+				catch ( [[maybe_unused]] const std::exception& exParent )
+				{
+					SPDLOG_ERROR( "Gmod constructor (linking): Exception while processing parent '{}' for relation with child '{}'. Error: {}", parentCode, childCode, exParent.what() );
+				}
+			}
+			else
+			{
+				SPDLOG_WARN( "Gmod constructor (linking): Relation with insufficient size ({}) encountered. Skipping.", relation.size() );
+			}
+		}
+		SPDLOG_INFO( "Gmod constructor: Pointer fix-up for children and parents complete." );
+
+		SPDLOG_INFO( "Gmod constructor: Trimming nodes in m_nodeMap..." );
+		if ( !m_nodeMap.isEmpty() )
+		{
+			std::vector<std::string> nodeCodesToTrim;
+			nodeCodesToTrim.reserve( numItemsForChd );
+			for ( Gmod::Iterator it = this->begin(); it != this->end(); ++it )
+			{
+				nodeCodesToTrim.push_back( it->code() );
+			}
+
+			for ( const std::string& code : nodeCodesToTrim )
+			{
+				try
+				{
+					GmodNode& nodeToTrim = m_nodeMap.at( code );
+					nodeToTrim.trim();
+				}
+				catch ( [[maybe_unused]] const std::out_of_range& oor )
+				{
+					SPDLOG_ERROR( "Gmod constructor (trimming): Node '{}' found during iteration but not in m_nodeMap.at() during trim. Error: {}", code, oor.what() );
+				}
+				catch ( [[maybe_unused]] const std::exception& ex )
+				{
+					SPDLOG_ERROR( "Gmod constructor (trimming): Exception while trimming node '{}'. Error: {}", code, ex.what() );
 				}
 			}
 		}
+		SPDLOG_INFO( "Gmod constructor: Trimming nodes complete." );
 
-		for ( auto& [code, node] : tempNodeMap )
+		SPDLOG_INFO( "Gmod constructor: Initializing m_rootNode..." );
+		try
 		{
-			node.trim();
+			m_rootNode = m_nodeMap.at( "VE" );
+			SPDLOG_INFO( "Gmod constructor: m_rootNode initialized from m_nodeMap, code: '{}'", m_rootNode.code() );
+		}
+		catch ( [[maybe_unused]] const std::out_of_range& oor )
+		{
+			SPDLOG_ERROR( "Gmod constructor: Root node 'VE' not found in m_nodeMap for VIS version {}. GMOD is likely invalid. Error: {}", VisVersionExtensions::toVersionString( version ), oor.what() );
+		}
+		catch ( [[maybe_unused]] const std::exception& ex )
+		{
+			SPDLOG_ERROR( "Gmod constructor: Exception while initializing m_rootNode from m_nodeMap for VIS version {}. Error: {}", VisVersionExtensions::toVersionString( version ), ex.what() );
 		}
 
-		auto rootIt = tempNodeMap.find( "VE" );
-		if ( rootIt != tempNodeMap.end() )
-		{
-			m_rootNode = GmodNode( rootIt->second, true );
-		}
-		else
-		{
-			SPDLOG_WARN( "Root node 'VE' not found in GMOD data." );
-		}
-
-		std::vector<std::pair<std::string, GmodNode>> nodePairs;
-		nodePairs.reserve( tempNodeMap.size() );
-		for ( auto& [code, node] : tempNodeMap )
-		{
-			nodePairs.emplace_back( code, std::move( node ) );
-		}
-
-		m_nodeMap = ChdDictionary<GmodNode>( std::move( nodePairs ) );
-
-		[[maybe_unused]] size_t dictionarySize = 0;
-		if ( m_nodeMap.begin() != m_nodeMap.end() )
-		{
-			dictionarySize = dto.items().size();
-		}
-
-		SPDLOG_INFO( "Creating Gmod with {} items - dictionary has approx {} entries", dto.items().size(), dictionarySize );
-
-		if ( ( m_nodeMap.begin() == m_nodeMap.end() ) && !dto.items().empty() )
-		{
-			SPDLOG_ERROR( "Failed to initialize node dictionary in constructor!" );
-		}
+		SPDLOG_INFO( "Gmod constructor: Successfully created Gmod for VIS version {}. Node count in map: {}. Root node code: '{}'",
+			VisVersionExtensions::toVersionString( version ), m_nodeMap.size(), m_rootNode.code().empty() ? "UNINITIALIZED OR MISSING" : m_rootNode.code() );
 	}
 
 	Gmod::Gmod( VisVersion version, const std::unordered_map<std::string, GmodNode>& nodeMap )
@@ -327,10 +550,12 @@ namespace dnv::vista::sdk
 	bool Gmod::traverse( const GmodNode& rootNode, const TraverseHandler& handler, const TraversalOptions& options ) const
 	{
 		TraversalContext context( handler, options.maxTraversalOccurrence, options.maxNodes );
-		TraversalHandlerResult result = traverseNode( context, rootNode );
+		SPDLOG_INFO( "Starting stateless traversal from node: {}", rootNode.code() );
 
-		SPDLOG_INFO( "Traversal completed with result: {}", static_cast<int>( result ) );
-		return result != TraversalHandlerResult::Stop;
+		TraversalHandlerResult result = traverseNode( context, rootNode );
+		SPDLOG_INFO( "Stateless traversal finished with result: {}", static_cast<int>( result ) );
+
+		return result == TraversalHandlerResult::Continue;
 	}
 
 	Gmod::TraversalHandlerResult Gmod::traverseNode( TraversalContext& context, const GmodNode& node ) const
@@ -344,7 +569,7 @@ namespace dnv::vista::sdk
 
 		if ( node.metadata().installSubstructure().has_value() && !node.metadata().installSubstructure().value() )
 		{
-			SPDLOG_TRACE( "Skipping node '{}' and its subtree due to InstallSubstructure=false", node.code() );
+			SPDLOG_INFO( "Skipping node '{}' and its subtree due to InstallSubstructure=false", node.code() );
 			return TraversalHandlerResult::Continue;
 		}
 
@@ -359,22 +584,23 @@ namespace dnv::vista::sdk
 			{
 				if ( occurrences == context.maxTraversalOccurrence )
 				{
-					SPDLOG_DEBUG( "Skipping subtree for node '{}': Occurrence limit ({}) met.", code, occurrences );
+					SPDLOG_INFO( "Skipping subtree for node '{}': Occurrence limit ({}) met.", code, occurrences );
 					return TraversalHandlerResult::SkipSubtree;
 				}
 				else if ( occurrences > context.maxTraversalOccurrence )
 				{
-					SPDLOG_ERROR( "Traversal stopped: Occurrence limit ({}) exceeded for node '{}' ({} occurrences). Potential cycle or logic error.",
+					std::string errMsg = fmt::format( "Traversal stopped: Occurrence limit ({}) exceeded for node '{}' ({} occurrences). Potential cycle or logic error.",
 						context.maxTraversalOccurrence, code, occurrences );
-					return TraversalHandlerResult::Stop;
+					SPDLOG_ERROR( errMsg );
+					throw std::runtime_error( errMsg );
 				}
 			}
 			else
 			{
-				SPDLOG_TRACE( "Skipping occurrence check for node '{}' due to ProductSelectionAssignment.", code );
+				SPDLOG_INFO( "Skipping occurrence check for node '{}' due to ProductSelectionAssignment.", code );
 			}
 
-			SPDLOG_TRACE( "Visiting node: '{}' (Occurrence: {})", code, occurrences + 1 );
+			SPDLOG_INFO( "Visiting node: '{}' (Occurrence: {})", code, occurrences + 1 );
 
 			context.parents.push( &node );
 
@@ -409,143 +635,62 @@ namespace dnv::vista::sdk
 		catch ( [[maybe_unused]] const std::exception& ex )
 		{
 			SPDLOG_ERROR( "Exception during stateless node traversal for node '{}': {}", node.code(), ex.what() );
-			context.parents.pop();
-			return TraversalHandlerResult::Stop;
+			if ( !context.parents.nodePointers().empty() && context.parents.lastOrDefault() == &node )
+			{
+				context.parents.pop();
+			}
+			throw;
 		}
 		catch ( ... )
 		{
 			SPDLOG_ERROR( "Unknown exception during stateless node traversal for node '{}'", node.code() );
-			context.parents.pop();
-			return TraversalHandlerResult::Stop;
+			if ( !context.parents.nodePointers().empty() && context.parents.lastOrDefault() == &node )
+			{
+				context.parents.pop();
+			}
+			throw;
 		}
 	}
 
-	bool Gmod::pathExistsBetween( const std::vector<const GmodNode*>& parentsPrefix,
-		const GmodNode& target, std::vector<const GmodNode*>& remainingParents ) const
+	bool Gmod::pathExistsBetween( const std::vector<const GmodNode*>& fromPath,
+		const GmodNode& to,
+		std::vector<const GmodNode*>& remainingParents ) const
 	{
+		const GmodNode* lastAssetFunction = nullptr;
+		if ( !fromPath.empty() )
+		{
+			for ( auto it = fromPath.rbegin(); it != fromPath.rend(); ++it )
+			{
+				const GmodNode* n = *it;
+				if ( n && Gmod::isAssetFunctionNode( n->metadata() ) )
+				{
+					const GmodNode* tempNodePtr = nullptr;
+					if ( this->tryGetNode( n->code(), tempNodePtr ) && tempNodePtr == n )
+					{
+						lastAssetFunction = n;
+						break;
+					}
+				}
+			}
+		}
+
 		remainingParents.clear();
-		SPDLOG_DEBUG( "Checking path existence to target node '{}' starting from provided prefix.", target.code() );
 
-		const GmodNode* targetNodePtr = nullptr;
-		if ( !tryGetNode( target.code(), targetNodePtr ) || targetNodePtr == nullptr )
-		{
-			SPDLOG_WARN( "pathExistsBetween: Target node '{}' not found in current Gmod.", target.code() );
-			return false;
-		}
+		PathExistsContext state( to, fromPath );
+		const GmodNode* traversalStartNode = ( lastAssetFunction != nullptr ) ? lastAssetFunction : &this->rootNode();
 
-		std::vector<const GmodNode*> fullPathToRootPtrs;
-		const GmodNode* currentNodePtr = targetNodePtr;
-		bool foundRoot = false;
-		std::unordered_set<const GmodNode*> visited;
+		Gmod::TraversalOptions options;
+		std::function<Gmod::TraversalHandlerResult( PathExistsContext&, const std::vector<const GmodNode*>&, const GmodNode& )> handler_func = &pathExistsHandler;
 
-		try
-		{
-			while ( currentNodePtr != nullptr )
-			{
-				if ( !visited.insert( currentNodePtr ).second )
-				{
-					SPDLOG_ERROR( "pathExistsBetween: Cycle detected while walking up from '{}'. Node '{}' encountered again.", target.code(), currentNodePtr->code() );
-					return false;
-				}
+		bool reachedEnd = this->traverse(
+			state,
+			*traversalStartNode,
+			handler_func,
+			options );
 
-				fullPathToRootPtrs.insert( fullPathToRootPtrs.begin(), currentNodePtr );
+		remainingParents = state.m_remainingParents;
 
-				if ( currentNodePtr->isRoot() )
-				{
-					foundRoot = true;
-					break;
-				}
-
-				const auto& currentParents = currentNodePtr->parents();
-				if ( currentParents.empty() )
-				{
-					SPDLOG_WARN( "pathExistsBetween: Node '{}' has no parents before reaching root.", currentNodePtr->code() );
-					return false;
-				}
-				if ( currentParents.size() > 1 )
-				{
-					SPDLOG_WARN( "pathExistsBetween: Node '{}' has multiple parents ({}). Cannot determine unique path to root.",
-						currentNodePtr->code(), currentParents.size() );
-					return false;
-				}
-
-				currentNodePtr = currentParents.front();
-			}
-		}
-		catch ( [[maybe_unused]] const std::exception& ex )
-		{
-			SPDLOG_ERROR( "pathExistsBetween: Exception while walking up parent chain from '{}': {}", target.code(), ex.what() );
-
-			return false;
-		}
-
-		if ( !foundRoot )
-		{
-			SPDLOG_ERROR( "pathExistsBetween: Failed to find root node 'VE' when walking up from '{}'.", target.code() );
-
-			return false;
-		}
-
-		if ( parentsPrefix.empty() )
-		{
-			SPDLOG_DEBUG( "pathExistsBetween: parentsPrefix is empty. Path considered valid." );
-			if ( fullPathToRootPtrs.size() > 1 )
-			{
-				remainingParents.assign( fullPathToRootPtrs.begin(), fullPathToRootPtrs.end() - 1 );
-			}
-
-			return true;
-		}
-		else
-		{
-			if ( fullPathToRootPtrs.size() < parentsPrefix.size() )
-			{
-				SPDLOG_DEBUG( "pathExistsBetween: Path to root ({}) is shorter than parentsPrefix ({}). Prefix mismatch.",
-					fullPathToRootPtrs.size(), parentsPrefix.size() );
-				return false;
-			}
-
-			for ( size_t i = 0; i < parentsPrefix.size(); ++i )
-			{
-				if ( !fullPathToRootPtrs[i] || !parentsPrefix[i] )
-				{
-					SPDLOG_DEBUG( "pathExistsBetween: Null pointer encountered during prefix comparison at index {}.", i );
-					return false;
-				}
-
-				if ( parentsPrefix[i]->code() != fullPathToRootPtrs[i]->code() )
-				{
-					SPDLOG_DEBUG( "pathExistsBetween: Prefix mismatch at index {}. Expected '{}', Found '{}'.",
-						i, parentsPrefix[i]->code(), fullPathToRootPtrs[i]->code() );
-					return false;
-				}
-			}
-			SPDLOG_DEBUG( "pathExistsBetween: parentsPrefix matches the path to root." );
-		}
-
-		size_t startIndex = parentsPrefix.size();
-
-		if ( startIndex < fullPathToRootPtrs.size() - 1 )
-		{
-			remainingParents.reserve( fullPathToRootPtrs.size() - startIndex - 1 );
-
-			for ( size_t i = startIndex; i < fullPathToRootPtrs.size() - 1; ++i )
-			{
-				if ( fullPathToRootPtrs[i] )
-				{
-					remainingParents.emplace_back( fullPathToRootPtrs[i] );
-				}
-				else
-				{
-					SPDLOG_ERROR( "pathExistsBetween: Encountered null pointer in constructed path to root at index {} while building remaining parents. Aborting.", i );
-					remainingParents.clear();
-					return false;
-				}
-			}
-		}
-
-		SPDLOG_INFO( "pathExistsBetween: Path found from prefix to '{}'. Remaining intermediate parents count: {}", target.code(), remainingParents.size() );
-		return true;
+		return !reachedEnd;
 	}
 
 	//-------------------------------------------------------------------
@@ -598,6 +743,16 @@ namespace dnv::vista::sdk
 		return Iterator( m_nodeMap.end() );
 	}
 
+	Gmod::Iterator Gmod::begin()
+	{
+		return Iterator( m_nodeMap.begin() );
+	}
+
+	Gmod::Iterator Gmod::end()
+	{
+		return Iterator( m_nodeMap.end() );
+	}
+
 	//-------------------------------------------------------------------
 	// Static Node Classification Methods
 	//-------------------------------------------------------------------
@@ -614,7 +769,7 @@ namespace dnv::vista::sdk
 
 	bool Gmod::isFunctionNode( const std::string& category )
 	{
-		return category != "PRODUCT" && category != "ASSET";
+		return category != NODE_CATEGORY_PRODUCT && category != NODE_CATEGORY_ASSET;
 	}
 
 	bool Gmod::isFunctionNode( const GmodNodeMetadata& metadata )
@@ -624,22 +779,22 @@ namespace dnv::vista::sdk
 
 	bool Gmod::isProductSelection( const GmodNodeMetadata& metadata )
 	{
-		return metadata.category() == "PRODUCT" && metadata.type() == "SELECTION";
+		return metadata.category() == NODE_CATEGORY_PRODUCT && metadata.type() == NODE_TYPE_SELECTION;
 	}
 
 	bool Gmod::isProductType( const GmodNodeMetadata& metadata )
 	{
-		return metadata.category() == "PRODUCT" && metadata.type() == "TYPE";
+		return metadata.category() == NODE_CATEGORY_PRODUCT && metadata.type() == NODE_TYPE_VALUE_TYPE;
 	}
 
 	bool Gmod::isAsset( const GmodNodeMetadata& metadata )
 	{
-		return metadata.category() == "ASSET";
+		return metadata.category() == NODE_CATEGORY_ASSET;
 	}
 
 	bool Gmod::isAssetFunctionNode( const GmodNodeMetadata& metadata )
 	{
-		return metadata.category() == "ASSET FUNCTION";
+		return metadata.category() == NODE_CATEGORY_ASSET_FUNCTION;
 	}
 
 	//-------------------------------------------------------------------
@@ -653,12 +808,12 @@ namespace dnv::vista::sdk
 			return false;
 		}
 
-		if ( parent->metadata().category().find( "FUNCTION" ) == std::string::npos )
+		if ( parent->metadata().category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
 		{
 			return false;
 		}
 
-		return child->metadata().category() == "PRODUCT" && child->metadata().type() == "TYPE";
+		return child->metadata().category() == NODE_CATEGORY_PRODUCT && child->metadata().type() == NODE_TYPE_VALUE_TYPE;
 	}
 
 	bool Gmod::isProductSelectionAssignment( const GmodNode* parent, const GmodNode* child )
@@ -667,12 +822,12 @@ namespace dnv::vista::sdk
 		{
 			return false;
 		}
-		if ( parent->metadata().category().find( "FUNCTION" ) == std::string::npos )
+		if ( parent->metadata().category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
 		{
 			return false;
 		}
-		return child->metadata().category().find( "PRODUCT" ) != std::string::npos &&
-			   child->metadata().type() == "SELECTION";
+		return child->metadata().category().find( NODE_CATEGORY_PRODUCT ) != std::string::npos &&
+			   child->metadata().type() == NODE_TYPE_SELECTION;
 	}
 
 	//-------------------------------------------------------------------

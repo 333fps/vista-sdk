@@ -125,8 +125,7 @@ namespace dnv::vista::sdk
 
 		/**
 		 * @brief Converts the metadata tag to its string value.
-		 * This method returns only the 'Value' part of the tag, mirroring
-		 * the overridden ToString() behavior in the C# version.
+		 * This method returns only the 'Value' part of the tag.
 		 * For a fully formatted string including prefix and name, use toString(std::ostringstream&, char).
 		 * @return The 'Value' of the metadata tag as a string.
 		 */

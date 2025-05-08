@@ -48,10 +48,11 @@ namespace dnv::vista::sdk
 		NamingEntity = 200,
 		IMONumber = 201
 	};
-}
 
-namespace dnv::vista::sdk
-{
+	//=====================================================================
+	// LocalIdParsingErrorBuilder Class
+	//=====================================================================
+
 	/**
 	 * @class LocalIdParsingErrorBuilder
 	 * @brief A builder class for accumulating errors encountered during LocalId parsing.

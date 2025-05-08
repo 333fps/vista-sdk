@@ -20,10 +20,7 @@ namespace dnv::vista::sdk
 
 	class MetadataTag;
 	enum class CodebookName;
-}
 
-namespace dnv::vista::sdk
-{
 	//=====================================================================
 	// Position Validation
 	//=====================================================================

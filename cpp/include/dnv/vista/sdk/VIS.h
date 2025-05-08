@@ -28,10 +28,7 @@ namespace dnv::vista::sdk
 	class GmodDto;
 	class GmodVersioningDto;
 	class LocationsDto;
-}
 
-namespace dnv::vista::sdk
-{
 	//=====================================================================
 	// IVIS Interface
 	//=====================================================================

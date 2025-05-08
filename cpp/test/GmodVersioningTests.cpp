@@ -159,81 +159,41 @@ namespace dnv::vista::sdk::tests
 	{
 	};
 
-	TEST_P( PathConversionTest, Test_GmodVersioning_ConvertPath )
-	{
-		auto testData = GetParam();
-		auto& vis = VIS::instance();
-		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
-		const auto& targetGmod = vis.gmod( testData.targetVersion );
-
-		GmodPath sourcePath;
-		ASSERT_TRUE( sourceGmod.tryParsePath( testData.inputPath, sourcePath ) );
-
-		GmodPath parsedTargetPath;
-		bool parsedPath = targetGmod.tryParsePath( testData.expectedPath, parsedTargetPath );
-
-		auto targetPath = vis.convertPath( testData.sourceVersion, sourcePath, testData.targetVersion );
-
-		SPDLOG_INFO( "Source path: {}", sourcePath.toString() );
-		EXPECT_EQ( testData.inputPath, sourcePath.toString() );
-
-		EXPECT_TRUE( parsedPath );
-		EXPECT_EQ( testData.expectedPath, parsedTargetPath.toString() );
-
-		ASSERT_TRUE( targetPath.has_value() );
-		EXPECT_EQ( testData.expectedPath, targetPath->toString() );
-	}
-
-	class FullPathConversionTest : public ::testing::TestWithParam<FullPathTestData>
-	{
-	};
-
-	TEST_P( FullPathConversionTest, Test_GmodVersioning_ConvertFullPath )
-	{
-		auto testData = GetParam();
-		auto& vis = VIS::instance();
-		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
-		const auto& targetGmod = vis.gmod( testData.targetVersion );
-
-		std::optional<GmodPath> sourcePathOpt;
-		ASSERT_TRUE( sourceGmod.tryParseFromFullPath( testData.inputPath, sourcePathOpt ) );
-		ASSERT_TRUE( sourcePathOpt.has_value() );
-
-		std::optional<GmodPath> parsedTargetPathOpt;
-		bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPathOpt );
-
-		auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
-
-		SPDLOG_INFO( "Source full path: {}", sourcePathOpt->toFullPathString() );
-		EXPECT_EQ( testData.inputPath, sourcePathOpt->toFullPathString() );
-
-		EXPECT_TRUE( parsedPath );
-		ASSERT_TRUE( parsedTargetPathOpt.has_value() );
-		EXPECT_EQ( testData.expectedPath, parsedTargetPathOpt->toFullPathString() );
-
-		ASSERT_TRUE( targetPath.has_value() );
-		EXPECT_EQ( testData.expectedPath, targetPath->toFullPathString() );
-	}
+	//=====================================================================
+	// TEST_F
+	//=====================================================================
 
 	TEST_F( GmodVersioningTest, Test_Finds_Path )
 	{
 		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
 
 		bool completed = true;
+
 		completed = m_gmod_v3_4a->traverse(
-			[this]( const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
+			m_gmod_v3_4a->rootNode(),
+			[this]( const std::vector<const dnv::vista::sdk::GmodNode*>& parents,
+				const dnv::vista::sdk::GmodNode& node ) -> dnv::vista::sdk::Gmod::TraversalHandlerResult {
 				if ( parents.empty() )
-					return Gmod::TraversalHandlerResult::Continue;
+				{
+					SPDLOG_INFO( "Test Handler: Root node '{}', continuing.", node.code() );
+					return dnv::vista::sdk::Gmod::TraversalHandlerResult::Continue;
+				}
 
 				GmodNode targetNodeCopy( node, true );
-
 				GmodPath path( parents, std::move( targetNodeCopy ), m_gmod_v3_4a->visVersion() );
 
-				if ( path.toString() == "1012.22/S201.1/C151.2/S110.2/C101.61/S203.2/S101" )
-					return Gmod::TraversalHandlerResult::Stop;
+				std::string currentPathStr = path.toString();
+				SPDLOG_INFO( "Test Handler: Node='{}', Path='{}'", node.code(), currentPathStr );
 
-				return Gmod::TraversalHandlerResult::Continue;
+				if ( currentPathStr == "1012.22/S201.1/C151.2/S110.2/C101.61/S203.2/S101" )
+				{
+					SPDLOG_CRITICAL( "Test Handler: Target path FOUND for Node='{}', Path='{}'. Returning Stop.", node.code(), currentPathStr );
+					return dnv::vista::sdk::Gmod::TraversalHandlerResult::Stop;
+				}
+				return dnv::vista::sdk::Gmod::TraversalHandlerResult::Continue;
 			} );
+
+		SPDLOG_CRITICAL( completed );
 
 		EXPECT_FALSE( completed );
 	}
@@ -263,54 +223,6 @@ namespace dnv::vista::sdk::tests
 					return Gmod::TraversalHandlerResult::Continue;
 				} );
 		}
-	}
-
-	class NodeConversionTest : public ::testing::TestWithParam<NodeTestData>
-	{
-	};
-
-	TEST_P( NodeConversionTest, Test_GmodVersioning_ConvertNode )
-	{
-		auto testData = GetParam();
-		auto& vis = VIS::instance();
-
-		const auto& gmod = vis.gmod( VisVersion::v3_4a );
-		const auto& targetGmod = vis.gmod( VisVersion::v3_6a );
-
-		const GmodNode* sourceNodePtr = nullptr;
-		bool foundSource = gmod.tryGetNode( testData.inputCode, sourceNodePtr );
-		ASSERT_TRUE( foundSource );
-		ASSERT_NE( sourceNodePtr, nullptr );
-
-		GmodNode sourceNode( *sourceNodePtr, true );
-
-		if ( testData.location.has_value() )
-		{
-			Location location( testData.location.value() );
-			sourceNode = sourceNode.withLocation( location );
-		}
-
-		const GmodNode* expectedNodePtr = nullptr;
-		bool foundExpected = targetGmod.tryGetNode( testData.expectedCode, expectedNodePtr );
-		ASSERT_TRUE( foundExpected );
-		ASSERT_NE( expectedNodePtr, nullptr );
-
-		GmodNode expectedNode( *expectedNodePtr, true );
-
-		if ( testData.location.has_value() )
-		{
-			Location location( testData.location.value() );
-			expectedNode = expectedNode.withLocation( location );
-		}
-
-		auto targetNodeOpt = vis.convertNode( VisVersion::v3_4a, sourceNode, VisVersion::v3_6a );
-
-		ASSERT_TRUE( targetNodeOpt.has_value() );
-		const auto& targetNode = *targetNodeOpt;
-
-		EXPECT_EQ( expectedNode.code(), targetNode.code() );
-		EXPECT_EQ( expectedNode.location(), targetNode.location() );
-		EXPECT_EQ( expectedNode, targetNode );
 	}
 
 	TEST_F( GmodVersioningTest, ConvertLocalId )
@@ -378,6 +290,114 @@ namespace dnv::vista::sdk::tests
 			}
 			EXPECT_TRUE( errors.empty() ) << "Found " << errors.size() << " errors converting nodes from version " << VisVersionExtensions::toVersionString( version ) << "." << errorList;
 		}
+	}
+
+	//=====================================================================
+	// TEST_P
+	//=====================================================================
+
+	TEST_P( PathConversionTest, Test_GmodVersioning_ConvertPath )
+	{
+		auto testData = GetParam();
+		auto& vis = VIS::instance();
+		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
+		const auto& targetGmod = vis.gmod( testData.targetVersion );
+
+		GmodPath sourcePath;
+		ASSERT_TRUE( sourceGmod.tryParsePath( testData.inputPath, sourcePath ) );
+
+		GmodPath parsedTargetPath;
+		bool parsedPath = targetGmod.tryParsePath( testData.expectedPath, parsedTargetPath );
+
+		auto targetPath = vis.convertPath( testData.sourceVersion, sourcePath, testData.targetVersion );
+
+		SPDLOG_INFO( "Source path: {}", sourcePath.toString() );
+		EXPECT_EQ( testData.inputPath, sourcePath.toString() );
+
+		EXPECT_TRUE( parsedPath );
+		EXPECT_EQ( testData.expectedPath, parsedTargetPath.toString() );
+
+		ASSERT_TRUE( targetPath.has_value() );
+		EXPECT_EQ( testData.expectedPath, targetPath->toString() );
+	}
+
+	class FullPathConversionTest : public ::testing::TestWithParam<FullPathTestData>
+	{
+	};
+
+	TEST_P( FullPathConversionTest, Test_GmodVersioning_ConvertFullPath )
+	{
+		auto testData = GetParam();
+		auto& vis = VIS::instance();
+		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
+		const auto& targetGmod = vis.gmod( testData.targetVersion );
+
+		std::optional<GmodPath> sourcePathOpt;
+		ASSERT_TRUE( sourceGmod.tryParseFromFullPath( testData.inputPath, sourcePathOpt ) );
+		ASSERT_TRUE( sourcePathOpt.has_value() );
+
+		std::optional<GmodPath> parsedTargetPathOpt;
+		bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPathOpt );
+
+		auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
+
+		SPDLOG_INFO( "Source full path: {}", sourcePathOpt->toFullPathString() );
+		EXPECT_EQ( testData.inputPath, sourcePathOpt->toFullPathString() );
+
+		EXPECT_TRUE( parsedPath );
+		ASSERT_TRUE( parsedTargetPathOpt.has_value() );
+		EXPECT_EQ( testData.expectedPath, parsedTargetPathOpt->toFullPathString() );
+
+		ASSERT_TRUE( targetPath.has_value() );
+		EXPECT_EQ( testData.expectedPath, targetPath->toFullPathString() );
+	}
+
+	class NodeConversionTest : public ::testing::TestWithParam<NodeTestData>
+	{
+	};
+
+	TEST_P( NodeConversionTest, Test_GmodVersioning_ConvertNode )
+	{
+		auto testData = GetParam();
+		auto& vis = VIS::instance();
+
+		const auto& gmod = vis.gmod( VisVersion::v3_4a );
+		const auto& targetGmod = vis.gmod( VisVersion::v3_6a );
+
+		const GmodNode* sourceNodePtr = nullptr;
+		bool foundSource = gmod.tryGetNode( testData.inputCode, sourceNodePtr );
+		ASSERT_TRUE( foundSource );
+		ASSERT_NE( sourceNodePtr, nullptr );
+
+		GmodNode sourceNode( *sourceNodePtr, true );
+
+		if ( testData.location.has_value() )
+		{
+			Location location( testData.location.value() );
+			sourceNode = sourceNode.withLocation( location );
+		}
+
+		const GmodNode* expectedNodePtr = nullptr;
+		bool foundExpected = targetGmod.tryGetNode( testData.expectedCode, expectedNodePtr );
+		ASSERT_TRUE( foundExpected );
+		ASSERT_NE( expectedNodePtr, nullptr );
+
+		GmodNode expectedNode( *expectedNodePtr, true );
+
+		if ( testData.location.has_value() )
+		{
+			Location location( testData.location.value() );
+			expectedNode = expectedNode.withLocation( location );
+		}
+
+		auto targetNodeOpt = vis.convertNode( VisVersion::v3_4a, sourceNode, VisVersion::v3_6a );
+
+		ASSERT_TRUE( targetNodeOpt.has_value() );
+		const auto& targetNode = *targetNodeOpt;
+
+		EXPECT_EQ( expectedNode.code(), targetNode.code() );
+		EXPECT_EQ( expectedNode.location(), targetNode.location() );
+		EXPECT_EQ( expectedNode, targetNode );
 	}
 
 	INSTANTIATE_TEST_SUITE_P(

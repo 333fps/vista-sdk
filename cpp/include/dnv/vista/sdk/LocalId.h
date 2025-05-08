@@ -21,10 +21,11 @@ namespace dnv::vista::sdk
 	class LocalIdBuilder;
 	class MetadataTag;
 	class ParsingErrors;
-}
 
-namespace dnv::vista::sdk
-{
+	//=====================================================================
+	// LocalId Class
+	//=====================================================================
+
 	/**
 	 * @class LocalId
 	 * @brief Concrete, immutable representation of a Local ID.

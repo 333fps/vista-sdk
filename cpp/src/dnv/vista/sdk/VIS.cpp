@@ -27,10 +27,7 @@ namespace dnv::vista::sdk
 	{
 		constexpr const char* VERSIONING = "<versioning>";
 	}
-}
 
-namespace dnv::vista::sdk
-{
 	//=====================================================================
 	// VIS Singleton
 	//=====================================================================

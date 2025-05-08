@@ -19,10 +19,7 @@ namespace dnv::vista::sdk
 	class GmodPath;
 	class MetadataTag;
 	enum class VisVersion;
-}
 
-namespace dnv::vista::sdk
-{
 	/**
 	 * @interface ILocalId
 	 * @brief Base interface for Local IDs using the CRTP pattern.

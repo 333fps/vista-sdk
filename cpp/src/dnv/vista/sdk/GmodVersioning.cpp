@@ -11,9 +11,12 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------------
-	// Constructor
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// GmodVersioning Class
+	//=====================================================================
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	GmodVersioning::GmodVersioning( const std::unordered_map<std::string, GmodVersioningDto>& dto )
 	{
@@ -28,32 +31,9 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	VisVersion GmodVersioning::GmodVersioningNode::visVersion() const
-	{
-		return m_visVersion;
-	}
-
-	bool GmodVersioning::GmodVersioningNode::tryGetCodeChanges(
-		const std::string& code, GmodNodeConversion& nodeChanges ) const
-	{
-		SPDLOG_INFO( "Looking for code changes for node {}", code );
-
-		auto it = m_versioningNodeChanges.find( code );
-		if ( it != m_versioningNodeChanges.end() )
-		{
-			nodeChanges = it->second;
-			if ( nodeChanges.target.has_value() )
-			{
-				SPDLOG_INFO( "Found code change: {} -> {}", code, *nodeChanges.target );
-			}
-			return true;
-		}
-		return false;
-	}
-
-	//-------------------------------------------------------------------------
-	// Public Conversion Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Conversion
+	//----------------------------------------------
 
 	std::optional<GmodNode> GmodVersioning::convertNode(
 		VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) const
@@ -102,6 +82,7 @@ namespace dnv::vista::sdk
 
 		return currentNodeOpt;
 	}
+
 	std::optional<GmodPath> GmodVersioning::convertPath(
 		VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const
 	{
@@ -347,9 +328,13 @@ namespace dnv::vista::sdk
 		return builder->build();
 	}
 
-	//-------------------------------------------------------------------------
-	// GmodVersioningNode Implementation
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// GmodVersioningNode Class
+	//----------------------------------------------
+
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	GmodVersioning::GmodVersioningNode::GmodVersioningNode(
 		VisVersion visVersion,
@@ -380,9 +365,36 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Accessors
+	//----------------------------------------------
+
+	VisVersion GmodVersioning::GmodVersioningNode::visVersion() const
+	{
+		return m_visVersion;
+	}
+
+	bool GmodVersioning::GmodVersioningNode::tryGetCodeChanges(
+		const std::string& code, GmodNodeConversion& nodeChanges ) const
+	{
+		SPDLOG_INFO( "Looking for code changes for node {}", code );
+
+		auto it = m_versioningNodeChanges.find( code );
+		if ( it != m_versioningNodeChanges.end() )
+		{
+			nodeChanges = it->second;
+			if ( nodeChanges.target.has_value() )
+			{
+				SPDLOG_INFO( "Found code change: {} -> {}", code, *nodeChanges.target );
+			}
+			return true;
+		}
+		return false;
+	}
+
+	//----------------------------------------------
 	// Private Helper Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	std::optional<GmodNode> GmodVersioning::convertNodeInternal(
 		[[maybe_unused]] VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) const
@@ -411,7 +423,7 @@ namespace dnv::vista::sdk
 		}
 
 		const GmodNode* targetNodePtr = nullptr;
-		if ( !targetGmod.tryGetNode( nextCode, targetNodePtr ) )
+		if ( !targetGmod.tryGetNode( nextCode, targetNodePtr ) || targetNodePtr == nullptr )
 		{
 			SPDLOG_ERROR( "Failed to find target node with code {}", nextCode );
 			return std::nullopt;
@@ -425,56 +437,41 @@ namespace dnv::vista::sdk
 			if ( targetNodePtr->isIndividualizable( false, true ) )
 			{
 				GmodNode resultWithLocation = targetNodePtr->withLocation( sourceLocation );
-
-				if ( resultWithLocation.location().has_value() && resultWithLocation.location() == sourceLocation )
-				{
-					SPDLOG_INFO( "Successfully applied location '{}' to node '{}'", sourceLocation.value(), resultWithLocation.code() );
-					return resultWithLocation;
-				}
-				else
-				{
-					if ( !resultWithLocation.location().has_value() )
-					{
-						SPDLOG_WARN( "Location '{}' could not be applied to target node '{}'. Returning node without location.", sourceLocation.value(), resultWithLocation.code() );
-					}
-					else
-					{
-						SPDLOG_WARN( "Applying location '{}' resulted in different location '{}' on target node '{}'. Returning node with new location.", sourceLocation.value(), resultWithLocation.location()->value(), resultWithLocation.code() );
-					}
-					return resultWithLocation;
-				}
+				SPDLOG_INFO( "Applied source location '{}' to node '{}', resulting location: '{}'",
+					sourceLocation.value(), resultWithLocation.code(),
+					resultWithLocation.location().has_value() ? resultWithLocation.location()->value() : "none" );
+				return resultWithLocation;
 			}
 			else
 			{
-				SPDLOG_WARN( "Target node {} is not individualizable, cannot carry over location {}. Returning node without location.", targetNodePtr->code(), sourceLocation.value() );
+				SPDLOG_WARN( "Target node {} is not individualizable, cannot carry over source location {}. Returning target node as is.",
+					targetNodePtr->code(), sourceLocation.value() );
 				if ( targetNodePtr->location().has_value() )
 				{
 					return targetNodePtr->withLocation( *targetNodePtr->location() );
 				}
 				else
 				{
-					SPDLOG_ERROR( "Cannot create an owned GmodNode instance for non-individualizable node {} without copying and no location.", targetNodePtr->code() );
-					return std::nullopt;
+					return targetNodePtr->withoutLocation();
 				}
 			}
 		}
 		else
 		{
-			SPDLOG_INFO( "No source location to apply for node {}. Returning base target node.", targetNodePtr->code() );
+			SPDLOG_INFO( "No source location to apply for node {}. Returning target node as is.", targetNodePtr->code() );
 			if ( targetNodePtr->location().has_value() )
 			{
 				return targetNodePtr->withLocation( *targetNodePtr->location() );
 			}
 			else
 			{
-				SPDLOG_ERROR( "Cannot create an owned GmodNode instance for node {} without copying and no location.", targetNodePtr->code() );
-				return std::nullopt;
+				return targetNodePtr->withoutLocation();
 			}
 		}
 	}
 
 	const GmodVersioning::GmodVersioningNode* GmodVersioning::tryGetVersioningNode(
-		VisVersion visVersion ) const
+		VisVersion visVersion ) const noexcept
 	{
 		SPDLOG_INFO( "Looking for versioning node for version {}", static_cast<int>( visVersion ) );
 
@@ -486,9 +483,9 @@ namespace dnv::vista::sdk
 		return nullptr;
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Private Validation Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	void GmodVersioning::validateSourceAndTargetVersions(
 		VisVersion sourceVersion, VisVersion targetVersion ) const
@@ -536,9 +533,9 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Private Static Utility Methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	GmodVersioning::ConversionType GmodVersioning::parseConversionType( const std::string& type )
 	{

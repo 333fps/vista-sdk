@@ -14,7 +14,14 @@
 
 namespace dnv::vista::sdk
 {
-	static constexpr const char* VIS_RELEASE_KEY = "visRelease";
+	namespace
+	{
+		//=====================================================================
+		// Constants
+		//=====================================================================
+
+		static constexpr const char* VIS_RELEASE_KEY = "visRelease";
+	}
 
 	//----------------------------------------------------------------------
 	// Public interface
