@@ -28,23 +28,26 @@ namespace dnv::vista::sdk
 	//=========================================================================
 
 	template <typename TBuilder, typename TResult>
-	inline TBuilder ILocalIdBuilder<TBuilder, TResult>::parse( const std::string& localIdStr )
+	inline TBuilder ILocalIdBuilder<TBuilder, TResult>::parse( std::string_view localIdStr ) // Changed
 	{
-		SPDLOG_TRACE( "ILocalIdBuilder::parse delegating to {}: {}", typeid( TBuilder ).name(), localIdStr );
+		SPDLOG_TRACE( "ILocalIdBuilder::parse delegating to {}: {}", typeid( TBuilder ).name(), std::string( localIdStr ) ); // May need explicit conversion for SPDLOG if it doesn't handle string_view directly
+
 		return TBuilder::parse( localIdStr );
 	}
 
 	template <typename TBuilder, typename TResult>
-	inline bool ILocalIdBuilder<TBuilder, TResult>::tryParse( const std::string& localIdStr, std::optional<TBuilder>& builder )
+	inline bool ILocalIdBuilder<TBuilder, TResult>::tryParse( std::string_view localIdStr, std::optional<TBuilder>& builder ) // Changed
 	{
-		SPDLOG_TRACE( "ILocalIdBuilder::tryParse (no errors) delegating to {}: {}", typeid( TBuilder ).name(), localIdStr );
+		SPDLOG_TRACE( "ILocalIdBuilder::tryParse (no errors) delegating to {}: {}", typeid( TBuilder ).name(), std::string( localIdStr ) ); // May need explicit conversion for SPDLOG
+
 		return TBuilder::tryParse( localIdStr, builder );
 	}
 
 	template <typename TBuilder, typename TResult>
-	inline bool ILocalIdBuilder<TBuilder, TResult>::tryParse( const std::string& localIdStr, ParsingErrors& errors, std::optional<TBuilder>& builder )
+	inline bool ILocalIdBuilder<TBuilder, TResult>::tryParse( std::string_view localIdStr, ParsingErrors& errors, std::optional<TBuilder>& builder ) // Changed
 	{
-		SPDLOG_TRACE( "ILocalIdBuilder::tryParse (with errors) delegating to {}: {}", typeid( TBuilder ).name(), localIdStr );
+		SPDLOG_TRACE( "ILocalIdBuilder::tryParse (with errors) delegating to {}: {}", typeid( TBuilder ).name(), std::string( localIdStr ) ); // May need explicit conversion for SPDLOG
+
 		return TBuilder::tryParse( localIdStr, errors, builder );
 	}
 }

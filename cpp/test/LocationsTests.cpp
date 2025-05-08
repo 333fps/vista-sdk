@@ -175,10 +175,9 @@ namespace dnv::vista::sdk::tests
 	{
 		auto locations = m_vis->locations( VisVersion::v3_4a );
 
-		ASSERT_THROW( { locations.parse( std::string_view() ); }, std::invalid_argument );
-		ASSERT_THROW( { locations.parse( std::string_view( "" ) ); }, std::invalid_argument );
-
-		ASSERT_THROW( { locations.parse( std::string_view( nullptr, 0 ) ); }, std::invalid_argument );
+		ASSERT_THROW( { (void)locations.parse( std::string_view() ); }, std::invalid_argument );
+		ASSERT_THROW( { (void)locations.parse( std::string_view( "" ) ); }, std::invalid_argument );
+		ASSERT_THROW( { (void)locations.parse( std::string_view( nullptr, 0 ) ); }, std::invalid_argument );
 	}
 
 	TEST_F( LocationsTests, Test_Location_Builder )

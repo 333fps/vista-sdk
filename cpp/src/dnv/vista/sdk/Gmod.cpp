@@ -8,6 +8,17 @@
 
 namespace dnv::vista::sdk
 {
+	namespace dnv::vista::sdk
+	{
+		//=====================================================================
+		// Constants
+		//=====================================================================
+
+		namespace
+		{
+		}
+	}
+
 	const std::unordered_set<std::string> Gmod::s_leafTypesSet = { "ASSET FUNCTION LEAF", "PRODUCT FUNCTION LEAF" };
 	const std::unordered_set<std::string> Gmod::s_potentialParentScopeTypes = { "SELECTION", "GROUP", "LEAF" };
 }
@@ -21,8 +32,11 @@ namespace dnv::vista::sdk
 	void Parents::push( const GmodNode* parent )
 	{
 		if ( !parent )
+		{
 			return;
-		m_nodes.push_back( std::move( parent ) );
+		}
+
+		m_nodes.push_back( parent );
 		const std::string& code = parent->code();
 		auto it = m_occurrences.find( code );
 		if ( it != m_occurrences.end() )
@@ -115,9 +129,13 @@ namespace dnv::vista::sdk
 				else
 				{
 					if ( parentIt == tempNodeMap.end() )
+					{
 						SPDLOG_WARN( "Relation skipped: Parent node '{}' not found.", parentCode );
+					}
 					if ( childIt == tempNodeMap.end() )
+					{
 						SPDLOG_WARN( "Relation skipped: Child node '{}' not found.", childCode );
+					}
 				}
 			}
 		}
@@ -193,43 +211,19 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	Gmod::Gmod( Gmod&& other ) noexcept
-		: m_visVersion( other.m_visVersion ), m_rootNode( std::move( other.m_rootNode ) ), m_nodeMap( std::move( other.m_nodeMap ) )
-	{
-		other.m_visVersion = VisVersion::Unknown;
-	}
-
-	Gmod::~Gmod()
-	{
-	}
-
-	Gmod& Gmod::operator=( Gmod&& other ) noexcept
-	{
-		SPDLOG_DEBUG( "Gmod move assignment." );
-		if ( this != &other )
-		{
-			m_visVersion = other.m_visVersion;
-			m_rootNode = std::move( other.m_rootNode );
-			m_nodeMap = std::move( other.m_nodeMap );
-		}
-		return *this;
-	}
-
 	//-------------------------------------------------------------------
 	// Basic Access Methods
 	//-------------------------------------------------------------------
 
 	const GmodNode& Gmod::operator[]( const std::string& key ) const
 	{
-		static GmodNode nullNode;
 		const GmodNode* nodePtr = nullptr;
 		if ( tryGetNode( key, nodePtr ) && nodePtr != nullptr )
 		{
 			return *nodePtr;
 		}
-		SPDLOG_WARN( "Node with key '{}' not found in GMOD dictionary via operator[]", key );
 
-		return nullNode;
+		throw std::out_of_range( "Node with key '" + key + "' not found in GMOD dictionary." );
 	}
 
 	VisVersion Gmod::visVersion() const
@@ -291,23 +285,24 @@ namespace dnv::vista::sdk
 	// Path Parsing Methods
 	//-------------------------------------------------------------------
 
-	GmodPath Gmod::parsePath( const std::string& item ) const
+	GmodPath Gmod::parsePath( std::string_view item ) const
 	{
 		return GmodPath::parse( item, m_visVersion );
 	}
 
-	bool Gmod::tryParsePath( const std::string& item, GmodPath& path ) const
+	bool Gmod::tryParsePath( std::string_view item, GmodPath& path ) const
 	{
 		SPDLOG_INFO( "TryParsePath: Attempting to parse path: {}", item );
+
 		return GmodPath::tryParse( item, m_visVersion, path );
 	}
 
-	GmodPath Gmod::parseFromFullPath( const std::string& item ) const
+	GmodPath Gmod::parseFromFullPath( std::string_view item ) const
 	{
 		return GmodPath::parseFullPath( item, m_visVersion );
 	}
 
-	bool Gmod::tryParseFromFullPath( const std::string& item, std::optional<GmodPath>& path ) const
+	bool Gmod::tryParseFromFullPath( std::string_view item, std::optional<GmodPath>& path ) const
 	{
 		GmodPath tempPath;
 
@@ -657,7 +652,8 @@ namespace dnv::vista::sdk
 		{
 			return false;
 		}
-		if ( parent->metadata().category() == "FUNCTION" )
+
+		if ( parent->metadata().category().find( "FUNCTION" ) == std::string::npos )
 		{
 			return false;
 		}
@@ -671,12 +667,12 @@ namespace dnv::vista::sdk
 		{
 			return false;
 		}
-		if ( parent->metadata().category() == "FUNCTION" )
+		if ( parent->metadata().category().find( "FUNCTION" ) == std::string::npos )
 		{
 			return false;
 		}
-
-		return child->metadata().category() != "PRODUCT" || child->metadata().type() != "SELECTION";
+		return child->metadata().category().find( "PRODUCT" ) != std::string::npos &&
+			   child->metadata().type() == "SELECTION";
 	}
 
 	//-------------------------------------------------------------------

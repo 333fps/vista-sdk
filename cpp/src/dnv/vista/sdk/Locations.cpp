@@ -6,31 +6,9 @@
 #include "pch.h"
 
 #include "dnv/vista/sdk/Locations.h"
+#include "dnv/vista/sdk/LocationParsingErrorBuilder.h"
 #include "dnv/vista/sdk/ParsingErrors.h"
 #include "dnv/vista/sdk/VisVersion.h"
-
-namespace dnv::vista::sdk
-{
-	//=====================================================================
-	// LocationParsingErrorBuilder
-	//=====================================================================
-
-	struct LocationParsingErrorBuilder
-	{
-		static LocationParsingErrorBuilder Empty;
-
-		bool HasError = false;
-		std::vector<std::pair<LocationValidationResult, std::string>> m_errors;
-
-		static LocationParsingErrorBuilder create();
-
-		void addError( LocationValidationResult result, const std::string& message );
-
-		ParsingErrors build() const;
-	};
-
-	LocationParsingErrorBuilder LocationParsingErrorBuilder::Empty;
-}
 
 namespace dnv::vista::sdk
 {
@@ -147,16 +125,6 @@ namespace dnv::vista::sdk
 	//=====================================================================
 	// LocationCharDict Class
 	//=====================================================================
-
-	LocationCharDict::LocationCharDict()
-	{
-		for ( auto& item : m_table )
-		{
-			item = std::nullopt;
-		}
-
-		SPDLOG_INFO( "Initialized LocationCharDict with {} groups", m_table.size() );
-	}
 
 	//----------------------------------------------
 	// Lookup Operators
@@ -303,7 +271,7 @@ namespace dnv::vista::sdk
 	// Public Methods - Parsing
 	//----------------------------------------------
 
-	Location Locations::parse( const std::string& locationStr )
+	Location Locations::parse( const std::string& locationStr ) const
 	{
 		SPDLOG_INFO( "Parsing location string: '{}'", locationStr );
 		Location location;
@@ -314,10 +282,11 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_INFO( "Successfully parsed location: '{}'", location.value() );
+
 		return location;
 	}
 
-	Location Locations::parse( std::string_view locationStr )
+	Location Locations::parse( std::string_view locationStr ) const
 	{
 		SPDLOG_INFO( "Parsing location string view: '{}'", locationStr );
 		Location location;
@@ -328,7 +297,13 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_INFO( "Successfully parsed location: '{}'", location.value() );
+
 		return location;
+	}
+
+	bool Locations::tryParse( const std::string& value, Location& location ) const
+	{
+		return tryParse( std::string_view( value ), location );
 	}
 
 	bool Locations::tryParse( const std::optional<std::string>& value, Location& location ) const
@@ -340,6 +315,7 @@ namespace dnv::vista::sdk
 		}
 
 		LocationParsingErrorBuilder errorBuilder;
+
 		return tryParseInternal( value.value(), value, location, errorBuilder );
 	}
 
@@ -362,12 +338,14 @@ namespace dnv::vista::sdk
 		{
 			errors = errorBuilder.build();
 		}
+
 		return result;
 	}
 
-	bool Locations::tryParse( std::string_view value, Location& location )
+	bool Locations::tryParse( std::string_view value, Location& location ) const
 	{
 		LocationParsingErrorBuilder errorBuilder;
+
 		return tryParseInternal( value, std::nullopt, location, errorBuilder );
 	}
 
@@ -385,15 +363,6 @@ namespace dnv::vista::sdk
 	//----------------------------------------------
 	// Private Static Helper Methods
 	//----------------------------------------------
-
-	void Locations::addError( LocationParsingErrorBuilder& errorBuilder,
-		LocationValidationResult name,
-		const std::string& message )
-	{
-		SPDLOG_INFO( "Adding location parsing error: {} - {}",
-			static_cast<int>( name ), message );
-		errorBuilder.addError( name, message );
-	}
 
 	bool Locations::tryParseInt( std::string_view span, int start, int length, int& number )
 	{
@@ -437,24 +406,16 @@ namespace dnv::vista::sdk
 
 		if ( span.empty() )
 		{
-			addError( errorBuilder, LocationValidationResult::NullOrWhiteSpace,
+			errorBuilder.addError( LocationValidationResult::NullOrWhiteSpace,
 				"Invalid location: contains only whitespace in '" + displayString() + "'" );
 			return false;
 		}
 
-		bool isOnlyWhitespace = true;
-		for ( char c : span )
-		{
-			if ( !std::isspace( c ) )
-			{
-				isOnlyWhitespace = false;
-				break;
-			}
-		}
+		bool isOnlyWhitespace = std::all_of( span.begin(), span.end(), []( unsigned char c_uc ) { return std::isspace( c_uc ); } );
 
 		if ( isOnlyWhitespace )
 		{
-			addError( errorBuilder, LocationValidationResult::NullOrWhiteSpace,
+			errorBuilder.addError( LocationValidationResult::NullOrWhiteSpace,
 				"Invalid location: contains only whitespace in '" + displayString() + "'" );
 			return false;
 		}
@@ -475,7 +436,7 @@ namespace dnv::vista::sdk
 				if ( charsStartIndex != -1 )
 				{
 					SPDLOG_INFO( "Digit found after location codes at position {}", i );
-					addError( errorBuilder, LocationValidationResult::InvalidOrder,
+					errorBuilder.addError( LocationValidationResult::InvalidOrder,
 						"Invalid location: numeric part must come before location codes in '" + displayString() + "'" );
 					return false;
 				}
@@ -483,7 +444,7 @@ namespace dnv::vista::sdk
 				if ( prevDigitIndex != -1 && prevDigitIndex != static_cast<int>( i ) - 1 )
 				{
 					SPDLOG_INFO( "Discontinuous digit sequence at position {}", i );
-					addError( errorBuilder, LocationValidationResult::Invalid,
+					errorBuilder.addError( LocationValidationResult::Invalid,
 						"Invalid location: cannot have multiple separated digits in '" + displayString() + "'" );
 					return false;
 				}
@@ -534,7 +495,7 @@ namespace dnv::vista::sdk
 					}
 				}
 
-				addError( errorBuilder, LocationValidationResult::InvalidCode,
+				errorBuilder.addError( LocationValidationResult::InvalidCode,
 					"Invalid location code: '" + displayString() + "' with invalid location code(s): " + invalidChars );
 				return false;
 			}
@@ -545,7 +506,7 @@ namespace dnv::vista::sdk
 				if ( !std::isdigit( prevCh ) && ch < prevCh )
 				{
 					SPDLOG_INFO( "Location codes not in alphabetical order: '{}' after '{}'", ch, prevCh );
-					addError( errorBuilder, LocationValidationResult::InvalidOrder,
+					errorBuilder.addError( LocationValidationResult::InvalidOrder,
 						"Invalid location: codes must be alphabetically sorted in location: '" + displayString() + "'" );
 					return false;
 				}
@@ -563,7 +524,7 @@ namespace dnv::vista::sdk
 				{
 					SPDLOG_INFO( "Duplicate location code from group {}: '{}' and '{}'",
 						static_cast<int>( group ), existingValue.value(), ch );
-					addError( errorBuilder, LocationValidationResult::InvalidOrder,
+					errorBuilder.addError( LocationValidationResult::InvalidOrder,
 						"Duplicate location code from the same group in '" + displayString() + "': " +
 							std::string( 1, existingValue.value() ) + " and " + std::string( 1, ch ) );
 					return false;
@@ -574,37 +535,5 @@ namespace dnv::vista::sdk
 		location = Location( originalStr.has_value() ? *originalStr : result );
 		SPDLOG_INFO( "Successfully parsed location: '{}'", location.value() );
 		return true;
-	}
-
-	//----------------------------------------------
-	// LocationParsingErrorBuilder
-	//----------------------------------------------
-	LocationParsingErrorBuilder LocationParsingErrorBuilder::create()
-	{
-		LocationParsingErrorBuilder builder;
-		builder.HasError = true;
-		return builder;
-	}
-
-	void LocationParsingErrorBuilder::addError( LocationValidationResult result, const std::string& message )
-	{
-		SPDLOG_INFO( "Adding location parsing error: {} - {}",
-			static_cast<int>( result ), message );
-		m_errors.emplace_back( result, message );
-		HasError = true;
-	}
-
-	ParsingErrors LocationParsingErrorBuilder::build() const
-	{
-		std::vector<ParsingErrors::ErrorEntry> convertedErrors;
-		convertedErrors.reserve( m_errors.size() );
-
-		for ( const auto& [result, message] : m_errors )
-		{
-			convertedErrors.emplace_back( std::to_string( static_cast<int>( result ) ), message );
-		}
-
-		SPDLOG_INFO( "Built parsing errors with {} entries", convertedErrors.size() );
-		return ParsingErrors( convertedErrors );
 	}
 }

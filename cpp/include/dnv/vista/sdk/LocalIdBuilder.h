@@ -25,36 +25,7 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	class LocalIdParsingErrorBuilder;
-
-	/**
-	 * @brief Represents the specific stage or aspect of LocalId parsing.
-	 *
-	 * Used internally by the parser to track progress and externally
-	 * within ParsingErrors to categorize issues found during LocalId parsing.
-	 */
-	enum class LocalIdParsingState
-	{
-		NamingRule = 0,
-		VisVersion,
-		PrimaryItem,
-		SecondaryItem,
-		ItemDescription,
-		MetaQuantity,
-		MetaContent,
-		MetaCalculation,
-		MetaState,
-		MetaCommand,
-		MetaType,
-		MetaPosition,
-		MetaDetail,
-
-		EmptyState = 100,
-		Formatting = 101,
-		Completeness = 102,
-
-		NamingEntity = 200,
-		IMONumber = 201
-	};
+	enum class LocalIdParsingState;
 }
 
 namespace dnv::vista::sdk
@@ -168,14 +139,14 @@ namespace dnv::vista::sdk
 		 *          Specific rules depend on the `LocalId` definition.
 		 * @return True if the current state allows for a successful `build()`, false otherwise.
 		 */
-		[[nodiscard]] virtual bool isValid() const override;
+		[[nodiscard]] virtual bool isValid() const noexcept override;
 
 		/**
 		 * @brief Checks if the builder is in its initial, empty state.
 		 * @details An empty builder has no VIS version, no items, and no metadata tags set.
 		 * @return True if the builder holds no configuration data, false otherwise.
 		 */
-		[[nodiscard]] virtual bool isEmpty() const override;
+		[[nodiscard]] virtual bool isEmpty() const noexcept override;
 
 		/**
 		 * @brief Gets the VIS version currently set in the builder, if any.
@@ -189,7 +160,7 @@ namespace dnv::vista::sdk
 		 * @details Verbose mode typically includes descriptive text alongside codes in the string output.
 		 * @return True if verbose mode is enabled, false otherwise.
 		 */
-		[[nodiscard]] virtual bool isVerboseMode() const override;
+		[[nodiscard]] virtual bool isVerboseMode() const noexcept override;
 
 		/**
 		 * @brief Gets the primary item path.
@@ -198,7 +169,7 @@ namespace dnv::vista::sdk
 		 * @return A const reference to the primary item's `GmodPath`.
 		 * @warning Behavior is undefined if called when no primary item is set (`isValid()` is false).
 		 */
-		[[nodiscard]] virtual const GmodPath& primaryItem() const override;
+		[[nodiscard]] virtual const std::optional<GmodPath>& primaryItem() const override;
 
 		/**
 		 * @brief Gets the secondary item path, if one is set.
@@ -220,16 +191,16 @@ namespace dnv::vista::sdk
 		//=====================================================================
 
 		/**
+		 * @brief Checks if the builder has any custom (non-standard) metadata tags.
+		 * @return True if the builder contains custom tags, false otherwise.
+		 */
+		[[nodiscard]] bool hasCustomTag() const noexcept override;
+
+		/**
 		 * @brief Checks if the builder has no metadata tags set.
 		 * @return True if no metadata tags (quantity, content, etc.) are present, false otherwise.
 		 */
 		[[nodiscard]] bool isEmptyMetadata() const;
-
-		/**
-		 * @brief Checks if the builder has any custom (non-standard) metadata tags.
-		 * @return True if the builder contains custom tags, false otherwise.
-		 */
-		[[nodiscard]] bool hasCustomTag() const;
 
 		/**
 		 * @brief Gets the internal `LocalIdItems` object containing primary and secondary items.

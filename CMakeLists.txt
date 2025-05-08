@@ -18,13 +18,15 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 endif()
 
 # --- Define Project Directories ---
-set(VISTA_SDK_INCLUDE_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/cpp/include" CACHE PATH "Path to the C++ SDK include directory")
-set(VISTA_SDK_SOURCE_DIR 	"${CMAKE_CURRENT_SOURCE_DIR}/cpp/src"     CACHE PATH "Path to the C++ SDK source directory")
-set(VISTA_SDK_RESOURCE_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/resources"   CACHE PATH "Path to the SDK resources directory")
-set(VISTA_SDK_TEST_DATA_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/testdata"    CACHE PATH "Path to the SDK test data directory")
+set(VISTA_SDK_INCLUDE_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/cpp/include"	CACHE PATH "Path to the C++ SDK include directory")
+set(VISTA_SDK_SOURCE_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/cpp/src"		CACHE PATH "Path to the C++ SDK source directory")
+set(VISTA_SDK_TEST_DIR		"${CMAKE_CURRENT_SOURCE_DIR}/cpp/test"		CACHE PATH "Path to the C++ SDK test directory")
+set(VISTA_SDK_SAMPLES_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/cpp/samples"	CACHE PATH "Path to the C++ SDK samples directory")
+set(VISTA_SDK_RESOURCE_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/resources"		CACHE PATH "Path to the SDK resources directory")
+set(VISTA_SDK_TEST_DATA_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/testdata"		CACHE PATH "Path to the SDK test data directory")
 
 # --- Add Subdirectories ---
-add_subdirectory(cpp)
+add_subdirectory(cpp/cmake)
 
 # --- Configuration Summary ---
 message(STATUS "--- VISTA SDK Configuration Summary ---")

@@ -42,7 +42,7 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_INFO( "LocalId constructed successfully: primaryItem={}",
-			m_builder->primaryItem().toString() );
+			m_builder->primaryItem().value().toString() );
 	}
 
 	//=====================================================================
@@ -86,12 +86,12 @@ namespace dnv::vista::sdk
 		return *m_builder->visVersion();
 	}
 
-	bool LocalId::isVerboseMode() const
+	bool LocalId::isVerboseMode() const noexcept
 	{
 		return m_builder->isVerboseMode();
 	}
 
-	const GmodPath& LocalId::primaryItem() const
+	const std::optional<GmodPath>& LocalId::primaryItem() const
 	{
 		return m_builder->primaryItem();
 	}
@@ -101,7 +101,7 @@ namespace dnv::vista::sdk
 		return m_builder->secondaryItem();
 	}
 
-	bool LocalId::hasCustomTag() const
+	bool LocalId::hasCustomTag() const noexcept
 	{
 		return m_builder->hasCustomTag();
 	}

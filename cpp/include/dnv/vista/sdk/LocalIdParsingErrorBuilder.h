@@ -14,7 +14,40 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	class ParsingErrors;
-	enum class LocalIdParsingState;
+
+	//=====================================================================
+	// Enumerations
+	//=====================================================================
+
+	/**
+	 * @brief Represents the specific stage or aspect of LocalId parsing.
+	 *
+	 * Used internally by the parser to track progress and externally
+	 * within ParsingErrors to categorize issues found during LocalId parsing.
+	 */
+	enum class LocalIdParsingState
+	{
+		NamingRule = 0,
+		VisVersion,
+		PrimaryItem,
+		SecondaryItem,
+		ItemDescription,
+		MetaQuantity,
+		MetaContent,
+		MetaCalculation,
+		MetaState,
+		MetaCommand,
+		MetaType,
+		MetaPosition,
+		MetaDetail,
+
+		EmptyState = 100,
+		Formatting = 101,
+		Completeness = 102,
+
+		NamingEntity = 200,
+		IMONumber = 201
+	};
 }
 
 namespace dnv::vista::sdk

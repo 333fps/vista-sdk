@@ -383,7 +383,7 @@ namespace dnv::vista::sdk
 		 * @throws std::runtime_error If the required GMOD/Locations data for `visVersion` cannot be loaded.
 		 */
 		[[nodiscard]] static GmodPath parse(
-			const std::string& item,
+			std::string_view item,
 			VisVersion visVersion );
 
 		/**
@@ -395,7 +395,7 @@ namespace dnv::vista::sdk
 		 *         but may throw `std::runtime_error` if GMOD/Locations data is missing.
 		 */
 		[[nodiscard]] static bool tryParse(
-			const std::string& item,
+			std::string_view item,
 			VisVersion visVersion,
 			GmodPath& path );
 
@@ -409,7 +409,7 @@ namespace dnv::vista::sdk
 		 * @throws std::runtime_error If GMOD/Locations data is missing.
 		 */
 		[[nodiscard]] static GmodPath parseFullPath(
-			const std::string& pathStr,
+			std::string_view pathStr,
 			VisVersion visVersion );
 
 		/**

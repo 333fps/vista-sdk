@@ -117,14 +117,14 @@ namespace dnv::vista::sdk
 		 *          and one or more metadata tags, depending on the specific `TResult` rules.
 		 * @return True if the current state allows for a successful `build()`, false otherwise.
 		 */
-		[[nodiscard]] virtual bool isValid() const = 0;
+		[[nodiscard]] virtual bool isValid() const noexcept = 0;
 
 		/**
 		 * @brief Checks if the builder is in its initial, empty state.
 		 * @details An empty builder typically has no VIS version, no items, and no metadata tags set.
 		 * @return True if the builder holds no configuration data, false otherwise.
 		 */
-		[[nodiscard]] virtual bool isEmpty() const = 0;
+		[[nodiscard]] virtual bool isEmpty() const noexcept = 0;
 
 		/**
 		 * @brief Gets the VIS version currently set in the builder, if any.
@@ -138,17 +138,19 @@ namespace dnv::vista::sdk
 		 * @details Verbose mode typically includes descriptive text alongside codes in the string output.
 		 * @return True if verbose mode is enabled, false otherwise.
 		 */
-		[[nodiscard]] virtual bool isVerboseMode() const = 0;
+		[[nodiscard]] virtual bool isVerboseMode() const noexcept = 0;
 
 		/**
 		 * @brief Gets the primary item path.
 		 * @details The primary item is usually mandatory for a valid Local ID.
 		 *          Accessing this when no primary item is set might lead to undefined behavior
 		 *          or exceptions in the concrete implementation, although `isValid()` should be false.
-		 * @return A const reference to the primary item's `GmodPath`.
-		 * @warning Calling this when `isValid()` is false or no primary item is set might be unsafe.
+		 * @return A const reference to an `std::optional<GmodPath>` containing the
+		 *         primary item path if set, or `std::nullopt` if no primary item is set.
+		 * @warning Calling this when `isValid()` is false or no primary item is set might be unsafe,
+		 *          though the returned optional would be empty in such cases.
 		 */
-		[[nodiscard]] virtual const GmodPath& primaryItem() const = 0;
+		[[nodiscard]] virtual const std::optional<GmodPath>& primaryItem() const = 0;
 
 		/**
 		 * @brief Gets the secondary item path, if one is set.
@@ -165,6 +167,14 @@ namespace dnv::vista::sdk
 		 * @return A vector containing copies of the MetadataTag objects currently set.
 		 */
 		[[nodiscard]] virtual std::vector<MetadataTag> metadataTags() const = 0;
+
+		/**
+		 * @brief Checks if the builder has a custom metadata tag defined.
+		 * @details A custom tag is typically one that isn't part of the standard VIS structure
+		 *          but is user-defined.
+		 * @return True if a custom tag is set, false otherwise.
+		 */
+		[[nodiscard]] virtual bool hasCustomTag() const noexcept = 0;
 
 		//=====================================================================
 		// Conversion and Comparison
@@ -412,7 +422,7 @@ namespace dnv::vista::sdk
 		 * @return A new `TBuilder` instance representing the parsed string.
 		 * @throws std::invalid_argument If parsing fails due to invalid format or content.
 		 */
-		[[nodiscard]] static TBuilder parse( const std::string& localIdStr );
+		[[nodiscard]] static TBuilder parse( std::string_view localIdStr );
 
 		/**
 		 * @brief Attempts to parse a string representation into a builder instance. Does not throw.
@@ -424,7 +434,7 @@ namespace dnv::vista::sdk
 		 *                     if parsing succeeds, or `std::nullopt` otherwise.
 		 * @return True if parsing was successful, false otherwise.
 		 */
-		[[nodiscard]] static bool tryParse( const std::string& localIdStr, std::optional<TBuilder>& builder );
+		[[nodiscard]] static bool tryParse( std::string_view localIdStr, std::optional<TBuilder>& builder );
 
 		/**
 		 * @brief Attempts to parse a string representation into a builder instance, providing error details.
@@ -437,7 +447,7 @@ namespace dnv::vista::sdk
 		 *                     if parsing succeeds, or `std::nullopt` otherwise.
 		 * @return True if parsing was successful, false otherwise.
 		 */
-		[[nodiscard]] static bool tryParse( const std::string& localIdStr, ParsingErrors& errors, std::optional<TBuilder>& builder );
+		[[nodiscard]] static bool tryParse( std::string_view localIdStr, ParsingErrors& errors, std::optional<TBuilder>& builder );
 	};
 }
 

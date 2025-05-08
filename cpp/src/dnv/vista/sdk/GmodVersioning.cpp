@@ -297,12 +297,12 @@ namespace dnv::vista::sdk
 		}
 
 		std::optional<GmodPath> primaryItem;
-		if ( sourceLocalId.primaryItem().length() > 0 )
+		if ( sourceLocalId.primaryItem().value().length() > 0 )
 		{
 			SPDLOG_INFO( "Converting primary item" );
 			auto convertedPath = convertPath(
 				*sourceLocalId.visVersion(),
-				sourceLocalId.primaryItem(),
+				sourceLocalId.primaryItem().value(),
 				targetVersion );
 
 			primaryItem = std::move( convertedPath );

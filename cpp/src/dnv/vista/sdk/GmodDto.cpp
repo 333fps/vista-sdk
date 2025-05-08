@@ -171,6 +171,7 @@ namespace dnv::vista::sdk
 			if ( !json.contains( NAME_KEY ) || !json.at( NAME_KEY ).is_string() )
 			{
 				SPDLOG_ERROR( "GMOD Node JSON (code='{}') missing required '{}' field or not a string", code, NAME_KEY );
+
 				return std::nullopt;
 			}
 
@@ -277,6 +278,7 @@ namespace dnv::vista::sdk
 			}
 
 			SPDLOG_ERROR( "nlohmann::json exception during GmodNodeDto parsing (hint: code='{}'): {}", codeHint, ex.what() );
+
 			return std::nullopt;
 		}
 		catch ( [[maybe_unused]] const std::exception& ex )
@@ -293,6 +295,7 @@ namespace dnv::vista::sdk
 			{
 			}
 			SPDLOG_ERROR( "Standard exception during GmodNodeDto parsing (hint: code='{}'): {}", codeHint, ex.what() );
+
 			return std::nullopt;
 		}
 	}

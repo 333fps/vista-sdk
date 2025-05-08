@@ -7,7 +7,6 @@
 
 #include "dnv/vista/sdk/LocalIdParsingErrorBuilder.h"
 
-#include "dnv/vista/sdk/LocalIdBuilder.h"
 #include "dnv/vista/sdk/ParsingErrors.h"
 
 namespace dnv::vista::sdk

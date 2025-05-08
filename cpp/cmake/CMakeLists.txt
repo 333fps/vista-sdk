@@ -221,6 +221,7 @@ set(PUBLIC_HEADERS
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocalIdBuilder.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocalIdItems.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocalIdParsingErrorBuilder.h
+	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocationParsingErrorBuilder.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/Locations.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocationsDto.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/MetadataTag.h
@@ -251,6 +252,7 @@ set(PRIVATE_SOURCES
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocalIdBuilder.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocalIdItems.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocalIdParsingErrorBuilder.cpp
+	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocationParsingErrorBuilder.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/Locations.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocationsDto.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/MetadataTag.cpp
@@ -299,14 +301,14 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 # --- Samples ---
-# if(VISTA_SDK_BUILD_SAMPLES)
-#     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../examples ${CMAKE_CURRENT_BINARY_DIR}/examples)
-# endif()
+if(VISTA_SDK_BUILD_SAMPLES)
+	#add_subdirectory(${VISTA_SDK_SAMPLES_DIR} samples)
+endif()
 
 # --- Tests ---
 if(VISTA_SDK_BUILD_TESTS)
 	enable_testing()
-	add_subdirectory(test)
+	add_subdirectory(${VISTA_SDK_TEST_DIR} test)
 endif()
 
 # --- Configuration Summary ---

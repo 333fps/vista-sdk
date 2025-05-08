@@ -107,7 +107,7 @@ namespace dnv::vista::sdk
 	// State Inspection Methods
 	//=====================================================================
 
-	bool LocalIdBuilder::isValid() const
+	bool LocalIdBuilder::isValid() const noexcept
 	{
 		if ( !m_visVersion.has_value() )
 		{
@@ -131,7 +131,7 @@ namespace dnv::vista::sdk
 		return true;
 	}
 
-	bool LocalIdBuilder::isEmpty() const
+	bool LocalIdBuilder::isEmpty() const noexcept
 	{
 		bool empty = !m_visVersion.has_value() &&
 					 m_items.primaryItem()->length() == 0 &&
@@ -146,14 +146,14 @@ namespace dnv::vista::sdk
 		return m_visVersion;
 	}
 
-	bool LocalIdBuilder::isVerboseMode() const
+	bool LocalIdBuilder::isVerboseMode() const noexcept
 	{
 		return m_verboseMode;
 	}
 
-	const GmodPath& LocalIdBuilder::primaryItem() const
+	const std::optional<GmodPath>& LocalIdBuilder::primaryItem() const
 	{
-		return m_items.primaryItem().value();
+		return m_items.primaryItem();
 	}
 
 	const std::optional<GmodPath>& LocalIdBuilder::secondaryItem() const
@@ -202,7 +202,7 @@ namespace dnv::vista::sdk
 			   !m_detail.has_value();
 	}
 
-	bool LocalIdBuilder::hasCustomTag() const
+	bool LocalIdBuilder::hasCustomTag() const noexcept
 	{
 		return ( m_quantity.has_value() && m_quantity->isCustom() ) ||
 			   ( m_content.has_value() && m_content->isCustom() ) ||

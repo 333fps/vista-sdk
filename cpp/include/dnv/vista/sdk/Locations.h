@@ -15,7 +15,7 @@ namespace dnv::vista::sdk
 
 	enum class VisVersion;
 	class ParsingErrors;
-	struct LocationParsingErrorBuilder;
+	class LocationParsingErrorBuilder;
 
 	//=====================================================================
 	// Enumerations
@@ -34,20 +34,6 @@ namespace dnv::vista::sdk
 		Vertical,
 		Transverse,
 		Longitudinal
-	};
-
-	/**
-	 * @brief Enumeration of location validation results.
-	 *
-	 * Indicates the outcome of a location string validation attempt.
-	 */
-	enum class LocationValidationResult
-	{
-		Invalid,
-		InvalidCode,
-		InvalidOrder,
-		NullOrWhiteSpace,
-		Valid
 	};
 }
 
@@ -303,7 +289,7 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/** @brief Default constructor. */
-		LocationCharDict();
+		LocationCharDict() = default;
 
 		/** @brief Copy constructor */
 		LocationCharDict( const LocationCharDict& ) = delete;
@@ -441,14 +427,24 @@ namespace dnv::vista::sdk
 		 * @return The parsed `Location` object.
 		 * @throws std::invalid_argument If parsing fails (e.g., invalid format, unknown codes).
 		 */
-		[[nodiscard]] Location parse( const std::string& locationStr );
+		[[nodiscard]] Location parse( const std::string& locationStr ) const;
+
 		/**
 		 * @brief Parses a location string (represented by a string_view) into a `Location` object.
 		 * @param locationStr The location string_view to parse.
 		 * @return The parsed `Location` object.
 		 * @throws std::invalid_argument If parsing fails.
 		 */
-		[[nodiscard]] Location parse( std::string_view locationStr );
+		[[nodiscard]] Location parse( std::string_view locationStr ) const;
+
+		/**
+		 * @brief Tries to parse a location string.
+		 * @param value The location string to parse.
+		 * @param location Output parameter: if parsing succeeds, this is set to the parsed `Location`.
+		 *                 The state of `location` is undefined if parsing fails.
+		 * @return True if parsing succeeded, false otherwise.
+		 */
+		bool tryParse( const std::string& value, Location& location ) const;
 
 		/**
 		 * @brief Tries to parse a location string.
@@ -475,7 +471,7 @@ namespace dnv::vista::sdk
 		 * @param location Output parameter: if parsing succeeds, this is set to the parsed `Location`.
 		 * @return True if parsing succeeded, false otherwise.
 		 */
-		bool tryParse( std::string_view value, Location& location );
+		bool tryParse( std::string_view value, Location& location ) const;
 
 		/**
 		 * @brief Tries to parse a location string (represented by a string_view), providing detailed error information.
@@ -490,16 +486,6 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 		// Private Static Helper Methods
 		//----------------------------------------------
-
-		/**
-		 * @brief Adds an error to the provided error builder.
-		 * @param errorBuilder The `LocationParsingErrorBuilder` to add the error to.
-		 * @param name The `LocationValidationResult` code for the error.
-		 * @param message A descriptive message for the error.
-		 */
-		static void addError( LocationParsingErrorBuilder& errorBuilder,
-			LocationValidationResult name,
-			const std::string& message );
 
 		/**
 		 * @brief Tries to parse an integer from a segment of a string_view.

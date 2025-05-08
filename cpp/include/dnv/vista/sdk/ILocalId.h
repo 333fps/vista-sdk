@@ -107,16 +107,18 @@ namespace dnv::vista::sdk
 		 * @details Verbose mode typically affects the `toString()` representation.
 		 * @return True if verbose mode is indicated, false otherwise.
 		 */
-		[[nodiscard]] virtual bool isVerboseMode() const = 0;
+		[[nodiscard]] virtual bool isVerboseMode() const noexcept = 0;
 
 		/**
 		 * @brief Gets the primary GMOD path item of the Local ID.
-		 * @details The primary item is mandatory for a valid Local ID.
-		 * @return A constant reference to the primary `GmodPath`.
-		 * @throws std::runtime_error (or derived) if the primary item is unexpectedly absent
-		 *         (though this should typically be guaranteed by valid construction).
+		 * @details The primary item is mandatory for a valid Local ID. For a valid `ILocalId` instance,
+		 *          this optional is expected to contain a value.
+		 * @return A constant reference to an `std::optional<GmodPath>` which holds the primary item.
+		 * @throws std::runtime_error (or derived) if the concrete implementation attempts to dereference
+		 *         an empty optional when it should be populated (implementation-defined behavior,
+		 *         though this should typically be guaranteed by valid construction).
 		 */
-		[[nodiscard]] virtual const GmodPath& primaryItem() const = 0;
+		[[nodiscard]] virtual const std::optional<GmodPath>& primaryItem() const = 0;
 
 		/**
 		 * @brief Gets the optional secondary GMOD path item.
@@ -131,7 +133,7 @@ namespace dnv::vista::sdk
 		 * @details Custom tags are typically prefixed with '~' in the string representation.
 		 * @return True if at least one custom tag exists, false otherwise.
 		 */
-		[[nodiscard]] virtual bool hasCustomTag() const = 0;
+		[[nodiscard]] virtual bool hasCustomTag() const noexcept = 0;
 
 		/**
 		 * @brief Gets all metadata tags associated with the Local ID.
@@ -175,7 +177,7 @@ namespace dnv::vista::sdk
 		 * @return An instance of the concrete Local ID type `T`.
 		 * @throws std::invalid_argument or derived exception if parsing fails due to invalid format or content.
 		 */
-		[[nodiscard]] static T parse( const std::string& localIdStr );
+		[[nodiscard]] static T parse( std::string_view localIdStr );
 
 		/**
 		 * @brief Attempts to parse a string representation into a concrete Local ID object.
@@ -189,7 +191,7 @@ namespace dnv::vista::sdk
 		 *                     if parsing succeeds, or `std::nullopt` otherwise.
 		 * @return True if parsing was successful, false otherwise.
 		 */
-		[[nodiscard]] static bool tryParse( const std::string& localIdStr, ParsingErrors& errors, std::optional<T>& localId );
+		[[nodiscard]] static bool tryParse( std::string_view localIdStr, ParsingErrors& errors, std::optional<T>& localId );
 	};
 }
 

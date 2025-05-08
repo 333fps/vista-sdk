@@ -660,7 +660,7 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	GmodPath GmodPath::parse(
-		const std::string& item,
+		std::string_view item,
 		VisVersion visVersion )
 	{
 		SPDLOG_DEBUG( "Parsing path '{}' with VIS version {}", item, static_cast<int>( visVersion ) );
@@ -668,10 +668,10 @@ namespace dnv::vista::sdk
 		const Gmod& gmod = VIS::instance().gmod( visVersion );
 		const Locations& locations = VIS::instance().locations( visVersion );
 
-		return parse( item, gmod, locations );
+		return parse( std::string( item ), gmod, locations );
 	}
 
-	bool GmodPath::tryParse( const std::string& item, VisVersion visVersion, GmodPath& path )
+	bool GmodPath::tryParse( std::string_view item, VisVersion visVersion, GmodPath& path )
 	{
 		SPDLOG_DEBUG( "Attempting to parse path '{}' with VIS version {}", item, static_cast<int>( visVersion ) );
 
@@ -681,7 +681,7 @@ namespace dnv::vista::sdk
 			const Locations& locations = VIS::instance().locations( visVersion );
 
 			GmodPath parsedPath;
-			if ( tryParse( item, gmod, locations, parsedPath ) )
+			if ( tryParse( std::string( item ), gmod, locations, parsedPath ) )
 			{
 				path = std::move( parsedPath );
 				return true;
@@ -696,7 +696,7 @@ namespace dnv::vista::sdk
 	}
 
 	GmodPath GmodPath::parseFullPath(
-		const std::string& pathStr,
+		std::string_view pathStr,
 		VisVersion visVersion )
 	{
 		SPDLOG_DEBUG( "Parsing full path '{}' with VIS version {}", pathStr, static_cast<int>( visVersion ) );
@@ -707,7 +707,7 @@ namespace dnv::vista::sdk
 		GmodPath path;
 		if ( !tryParseFullPath( pathStr, gmod, locations, path ) )
 		{
-			throw std::invalid_argument( "Failed to parse full path string: " + pathStr );
+			throw std::invalid_argument( "Failed to parse full path string: " + std::string( pathStr ) );
 		}
 
 		return path;
