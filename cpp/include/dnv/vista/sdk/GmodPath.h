@@ -630,7 +630,6 @@ namespace dnv::vista::sdk
 				Enumerator* m_enumerator{ nullptr };
 				bool m_isEnd{ true };
 				mutable std::optional<value_type> m_cachedValue;
-				int m_currentIndexSnapshot{ -1 };
 			};
 
 			/**

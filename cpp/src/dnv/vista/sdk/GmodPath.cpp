@@ -474,46 +474,30 @@ namespace dnv::vista::sdk
 	void GmodPath::toString( std::stringstream& builder, char separator ) const
 	{
 		if ( m_isEmpty )
+		{
 			return;
+		}
 
-		bool hasNodeWithLocation = false;
-
+		bool printedParent = false;
 		for ( const auto* nodePtr : m_nodes )
 		{
-			if ( nodePtr && nodePtr->location() )
-			{
-				hasNodeWithLocation = true;
-				break;
-			}
-		}
-		if ( !hasNodeWithLocation && m_targetNode.location() )
-		{
-			hasNodeWithLocation = true;
-		}
-
-		if ( !hasNodeWithLocation )
-		{
-			m_targetNode.toString( builder );
-			return;
-		}
-
-		for ( size_t i = 0; i < m_nodes.size(); ++i )
-		{
-			const GmodNode* nodePtr = m_nodes[i];
 			if ( !nodePtr )
 				continue;
 
-			if ( nodePtr->location() )
+			if ( nodePtr->isLeafNode() )
 			{
-				builder << nodePtr->code();
-
-				if ( nodePtr->location() )
+				if ( printedParent )
 				{
-					builder << '.' << nodePtr->location()->toString();
+					builder << separator;
 				}
-
-				builder << separator;
+				nodePtr->toString( builder );
+				printedParent = true;
 			}
+		}
+
+		if ( printedParent )
+		{
+			builder << separator;
 		}
 
 		m_targetNode.toString( builder );
