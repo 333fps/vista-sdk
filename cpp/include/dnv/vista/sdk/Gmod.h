@@ -662,7 +662,7 @@ namespace dnv::vista::sdk
 			{
 				if ( occurrences == context.maxTraversalOccurrence )
 				{
-					SPDLOG_INFO( "Skipping subtree for node '{}': Occurrence limit ({}) met.", code, occurrences );
+					SPDLOG_DEBUG( "Skipping subtree for node '{}': Occurrence limit ({}) met.", code, occurrences );
 					return TraversalHandlerResult::SkipSubtree;
 				}
 				else if ( occurrences > context.maxTraversalOccurrence )
@@ -675,10 +675,10 @@ namespace dnv::vista::sdk
 			}
 			else
 			{
-				SPDLOG_INFO( "Skipping occurrence check for node '{}' due to ProductSelectionAssignment.", code );
+				SPDLOG_DEBUG( "Skipping occurrence check for node '{}' due to ProductSelectionAssignment.", code );
 			}
 
-			SPDLOG_INFO( "Visiting node: '{}' (Occurrence: {})", code, occurrences + 1 );
+			SPDLOG_DEBUG( "Visiting node: '{}' (Occurrence: {})", code, occurrences + 1 );
 
 			context.parents.push( &node );
 

@@ -12,8 +12,12 @@ namespace dnv::vista::sdk
 	namespace internal
 	{
 		//=====================================================================
-		// CPU Feature Detection
+		// Internal Helper Components
 		//=====================================================================
+
+		//----------------------------------------------
+		// CPU Feature Detection
+		//----------------------------------------------
 
 		bool hasSSE42Support()
 		{
@@ -41,23 +45,9 @@ namespace dnv::vista::sdk
 			return s_hasSSE42;
 		}
 
-		//=====================================================================
-		// Exception Handling
-		//=====================================================================
-
-		void ThrowHelper::throwKeyNotFoundException( std::string_view key )
-		{
-			throw std::out_of_range( "Key not found in dictionary: " + std::string( key ) );
-		}
-
-		void ThrowHelper::throwInvalidOperationException()
-		{
-			throw std::logic_error( "Invalid operation" );
-		}
-
-		//=====================================================================
-		// Hashing
-		//=====================================================================
+		//----------------------------------------------
+		// Hashing Class
+		//----------------------------------------------
 
 		uint32_t Hashing::fnv1a( uint32_t hash, uint8_t ch )
 		{

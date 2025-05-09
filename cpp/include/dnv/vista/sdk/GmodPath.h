@@ -24,8 +24,12 @@ namespace dnv::vista::sdk
 	class GmodParsePathResult;
 
 	//=====================================================================
-	// Helper Classes (Used internally or by GmodPath operations)
+	// Internal Helper Classes
 	//=====================================================================
+
+	//----------------------------------------------
+	// PathNode Struct
+	//----------------------------------------------
 
 	/**
 	 * @brief Represents a single node component parsed from a path string segment.
@@ -47,6 +51,10 @@ namespace dnv::vista::sdk
 		 */
 		PathNode( const std::string& nodeCode = "", const std::optional<Location>& nodeLocation = std::nullopt );
 	};
+
+	//----------------------------------------------
+	// LocationSetsVisitor Struct
+	//----------------------------------------------
 
 	/**
 	 * @brief Helper struct for identifying individualizable node sets within a GmodPath during traversal.
@@ -81,7 +89,7 @@ namespace dnv::vista::sdk
 		std::optional<std::tuple<size_t, size_t, std::optional<Location>>> visit(
 			const GmodNode& node,
 			size_t i,
-			const std::vector<GmodNode>& parents,
+			const std::vector<const GmodNode*>& parents,
 			const GmodNode& target );
 	};
 
@@ -103,16 +111,11 @@ namespace dnv::vista::sdk
 		friend class GmodIndividualizableSet;
 
 	public:
-		//=====================================================================
-		// Constructors and Assignment Operators
-		//=====================================================================
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
 
-		/**
-		 * @brief Default constructor. Creates an empty, invalid path.
-		 * @details An empty path has `m_isEmpty = true`, length 0, and cannot be used
-		 *          until properly initialized or assigned via move semantics.
-		 * @warning Intended primarily for use in containers or as a placeholder.
-		 */
+		/** @brief Default constructor. */
 		GmodPath();
 
 		/**
@@ -128,24 +131,58 @@ namespace dnv::vista::sdk
 		 */
 		GmodPath( const std::vector<const GmodNode*>& parents, GmodNode target, VisVersion visVersion, bool skipVerify = true );
 
-		/** @brief Deleted copy constructor. GmodPath manages ownership and references, making shallow copies unsafe. */
+		/** @brief Copy constructor */
 		GmodPath( const GmodPath& ) = delete;
 
-		/** @brief Deleted copy assignment operator. */
-		GmodPath& operator=( const GmodPath& ) = delete;
-
-		/** @brief Default move constructor. Transfers ownership efficiently. */
+		/** @brief Move constructor */
 		GmodPath( GmodPath&& other ) noexcept = default;
-
-		/** @brief Default move assignment operator. Transfers ownership efficiently. */
-		GmodPath& operator=( GmodPath&& other ) noexcept = default;
 
 		/** @brief Default destructor. */
 		~GmodPath() = default;
 
-		//=====================================================================
-		// Core Properties & Operations
-		//=====================================================================
+		//----------------------------------------------
+		// Assignment Operators
+		//----------------------------------------------
+
+		/** @brief Copy assignment operator */
+		GmodPath& operator=( const GmodPath& ) = delete;
+
+		/** @brief Move assignment operator */
+		GmodPath& operator=( GmodPath&& other ) noexcept = default;
+
+		//----------------------------------------------
+		// Operators
+		//----------------------------------------------
+
+		/**
+		 * @brief Access a node pointer at a specific depth within the path (const version).
+		 * @param depth Zero-based depth index (0 is the first parent/root, `length()-1` is the target node).
+		 * @return Const pointer (`const GmodNode*`) to the node at the specified depth.
+		 *         Returns a pointer to the parent from `m_nodes` or the address of `m_targetNode`.
+		 * @throws std::out_of_range If the `depth` index is invalid for this path.
+		 * @throws std::logic_error If called on an empty path.
+		 */
+		[[nodiscard]] const GmodNode* operator[]( size_t depth ) const;
+
+		/**
+		 * @brief Equality operator. Equivalent to calling `equals(other)`.
+		 * @param other The GmodPath to compare with.
+		 * @return True if the paths are equal, false otherwise.
+		 * @see equals
+		 */
+		bool operator==( const GmodPath& other ) const;
+
+		/**
+		 * @brief Inequality operator. Equivalent to `!equals(other)`.
+		 * @param other The GmodPath to compare with.
+		 * @return True if the paths are not equal, false otherwise.
+		 * @see equals
+		 */
+		bool operator!=( const GmodPath& other ) const;
+
+		//----------------------------------------------
+		// Public Methods
+		//----------------------------------------------
 
 		/**
 		 * @brief Get the total number of nodes in the path (parents + target node).
@@ -162,7 +199,6 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Check if the target node of this path is designated as mappable in the GMOD.
 		 * @return True if the target node is mappable, false otherwise. Returns false for an empty path.
-		 * @throws std::logic_error If called on an empty path (though `noexcept` suggests it should return false).
 		 *         Let's assume it returns false for empty path based on implementation.
 		 */
 		[[nodiscard]] bool isMappable() const noexcept;
@@ -213,9 +249,9 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] std::vector<GmodIndividualizableSet> individualizableSets();
 
-		//=====================================================================
+		//----------------------------------------------
 		// Accessors
-		//=====================================================================
+		//----------------------------------------------
 
 		/**
 		 * @brief Get the VIS (Vessel Information Structure) version associated with this path.
@@ -238,9 +274,9 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] const std::vector<const GmodNode*>& nodes() const noexcept;
 
-		//=====================================================================
+		//----------------------------------------------
 		// Specific Accessors
-		//=====================================================================
+		//----------------------------------------------
 
 		/**
 		 * @brief Get the normal assignment name for the node at a specific depth, if defined in the GMOD.
@@ -261,9 +297,9 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] std::vector<std::pair<size_t, std::string>> commonNames() const;
 
-		//=====================================================================
+		//----------------------------------------------
 		// String Conversions
-		//=====================================================================
+		//----------------------------------------------
 
 		/**
 		 * @brief Convert the path to its standard string representation (e.g., "CODE1/CODE2.LOC/CODE3").
@@ -310,39 +346,9 @@ namespace dnv::vista::sdk
 		 */
 		void toStringDump( std::stringstream& builder ) const;
 
-		//=====================================================================
-		// Operators
-		//=====================================================================
-
-		/**
-		 * @brief Access a node pointer at a specific depth within the path (const version).
-		 * @param depth Zero-based depth index (0 is the first parent/root, `length()-1` is the target node).
-		 * @return Const pointer (`const GmodNode*`) to the node at the specified depth.
-		 *         Returns a pointer to the parent from `m_nodes` or the address of `m_targetNode`.
-		 * @throws std::out_of_range If the `depth` index is invalid for this path.
-		 * @throws std::logic_error If called on an empty path.
-		 */
-		[[nodiscard]] const GmodNode* operator[]( size_t depth ) const;
-
-		/**
-		 * @brief Equality operator. Equivalent to calling `equals(other)`.
-		 * @param other The GmodPath to compare with.
-		 * @return True if the paths are equal, false otherwise.
-		 * @see equals
-		 */
-		bool operator==( const GmodPath& other ) const;
-
-		/**
-		 * @brief Inequality operator. Equivalent to `!equals(other)`.
-		 * @param other The GmodPath to compare with.
-		 * @return True if the paths are not equal, false otherwise.
-		 * @see equals
-		 */
-		bool operator!=( const GmodPath& other ) const;
-
-		//=====================================================================
-		// Static Methods - Validation
-		//=====================================================================
+		//----------------------------------------------
+		// Static Validation Methods
+		//----------------------------------------------
 
 		/**
 		 * @brief Statically validate the structural integrity of a potential path.
@@ -369,9 +375,9 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] static bool isValid( const std::vector<const GmodNode*>& nodes, const GmodNode& targetNode, size_t& missingLinkAt );
 
-		//=====================================================================
-		// Static Methods - Parsing (using default GMOD/Locations for VisVersion)
-		//=====================================================================
+		//----------------------------------------------
+		// Static Parsing Methods
+		//----------------------------------------------
 
 		/**
 		 * @brief Parse a path string using the default GMOD and Locations for the specified VIS version.
@@ -436,10 +442,6 @@ namespace dnv::vista::sdk
 			VisVersion visVersion,
 			GmodPath& path );
 
-		//=====================================================================
-		// Static Methods - Parsing (using provided GMOD/Locations)
-		//=====================================================================
-
 		/**
 		 * @brief Parse a path string using explicitly provided GMOD and Locations objects.
 		 * @param item The path string to parse.
@@ -481,9 +483,9 @@ namespace dnv::vista::sdk
 			const Locations& locations,
 			GmodPath& path );
 
-		//=====================================================================
-		// Enumerator for Path Traversal
-		//=====================================================================
+		//----------------------------------------------
+		// Enumerator Inner Class
+		//----------------------------------------------
 
 		/**
 		 * @class Enumerator
@@ -494,9 +496,9 @@ namespace dnv::vista::sdk
 		class Enumerator final
 		{
 		public:
-			//----------------------------------------------
+			//---------------------------
 			// Construction / Reset
-			//----------------------------------------------
+			//---------------------------
 
 			/**
 			 * @brief Construct a new Enumerator for a given GmodPath.
@@ -525,9 +527,9 @@ namespace dnv::vista::sdk
 			 */
 			void reset();
 
-			//----------------------------------------------
-			// Iteration Methods
-			//----------------------------------------------
+			//---------------------------
+			// Iteration
+			//---------------------------
 
 			/**
 			 * @brief Gets the current item in the enumeration.
@@ -544,9 +546,9 @@ namespace dnv::vista::sdk
 			 */
 			bool next();
 
-			//-------------------------------------------------------------------------
-			// Iterator Implementation (for range-based for loops)
-			//-------------------------------------------------------------------------
+			//---------------------------
+			// Enumerator Inner Class
+			//---------------------------
 
 			/**
 			 * @class Iterator
@@ -651,9 +653,9 @@ namespace dnv::vista::sdk
 			const size_t m_startIndex;
 		};
 
-		//=====================================================================
+		//----------------------------------------------
 		// Enumerator Accessors
-		//=====================================================================
+		//----------------------------------------------
 
 		/**
 		 * @brief Get an enumerator to traverse the full path from the beginning (depth 0).
@@ -672,9 +674,9 @@ namespace dnv::vista::sdk
 		[[nodiscard]] Enumerator fullPathFrom( size_t fromDepth ) const;
 
 	private:
-		//=====================================================================
-		// Private Static Helper Methods (Implementation Details)
-		//=====================================================================
+		//----------------------------------------------
+		// Private Static Helper Methods
+		//----------------------------------------------
 
 		/**
 		 * @brief Internal implementation for parsing a standard path string (e.g., "A/B.L/C").
@@ -703,9 +705,9 @@ namespace dnv::vista::sdk
 			const Gmod& gmod,
 			const Locations& locations );
 
-		//=====================================================================
+		//----------------------------------------------
 		// Private Member Variables
-		//=====================================================================
+		//----------------------------------------------
 
 		/** @brief The VIS version associated with this path. */
 		VisVersion m_visVersion;
@@ -721,7 +723,7 @@ namespace dnv::vista::sdk
 	};
 
 	//=====================================================================
-	// GmodIndividualizableSet Declaration (Depends on GmodPath)
+	// GmodIndividualizableSet Class
 	//=====================================================================
 
 	/**
@@ -781,18 +783,6 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Sets or removes the location for the target node if it's part of this set.
-		 * @details Modifies the owned `m_targetNode` of the underlying `GmodPath` referenced during construction.
-		 * @warning This method **cannot** change the location of intermediate (parent) nodes in the path,
-		 *          as they are referenced via `const GmodNode*`. It will throw if the target node is not
-		 *          in the set and `newLocation` differs from the set's current location.
-		 * @param newLocation The location to apply, or `std::nullopt` to remove the location.
-		 * @throws std::runtime_error If the internal path pointer is null or if the path contains null pointers.
-		 * @throws std::logic_error If attempting to change the location of intermediate nodes.
-		 */
-		void setLocation( const std::optional<Location>& newLocation );
-
-		/**
 		 * @brief Finalizes modifications and returns the modified `GmodPath` via move semantics.
 		 * @details After calling `build()`, this set becomes invalid (internal path pointer is nullified)
 		 *          and should not be used further. The original `GmodPath` object referenced during
@@ -818,7 +808,7 @@ namespace dnv::vista::sdk
 	};
 
 	//=====================================================================
-	// Result Class for Parsing Operations (Declaration & Definition)
+	// GmodParsePathResult Class
 	//=====================================================================
 
 	/**
@@ -938,47 +928,5 @@ namespace dnv::vista::sdk
 	private:
 		/** @brief Error message describing the parsing failure. */
 		std::string m_error;
-	};
-
-	//=====================================================================
-	// TODO Deprecated/Internal Helper Classes (Consider removal or refactoring)
-	//=====================================================================
-
-	/**
-	 * @class ParseContext
-	 * @brief Represents the context and state during the GmodPath parsing process.
-	 * @warning This class seems related to an older or alternative parsing approach.
-	 *          Its usage might be deprecated or internal. Consider refactoring or removing if unused.
-	 */
-	class ParseContext final
-	{
-	public:
-		/**
-		 * @brief Construct a new parse context.
-		 * @param initialParts Queue of path node components to process.
-		 */
-		explicit ParseContext( std::queue<PathNode> initialParts );
-
-		/** @brief Deleted copy constructor. */
-		ParseContext( const ParseContext& ) = delete;
-		/** @brief Deleted copy assignment operator. */
-		ParseContext& operator=( const ParseContext& ) = delete;
-
-		/** @brief Default move constructor. */
-		ParseContext( ParseContext&& ) noexcept = default;
-		/** @brief Default move assignment operator. */
-		ParseContext& operator=( ParseContext&& ) noexcept = default;
-
-		/** @brief Queue of remaining path node components to process. */
-		std::queue<PathNode> parts;
-
-		/** @brief The current node component being searched for. */
-		PathNode toFind;
-
-		/** @brief Mapping of node codes encountered so far to their resolved locations. */
-		std::unordered_map<std::string, Location> locations;
-
-		/** @brief Potentially holds the result of parsing. */
-		std::optional<GmodPath> path;
 	};
 }

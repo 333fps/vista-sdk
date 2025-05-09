@@ -56,12 +56,12 @@ namespace dnv::vista::sdk
 			const std::vector<const GmodNode*>& currentPathFromTraversalStart,
 			const GmodNode& currentNode )
 		{
-			SPDLOG_INFO( "pathExistsHandler: CurrentNode='{}', TargetNode='{}', PathFromTraversalStart size={}",
+			SPDLOG_DEBUG( "pathExistsHandler: CurrentNode='{}', TargetNode='{}', PathFromTraversalStart size={}",
 				currentNode.code(), context.m_to.code(), currentPathFromTraversalStart.size() );
 
 			if ( currentNode.code() != context.m_to.code() )
 			{
-				SPDLOG_INFO( "pathExistsHandler: CurrentNode '{}' is not the target node '{}'. Continuing traversal.", currentNode.code(), context.m_to.code() );
+				SPDLOG_DEBUG( "pathExistsHandler: CurrentNode '{}' is not the target node '{}'. Continuing traversal.", currentNode.code(), context.m_to.code() );
 				return Gmod::TraversalHandlerResult::Continue;
 			}
 
@@ -211,6 +211,7 @@ namespace dnv::vista::sdk
 			}
 		}
 	}
+
 	//-------------------------------------------------------------------
 	// Parents Implementation
 	//-------------------------------------------------------------------
@@ -320,10 +321,10 @@ namespace dnv::vista::sdk
 
 				try
 				{
-					GmodNode& parentNode = m_nodeMap.at( parentCode );
+					GmodNode& parentNode = m_nodeMap[parentCode];
 					try
 					{
-						GmodNode& childNode = m_nodeMap.at( childCode );
+						GmodNode& childNode = m_nodeMap[childCode];
 
 						parentNode.addChild( &childNode );
 						childNode.addParent( &parentNode );
@@ -367,7 +368,7 @@ namespace dnv::vista::sdk
 			{
 				try
 				{
-					GmodNode& nodeToTrim = m_nodeMap.at( code );
+					GmodNode& nodeToTrim = m_nodeMap[code];
 					nodeToTrim.trim();
 				}
 				catch ( [[maybe_unused]] const std::out_of_range& oor )
@@ -385,7 +386,8 @@ namespace dnv::vista::sdk
 		SPDLOG_INFO( "Gmod constructor: Initializing m_rootNode..." );
 		try
 		{
-			m_rootNode = m_nodeMap.at( "VE" );
+			m_rootNode = m_nodeMap["VE"];
+
 			SPDLOG_INFO( "Gmod constructor: m_rootNode initialized from m_nodeMap, code: '{}'", m_rootNode.code() );
 		}
 		catch ( [[maybe_unused]] const std::out_of_range& oor )

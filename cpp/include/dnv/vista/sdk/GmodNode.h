@@ -217,15 +217,6 @@ namespace dnv::vista::sdk
 		GmodNode();
 
 		/**
-		 * @brief Internal constructor for creating modified copies (e.g., for "wither" methods like `withLocation`).
-		 * @details This constructor is typically used internally to create a new node instance
-		 *          based on an existing one, often with a specific modification.
-		 * @param other The source node to copy data from.
-		 * @param b A tag parameter, marked [[maybe_unused]] if its value isn't directly used beyond dispatching to this constructor.
-		 */
-		GmodNode( const GmodNode& other, [[maybe_unused]] bool b );
-
-		/**
 		 * @brief Constructs a GmodNode from a Data Transfer Object (DTO).
 		 * @param version The VIS version associated with this node.
 		 * @param dto The DTO containing the node's data.
@@ -233,13 +224,22 @@ namespace dnv::vista::sdk
 		GmodNode( VisVersion version, const GmodNodeDto& dto );
 
 		/** @brief Copy constructor */
-		GmodNode( const GmodNode& ) = delete;
+		GmodNode( const GmodNode& ) = default;
 
 		/** @brief Move constructor */
 		GmodNode( GmodNode&& ) noexcept = default;
 
 		/** @brief Destructor */
 		~GmodNode() = default;
+
+		/**
+		 * @brief Internal constructor for creating modified copies (e.g., for "wither" methods like `withLocation`).
+		 * @details This constructor is typically used internally to create a new node instance
+		 *          based on an existing one, often with a specific modification.
+		 * @param other The source node to copy data from.
+		 * @param b A tag parameter, marked [[maybe_unused]] if its value isn't directly used beyond dispatching to this constructor.
+		 */
+		GmodNode( const GmodNode& other, [[maybe_unused]] bool b );
 
 		//----------------------------------------------
 		// Assignment Operators

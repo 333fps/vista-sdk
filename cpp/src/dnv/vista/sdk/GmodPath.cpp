@@ -18,14 +18,22 @@
 namespace dnv::vista::sdk
 {
 	//=====================================================================
-	// Helper Classes (Used internally or by GmodPath operations)
+	// Internal Helper Classes
 	//=====================================================================
+
+	//----------------------------------------------
+	// PathNode Struct
+	//----------------------------------------------
 
 	PathNode::PathNode( const std::string& code, const std::optional<Location>& location )
 		: code{ code },
 		  location{ location }
 	{
 	}
+
+	//----------------------------------------------
+	// LocationSetsVisitor Struct
+	//----------------------------------------------
 
 	LocationSetsVisitor::LocationSetsVisitor()
 		: m_currentParentStart{ 0 }
@@ -35,15 +43,15 @@ namespace dnv::vista::sdk
 	std::optional<std::tuple<size_t, size_t, std::optional<Location>>> LocationSetsVisitor::visit(
 		const GmodNode& node,
 		size_t i,
-		const std::vector<GmodNode>& parents,
+		const std::vector<const GmodNode*>& parents,
 		const GmodNode& target )
 	{
-		SPDLOG_INFO( "LocationSetsVisitor: Visiting node '{}' at index {}", node.code(), i );
+		SPDLOG_DEBUG( "LocationSetsVisitor: Visiting node '{}' at index {}", node.code(), i );
 
 		bool isParent = Gmod::isPotentialParent( node.metadata().type() );
 		bool isTargetNode = ( i == parents.size() );
 
-		SPDLOG_INFO( "Node '{}': isTargetNode={}, isParent={}, isIndividualizable={}", node.code(), isTargetNode, isParent, node.isIndividualizable( isTargetNode ) );
+		SPDLOG_DEBUG( "Node '{}': isTargetNode={}, isParent={}, isIndividualizable={}", node.code(), isTargetNode, isParent, node.isIndividualizable( isTargetNode ) );
 
 		if ( m_currentParentStart == 0 )
 		{
@@ -51,7 +59,7 @@ namespace dnv::vista::sdk
 				m_currentParentStart = i;
 			if ( node.isIndividualizable( isTargetNode ) )
 			{
-				SPDLOG_INFO( "Single node is individualizable: [{},{}] with location {}",
+				SPDLOG_DEBUG( "Single node is individualizable: [{},{}] with location {}",
 					i, i, node.location() ? node.location()->toString() : "null" );
 				return std::make_tuple( i, i, node.location() );
 			}
@@ -66,7 +74,7 @@ namespace dnv::vista::sdk
 					if ( node.isIndividualizable( isTargetNode ) )
 					{
 						nodes = std::make_tuple( m_currentParentStart, i, node.location() );
-						SPDLOG_INFO( "Found adjacent individualizable nodes: [{},{}] with location {}",
+						SPDLOG_DEBUG( "Found adjacent individualizable nodes: [{},{}] with location {}",
 							m_currentParentStart, i, node.location() ? node.location()->toString() : "null" );
 					}
 				}
@@ -77,7 +85,7 @@ namespace dnv::vista::sdk
 
 					for ( size_t j = m_currentParentStart + 1; j <= i; j++ )
 					{
-						const auto& setNode = j < parents.size() ? parents[j] : target;
+						const GmodNode& setNode = ( j < parents.size() ) ? *( parents[j] ) : target;
 
 						if ( !setNode.isIndividualizable( j == parents.size(), true ) )
 						{
@@ -121,7 +129,7 @@ namespace dnv::vista::sdk
 					bool hasLeafNode = false;
 					for ( size_t j = std::get<0>( *nodes ); j <= std::get<1>( *nodes ); j++ )
 					{
-						const auto& setNode = j < parents.size() ? parents[static_cast<size_t>( j )] : target;
+						const GmodNode& setNode = ( j < parents.size() ) ? *( parents[static_cast<size_t>( j )] ) : target;
 						if ( setNode.isLeafNode() || j == parents.size() )
 						{
 							hasLeafNode = true;
@@ -130,13 +138,15 @@ namespace dnv::vista::sdk
 					}
 
 					if ( hasLeafNode )
+					{
 						return nodes;
+					}
 				}
 			}
 
 			if ( isTargetNode && node.isIndividualizable( isTargetNode ) )
 			{
-				SPDLOG_INFO( "Target node forms singleton set: [{},{}] with location {}", i, i, node.location() ? node.location()->toString() : "null" );
+				SPDLOG_DEBUG( "Target node forms singleton set: [{},{}] with location {}", i, i, node.location() ? node.location()->toString() : "null" );
 				return std::make_tuple( i, i, node.location() );
 			}
 		}
@@ -148,9 +158,9 @@ namespace dnv::vista::sdk
 	// GmodPath Class
 	//=====================================================================
 
-	//=====================================================================
-	// Constructors & Assignment Operators
-	//=====================================================================
+	//----------------------------------------------
+	// Construction / Destruction
+	//----------------------------------------------
 
 	GmodPath::GmodPath()
 		: m_visVersion{ VisVersion::Unknown },
@@ -195,9 +205,42 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//=====================================================================
-	// Core Properties & Operations
-	//=====================================================================
+	//----------------------------------------------
+	// Operators
+	//----------------------------------------------
+
+	const GmodNode* GmodPath::operator[]( size_t depth ) const
+	{
+		if ( m_isEmpty )
+		{
+			SPDLOG_ERROR( "Array access on empty path" );
+			throw std::logic_error( "Cannot access nodes of an empty path" );
+		}
+		if ( depth >= length() )
+		{
+			SPDLOG_ERROR( "Array access out of bounds: index {} in path of length {}", depth, length() );
+			throw std::out_of_range( "Node depth out of range" );
+		}
+
+		if ( depth < m_nodes.size() )
+			return m_nodes[depth];
+		else
+			return &m_targetNode;
+	}
+
+	bool GmodPath::operator==( const GmodPath& other ) const
+	{
+		return equals( other );
+	}
+
+	bool GmodPath::operator!=( const GmodPath& other ) const
+	{
+		return !equals( other );
+	}
+
+	//----------------------------------------------
+	// Public Methods
+	//----------------------------------------------
 
 	size_t GmodPath::length() const noexcept
 	{
@@ -311,9 +354,9 @@ namespace dnv::vista::sdk
 		return {};
 	}
 
-	//=====================================================================
+	//----------------------------------------------
 	// Accessors
-	//=====================================================================
+	//----------------------------------------------
 
 	VisVersion GmodPath::visVersion() const noexcept
 	{
@@ -336,9 +379,9 @@ namespace dnv::vista::sdk
 		return m_nodes;
 	}
 
-	//=====================================================================
+	//----------------------------------------------
 	// Specific Accessors
-	//=====================================================================
+	//----------------------------------------------
 
 	std::optional<std::string> GmodPath::normalAssignmentName( size_t nodeDepth ) const
 	{
@@ -417,9 +460,9 @@ namespace dnv::vista::sdk
 		return results;
 	}
 
-	//=====================================================================
+	//----------------------------------------------
 	// String Conversions
-	//=====================================================================
+	//----------------------------------------------
 
 	std::string GmodPath::toString() const
 	{
@@ -548,42 +591,9 @@ namespace dnv::vista::sdk
 		builder << " (Mappable: " << ( m_targetNode.isMappable() ? "Yes" : "No" ) << ")";
 	}
 
-	//=====================================================================
-	// Operators
-	//=====================================================================
-
-	const GmodNode* GmodPath::operator[]( size_t depth ) const
-	{
-		if ( m_isEmpty )
-		{
-			SPDLOG_ERROR( "Array access on empty path" );
-			throw std::logic_error( "Cannot access nodes of an empty path" );
-		}
-		if ( depth >= length() )
-		{
-			SPDLOG_ERROR( "Array access out of bounds: index {} in path of length {}", depth, length() );
-			throw std::out_of_range( "Node depth out of range" );
-		}
-
-		if ( depth < m_nodes.size() )
-			return m_nodes[depth];
-		else
-			return &m_targetNode;
-	}
-
-	bool GmodPath::operator==( const GmodPath& other ) const
-	{
-		return equals( other );
-	}
-
-	bool GmodPath::operator!=( const GmodPath& other ) const
-	{
-		return !equals( other );
-	}
-
-	//-------------------------------------------------------------------------
-	// GmodPath Implementation - Static Methods - Validation
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
+	// Static Validation Methods
+	//----------------------------------------------
 
 	bool GmodPath::isValid( const std::vector<const GmodNode*>& nodes, const GmodNode& targetNode )
 	{
@@ -655,9 +665,9 @@ namespace dnv::vista::sdk
 		return true;
 	}
 
-	//=====================================================================
-	// Static Methods - Validation
-	//=====================================================================
+	//----------------------------------------------
+	// Static Parsing Methods
+	//----------------------------------------------
 
 	GmodPath GmodPath::parse(
 		std::string_view item,
@@ -755,10 +765,6 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//=====================================================================
-	// Static Methods - Parsing (using default GMOD/Locations for VisVersion)
-	//=====================================================================
-
 	GmodPath GmodPath::parse( const std::string& item, const Gmod& gmod, const Locations& locations )
 	{
 		SPDLOG_INFO( "Parsing path '{}' using provided GMOD and Locations", item );
@@ -810,7 +816,7 @@ namespace dnv::vista::sdk
 		}
 		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			SPDLOG_ERROR( "Exception during tryParse: {}", ex.what() ); // Changed message slightly
+			SPDLOG_ERROR( "Exception during tryParse: {}", ex.what() );
 			return false;
 		}
 	}
@@ -849,10 +855,6 @@ namespace dnv::vista::sdk
 			return false;
 		}
 	}
-
-	//-------------------------------------------------------------------------
-	// GmodPath Implementation - Private Static Methods - Parsing Internals
-	//-------------------------------------------------------------------------
 
 	std::unique_ptr<GmodParsePathResult> GmodPath::parseInternal( const std::string& item, const Gmod& gmod, const Locations& locations )
 	{
@@ -1141,9 +1143,13 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//=====================================================================
-	// Enumerator for Path Traversal
-	//=====================================================================
+	//----------------------------------------------
+	// Enumerator Inner Class
+	//----------------------------------------------
+
+	//---------------------------
+	// Construction / Reset
+	//---------------------------
 
 	GmodPath::Enumerator::Enumerator( const GmodPath& path, std::optional<size_t> fromDepth )
 		: m_path{ path },
@@ -1166,6 +1172,16 @@ namespace dnv::vista::sdk
 			throw std::out_of_range( "Starting depth out of range for path" );
 		}
 	}
+
+	void GmodPath::Enumerator::reset()
+	{
+		SPDLOG_DEBUG( "Resetting enumerator to start position" );
+		m_currentIndex = -1;
+	}
+
+	//---------------------------
+	// Iteration
+	//---------------------------
 
 	std::pair<size_t, std::reference_wrapper<const GmodNode>> GmodPath::Enumerator::current() const
 	{
@@ -1200,11 +1216,9 @@ namespace dnv::vista::sdk
 		return true;
 	}
 
-	void GmodPath::Enumerator::reset()
-	{
-		SPDLOG_DEBUG( "Resetting enumerator to start position" );
-		m_currentIndex = -1;
-	}
+	//---------------------------
+	// Enumerator Inner Class
+	//---------------------------
 
 	void GmodPath::Enumerator::Iterator::updateCache() const
 	{
@@ -1320,9 +1334,9 @@ namespace dnv::vista::sdk
 		return Iterator( nullptr, true );
 	}
 
-	//=====================================================================
+	//----------------------------------------------
 	// Enumerator Accessors
-	//=====================================================================
+	//----------------------------------------------
 
 	GmodPath::Enumerator GmodPath::fullPath() const
 	{
@@ -1353,8 +1367,12 @@ namespace dnv::vista::sdk
 	}
 
 	//=====================================================================
-	// GmodIndividualizableSet Implementation
+	// GmodIndividualizableSet Class
 	//=====================================================================
+
+	//----------------------------------------------
+	// Construction
+	//----------------------------------------------
 
 	GmodIndividualizableSet::GmodIndividualizableSet( const std::vector<size_t>& nodeIndices, GmodPath& path )
 		: m_nodeIndices{ nodeIndices },
@@ -1430,6 +1448,10 @@ namespace dnv::vista::sdk
 		}
 	}
 
+	//----------------------------------------------
+	// Accessors
+	//----------------------------------------------
+
 	std::vector<std::reference_wrapper<const GmodNode>> GmodIndividualizableSet::nodes() const
 	{
 		if ( !m_path )
@@ -1480,56 +1502,9 @@ namespace dnv::vista::sdk
 		return nodePtr->location();
 	}
 
-	void GmodIndividualizableSet::setLocation( const std::optional<Location>& newLocation )
-	{
-		if ( !m_path )
-		{
-			SPDLOG_ERROR( "Attempted to call setLocation() on invalid GmodIndividualizableSet (after build)" );
-			throw std::runtime_error( "GmodIndividualizableSet is no longer valid" );
-		}
-
-		SPDLOG_INFO( "Setting location {} for {} nodes in individualizable set",
-			newLocation ? newLocation->toString() : "null", m_nodeIndices.size() );
-
-		bool targetNodeModified = false;
-		for ( size_t idx : m_nodeIndices )
-		{
-			const GmodNode* nodePtr = ( *m_path )[idx];
-			if ( !nodePtr )
-			{
-				SPDLOG_ERROR( "Null node pointer encountered at index {} during GmodIndividualizableSet::setLocation()", idx );
-				throw std::runtime_error( "Invalid path state: null node pointer" );
-			}
-
-			if ( idx == m_path->length() - 1 )
-			{
-				if ( newLocation )
-				{
-					m_path->m_targetNode = nodePtr->withLocation( *newLocation );
-				}
-				else
-				{
-					m_path->m_targetNode = nodePtr->withoutLocation();
-				}
-				targetNodeModified = true;
-				SPDLOG_DEBUG( "Modified owned target node location at index {}", idx );
-			}
-			else
-			{
-				const auto& currentLoc = nodePtr->location();
-				if ( currentLoc != newLocation )
-				{
-					SPDLOG_ERROR( "Cannot change location of intermediate node '{}' at index {} via GmodIndividualizableSet::setLocation(). Locations must match.", nodePtr->code(), idx );
-					throw std::logic_error( "Cannot change location of intermediate nodes in a GmodPath set." );
-				}
-			}
-		}
-		if ( !targetNodeModified && newLocation != location() )
-		{
-			SPDLOG_ERROR( "setLocation called with a new location, but the target node was not part of the set. Cannot modify intermediate nodes." );
-			throw std::logic_error( "Cannot change location of intermediate nodes in a GmodPath set." );
-		}
-	}
+	//----------------------------------------------
+	// Mutators and Operations
+	//----------------------------------------------
 
 	GmodPath GmodIndividualizableSet::build()
 	{
@@ -1546,6 +1521,10 @@ namespace dnv::vista::sdk
 
 		return result;
 	}
+
+	//----------------------------------------------
+	// Conversion
+	//----------------------------------------------
 
 	std::string GmodIndividualizableSet::toString() const
 	{
@@ -1586,7 +1565,7 @@ namespace dnv::vista::sdk
 	}
 
 	//=====================================================================
-	// Result Class for Parsing Operations (Declaration & Definition)
+	// GmodParsePathResult Class
 	//=====================================================================
 
 	GmodParsePathResult::Ok::Ok( GmodPath&& path )
@@ -1616,17 +1595,5 @@ namespace dnv::vista::sdk
 	const std::string& GmodParsePathResult::Err::error()
 	{
 		return m_error;
-	}
-
-	//=====================================================================
-	// TODO Deprecated/Internal Helper Classes (Consider removal or refactoring)
-	//=====================================================================
-
-	ParseContext::ParseContext( std::queue<PathNode> initialParts )
-		: parts{ std::move( initialParts ) },
-		  toFind{},
-		  locations{},
-		  path{ std::nullopt }
-	{
 	}
 }
