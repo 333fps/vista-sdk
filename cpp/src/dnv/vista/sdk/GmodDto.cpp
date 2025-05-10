@@ -168,25 +168,38 @@ namespace dnv::vista::sdk
 				SPDLOG_ERROR( "GMOD Node JSON (code='{}') missing required '{}' field or not a string", code, TYPE_KEY );
 				return std::nullopt;
 			}
-			if ( !json.contains( NAME_KEY ) || !json.at( NAME_KEY ).is_string() )
+
+			std::string nameValue;
+			if ( json.contains( NAME_KEY ) )
 			{
-				SPDLOG_ERROR( "GMOD Node JSON (code='{}') missing required '{}' field or not a string", code, NAME_KEY );
-				return std::nullopt;
+				if ( json.at( NAME_KEY ).is_string() )
+				{
+					nameValue = json.at( NAME_KEY ).get<std::string>();
+				}
+				else
+				{
+					SPDLOG_ERROR( "GMOD Node JSON (code='{}') field '{}' is present but not a string", code, NAME_KEY );
+					return std::nullopt;
+				}
+			}
+			else
+			{
+				SPDLOG_WARN( "GMOD Node JSON (code='{}') missing '{}' field. Defaulting name to empty string.", code, NAME_KEY );
+				nameValue = "";
 			}
 
 			std::string category = internString( json.at( CATEGORY_KEY ).get<std::string>() );
 			std::string type = internString( json.at( TYPE_KEY ).get<std::string>() );
-			std::string name = json.at( NAME_KEY ).get<std::string>();
 
 			if ( category.empty() )
 				SPDLOG_WARN( "Empty category field found in GMOD node code='{}'", code );
 			if ( type.empty() )
 				SPDLOG_WARN( "Empty type field found in GMOD node code='{}'", code );
-			if ( name.empty() )
-				SPDLOG_WARN( "Empty name field found in GMOD node code='{}'", code );
+			if ( nameValue.empty() )
+				SPDLOG_WARN( "Empty name field used for GMOD node code='{}'", code );
 
 			SPDLOG_DEBUG( "Parsed required GMOD node fields: category={}, type={}, code={}, name={}",
-				category, type, code, name );
+				category, type, code, nameValue );
 
 			std::optional<std::string> commonName = std::nullopt;
 			std::optional<std::string> definition = std::nullopt;
@@ -250,7 +263,7 @@ namespace dnv::vista::sdk
 				std::move( category ),
 				std::move( type ),
 				std::move( code ),
-				std::move( name ),
+				std::move( nameValue ),
 				std::move( commonName ),
 				std::move( definition ),
 				std::move( commonDefinition ),

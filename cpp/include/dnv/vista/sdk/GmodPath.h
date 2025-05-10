@@ -28,43 +28,19 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	//----------------------------------------------
-	// PathNode Struct
-	//----------------------------------------------
-
-	/**
-	 * @brief Represents a single node component parsed from a path string segment.
-	 * @details Contains the node's code and optional location before it's resolved against a Gmod.
-	 *          Used primarily during the parsing process.
-	 */
-	struct PathNode final
-	{
-		/** @brief Code identifying the node (e.g., "HULL", "SYS"). */
-		std::string code{};
-
-		/** @brief Optional location associated with the node (e.g., "P", "S"). */
-		std::optional<Location> location{};
-
-		/**
-		 * @brief Construct a new PathNode.
-		 * @param nodeCode The node code (default: empty string).
-		 * @param nodeLocation The optional location (default: no location).
-		 */
-		PathNode( const std::string& nodeCode = "", const std::optional<Location>& nodeLocation = std::nullopt );
-	};
-
-	//----------------------------------------------
 	// LocationSetsVisitor Struct
 	//----------------------------------------------
 
 	/**
 	 * @brief Helper struct for identifying individualizable node sets within a GmodPath during traversal.
-	 * @details Used internally by `GmodPath::individualizableSets()` to track consecutive individualizable nodes.
-	 * @warning This visitor's implementation needs updating to work correctly with the `GmodPath` structure
-	 *          that uses `std::vector<const GmodNode*>` for parents. The current signature is likely incorrect.
+	 * @details Used internally by `GmodPath` methods to track consecutive individualizable nodes
+	 *          and determine their common location according to GMOD rules. It operates on nodes
+	 *          from a `GmodPath` instance.
 	 */
 	struct LocationSetsVisitor final
 	{
-		/** @brief Starting index of the current potential individualizable parent sequence. */
+		/** @brief Starting index of the current potential individualizable parent sequence within the path.
+		 *         Initialized to a value indicating "not started" (e.g., std::numeric_limits<size_t>::max()). */
 		size_t m_currentParentStart;
 
 		/**
@@ -74,23 +50,22 @@ namespace dnv::vista::sdk
 
 		/**
 		 * @brief Visits a node during path traversal to identify potential individualizable sets.
-		 * @warning The signature `const std::vector<GmodNode>& parents` is likely outdated and needs
-		 *          to be changed to `const std::vector<const GmodNode*>& parents` to match `GmodPath`.
-		 * @param node The current GmodNode being visited in the path.
-		 * @param i The index/depth of the current node in the path (0-based).
-		 * @param parents Collection of parent nodes in the path, from root to leaf. (NEEDS UPDATE)
-		 * @param target The target GmodNode at the end of the path.
+		 * @param visitedNodeInstance The specific GmodNode instance from the path currently being evaluated by the caller's loop.
+		 * @param visitedNodeIndex The 0-based index of `visitedNodeInstance` within the full path.
+		 * @param allPathParentInstances A const reference to the vector of all parent GmodNode instances in the GmodPath being analyzed.
+		 * @param pathTargetInstance A const reference to the target GmodNode instance of the GmodPath being analyzed.
 		 * @return Optional tuple containing:
-		 *         - size_t: Starting index (inclusive) of the identified individualizable set.
-		 *         - size_t: Ending index (inclusive) of the identified individualizable set.
+		 *         - size_t: Starting index (inclusive) of the identified individualizable set within the path.
+		 *         - size_t: Ending index (inclusive) of the identified individualizable set within the path.
 		 *         - std::optional<Location>: The common location associated with the set, if any.
-		 *         Returns std::nullopt if the current node doesn't complete an individualizable set.
+		 *         Returns std::nullopt if the current node doesn't complete or form part of an individualizable set
+		 *         according to the GMOD rules.
 		 */
 		std::optional<std::tuple<size_t, size_t, std::optional<Location>>> visit(
-			const GmodNode& node,
-			size_t i,
-			const std::vector<const GmodNode*>& parents,
-			const GmodNode& target );
+			const GmodNode& visitedNodeInstance,
+			size_t visitedNodeIndex,
+			const std::vector<GmodNode>& allPathParentInstances,
+			const GmodNode& pathTargetInstance );
 	};
 
 	//=====================================================================
@@ -100,11 +75,12 @@ namespace dnv::vista::sdk
 	/**
 	 * @class GmodPath
 	 * @brief Represents a hierarchical path in the Generic Product Model (GMOD).
-	 * @details A GmodPath consists of a sequence of parent GmodNode pointers (`m_nodes`)
-	 *          and an owned target GmodNode (`m_targetNode`), forming a path through the
-	 *          GMOD structure as defined in ISO 19848. Each node in the path may have an
-	 *          optional Location. This class uses move-only semantics to manage ownership
-	 *          of the target node and references to parent nodes (which are typically owned by a Gmod instance).
+	 * @details A GmodPath consists of a sequence of owned parent GmodNode objects (`m_ownedParentNodes`)
+	 *          and an owned target GmodNode (`m_ownedTargetNode`), forming a path through the
+	 *          GMOD structure as defined in ISO 19848. These nodes are typically initialized from
+	 *          GmodNode templates but are managed as distinct instances by the GmodPath. Each node
+	 *          in the path may have an optional Location. This class uses move-only semantics for transfer
+	 *          of ownership and manages its own node data.
 	 */
 	class GmodPath final
 	{
@@ -129,10 +105,13 @@ namespace dnv::vista::sdk
 		 *                   If false, validates the path structure upon construction using `isValid()`.
 		 * @throws std::invalid_argument If `skipVerify` is false and the provided path structure is invalid.
 		 */
-		GmodPath( const std::vector<const GmodNode*>& parents, GmodNode target, VisVersion visVersion, bool skipVerify = true );
+		GmodPath( const std::vector<const GmodNode*>& initialParentNodeTemplates,
+			const GmodNode& initialTargetNodeTemplate,
+			VisVersion visVersion,
+			bool skipVerify = true );
 
 		/** @brief Copy constructor */
-		GmodPath( const GmodPath& ) = delete;
+		GmodPath( const GmodPath& );
 
 		/** @brief Move constructor */
 		GmodPath( GmodPath&& other ) noexcept = default;
@@ -145,7 +124,7 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
-		GmodPath& operator=( const GmodPath& ) = delete;
+		GmodPath& operator=( const GmodPath& );
 
 		/** @brief Move assignment operator */
 		GmodPath& operator=( GmodPath&& other ) noexcept = default;
@@ -204,11 +183,11 @@ namespace dnv::vista::sdk
 		[[nodiscard]] bool isMappable() const noexcept;
 
 		/**
-		 * @brief Creates a new GmodPath instance identical to this one but without locations on the target node.
-		 * @details Creates a copy of the path structure, but the new target node instance is created using `withoutLocation()`.
-		 *          Parent node pointers remain unchanged (locations on pointed-to parents are not affected).
-		 * @warning This function's name might be misleading as it only affects the owned target node.
-		 * @return A new GmodPath instance with a location-less target node. Returns an empty path if called on an empty path.
+		 * @brief Creates a new GmodPath instance identical to this one but with locations removed from all its nodes.
+		 * @details Creates a new path by making new instances of all parent nodes and the target node,
+		 *          each created using their respective `withoutLocation()` method.
+		 * @return A new GmodPath instance where all constituent nodes are copies without locations.
+		 *         Returns an empty path if called on an empty path.
 		 */
 		[[nodiscard]] GmodPath withoutLocations() const;
 
@@ -235,7 +214,7 @@ namespace dnv::vista::sdk
 		 * @details Checks both the parent nodes (via pointers) and the owned target node.
 		 * @return True if at least one node in the path is individualizable, false otherwise or for an empty path.
 		 */
-		[[nodiscard]] bool isIndividualizable() const noexcept;
+		[[nodiscard]] bool isIndividualizable() const;
 
 		/**
 		 * @brief Identifies and returns all sets of consecutive individualizable nodes within this path.
@@ -265,14 +244,6 @@ namespace dnv::vista::sdk
 		 * @throws std::logic_error If called on an empty path.
 		 */
 		[[nodiscard]] const GmodNode& targetNode() const;
-
-		/**
-		 * @brief Get a const reference to the vector containing pointers to the parent nodes.
-		 * @details The vector contains `const GmodNode*` elements, ordered from the root node
-		 *          up to (but not including) the target node.
-		 * @return Const reference to the vector of parent node pointers. Returns an empty vector if path length <= 1.
-		 */
-		[[nodiscard]] const std::vector<const GmodNode*>& nodes() const noexcept;
 
 		//----------------------------------------------
 		// Specific Accessors
@@ -392,6 +363,11 @@ namespace dnv::vista::sdk
 			std::string_view item,
 			VisVersion visVersion );
 
+		[[nodiscard]] static GmodPath parse(
+			const std::string& item,
+			VisVersion visVersion,
+			const Gmod& gmod );
+
 		/**
 		 * @brief Try to parse a path string using the default GMOD and Locations for the specified VIS version.
 		 * @param item The path string to parse.
@@ -418,6 +394,11 @@ namespace dnv::vista::sdk
 			std::string_view pathStr,
 			VisVersion visVersion );
 
+		[[nodiscard]] static GmodPath parseFullPath(
+			const std::string& item,
+			VisVersion visVersion,
+			const Gmod& gmod );
+
 		/**
 		 * @brief Try to parse a full path string using the default GMOD and Locations for the specified VIS version.
 		 * @param pathStr The full path string to parse.
@@ -441,6 +422,12 @@ namespace dnv::vista::sdk
 			std::string_view pathStr,
 			VisVersion visVersion,
 			GmodPath& path );
+
+		[[nodiscard]] static bool tryParseFullPath(
+			const std::string& item,
+			VisVersion visVersion,
+			const Gmod& gmod,
+			std::optional<GmodPath>& path );
 
 		/**
 		 * @brief Parse a path string using explicitly provided GMOD and Locations objects.
@@ -468,6 +455,12 @@ namespace dnv::vista::sdk
 			const Gmod& gmod,
 			const Locations& locations,
 			GmodPath& path );
+
+		[[nodiscard]] static bool tryParse(
+			const std::string& item,
+			VisVersion visVersion,
+			const Gmod& gmod,
+			std::optional<GmodPath>& path );
 
 		/**
 		 * @brief Try to parse a full path string (provided as string_view) using explicit GMOD/Locations.
@@ -680,13 +673,13 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Internal implementation for parsing a standard path string (e.g., "A/B.L/C").
 		 * @details Handles splitting, node/location parsing, node lookup, and path validation/construction.
-		 * @param item The path string to parse.
+		 * @param item The path string (as a string_view) to parse.
 		 * @param gmod The `Gmod` object to use for resolving nodes.
 		 * @param locations The `Locations` object to use for resolving locations.
 		 * @return A `GmodParsePathResult` containing either the parsed `GmodPath` (Ok) or an error message (Err).
 		 */
 		[[nodiscard]] static std::unique_ptr<GmodParsePathResult> parseInternal(
-			const std::string& item,
+			std::string_view item,
 			const Gmod& gmod,
 			const Locations& locations );
 
@@ -712,10 +705,11 @@ namespace dnv::vista::sdk
 		VisVersion m_visVersion;
 
 		/** @brief The owned target node at the end of the path. Only valid if `!m_isEmpty`. */
-		GmodNode m_targetNode;
+		GmodNode m_ownedTargetNode;
 
-		/** @brief Vector storing const pointers to the parent nodes, ordered root towards target. Empty if path length <= 1. */
-		std::vector<const GmodNode*> m_nodes;
+		/** @brief Vector storing owned GmodNode instances for the parent nodes, ordered root towards target.
+		 *         These nodes may have locations modified by the LocationSetsVisitor. */
+		std::vector<GmodNode> m_ownedParentNodes;
 
 		/** @brief Flag indicating if the path is empty (default constructed). */
 		bool m_isEmpty{ true };
@@ -736,7 +730,7 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//----------------------------------------------
-		// Construction
+		// Construction / Destruction
 		//----------------------------------------------
 
 		/**
@@ -749,7 +743,29 @@ namespace dnv::vista::sdk
 		 * @throws std::logic_error If the referenced path is empty.
 		 * @throws std::runtime_error If the path contains null pointers at the specified indices.
 		 */
-		GmodIndividualizableSet( const std::vector<size_t>& nodeIndices, GmodPath& path );
+		GmodIndividualizableSet( const std::vector<size_t>& nodeIndices, const GmodPath& path );
+
+		/** @brief Default constructor. */
+		GmodIndividualizableSet() = delete;
+
+		/** @brief Copy constructor */
+		GmodIndividualizableSet( const GmodIndividualizableSet& ) = default;
+
+		/** @brief Move constructor */
+		GmodIndividualizableSet( GmodIndividualizableSet&& ) = default;
+
+		/** @brief Destructor */
+		~GmodIndividualizableSet() = default;
+
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
+
+		/** @brief Copy assignment operator */
+		GmodIndividualizableSet& operator=( const GmodIndividualizableSet& ) = default;
+
+		/** @brief Move assignment operator */
+		GmodIndividualizableSet& operator=( GmodIndividualizableSet&& ) = default;
 
 		//----------------------------------------------
 		// Accessors
@@ -781,6 +797,8 @@ namespace dnv::vista::sdk
 		// Mutators and Operations
 		//----------------------------------------------
 
+		void setLocation( std::optional<Location> newLocation );
+
 		/**
 		 * @brief Finalizes modifications and returns the modified `GmodPath` via move semantics.
 		 * @details After calling `build()`, this set becomes invalid (internal path pointer is nullified)
@@ -803,7 +821,7 @@ namespace dnv::vista::sdk
 
 	private:
 		std::vector<size_t> m_nodeIndices;
-		GmodPath* m_path;
+		GmodPath m_ownedPath;
 	};
 
 	//=====================================================================

@@ -1068,7 +1068,7 @@ namespace dnv::vista::sdk
 					if ( isSec || isMeta || isDesc )
 					{
 						std::string_view pathView = localIdView.substr( primaryItemParseStart, currentIndex - 1 - primaryItemParseStart );
-						GmodPath tempPath;
+						std::optional<GmodPath> tempPath;
 						if ( gmod->tryParsePath( std::string( pathView ), tempPath ) )
 						{
 							parsedPrimaryItem = std::move( tempPath );
@@ -1117,7 +1117,7 @@ namespace dnv::vista::sdk
 					if ( isMeta || isDesc )
 					{
 						std::string_view pathView = localIdView.substr( secondaryItemParseStart, currentIndex - 1 - secondaryItemParseStart );
-						GmodPath tempPath;
+						std::optional<GmodPath> tempPath;
 						if ( gmod->tryParsePath( std::string( pathView ), tempPath ) )
 						{
 							parsedSecondaryItem = std::move( tempPath );
@@ -1297,18 +1297,18 @@ namespace dnv::vista::sdk
 		errorBuilder.addError( state, message );
 	}
 
-	void LocalIdBuilder::advanceParser( size_t& i, const std::string_view& segment )
+	void LocalIdBuilder::advanceParser( size_t& i, std::string_view segment )
 	{
 		i += segment.length() + 1;
 	}
 
-	void LocalIdBuilder::advanceParser( size_t& i, const std::string_view& segment, LocalIdParsingState& state )
+	void LocalIdBuilder::advanceParser( size_t& i, std::string_view segment, LocalIdParsingState& state )
 	{
 		state = static_cast<LocalIdParsingState>( static_cast<int>( state ) + 1 );
 		i += segment.length() + 1;
 	}
 
-	void LocalIdBuilder::advanceParser( size_t& i, const std::string_view& segment, LocalIdParsingState& state, LocalIdParsingState to )
+	void LocalIdBuilder::advanceParser( size_t& i, std::string_view segment, LocalIdParsingState& state, LocalIdParsingState to )
 	{
 		state = to;
 		i += segment.length() + 1;
@@ -1370,7 +1370,7 @@ namespace dnv::vista::sdk
 		return { nextIndex, endIndex };
 	}
 
-	std::optional<LocalIdParsingState> LocalIdBuilder::metaPrefixToState( const std::string_view& prefix )
+	std::optional<LocalIdParsingState> LocalIdBuilder::metaPrefixToState( std::string_view prefix )
 	{
 		if ( prefix == "q" || prefix == "qty" )
 			return LocalIdParsingState::MetaQuantity;
@@ -1429,7 +1429,7 @@ namespace dnv::vista::sdk
 	}
 
 	bool LocalIdBuilder::parseMetaTag( CodebookName codebookName, LocalIdParsingState& state,
-		size_t& i, const std::string_view& segment, std::optional<MetadataTag>& tag,
+		size_t& i, std::string_view segment, std::optional<MetadataTag>& tag,
 		const std::shared_ptr<const Codebooks>& codebooks,
 		LocalIdParsingErrorBuilder& errorBuilder )
 	{

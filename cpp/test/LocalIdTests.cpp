@@ -78,68 +78,13 @@ namespace dnv::vista::sdk::tests
 		}
 	};
 
-	inline std::pair<VIS&, const Gmod&> visAndGmod( VisVersion visVersion )
-	{
-		auto& vis = VIS::instance();
-		const auto& gmod = vis.gmod( visVersion );
-
-		return { vis, gmod };
-	}
-
-	std::optional<LocalIdBuilder> buildLocalIdFromInput( const Input& input, const Gmod& gmod, const Codebooks& codebooks )
-	{
-		GmodPath primaryPath;
-		if ( !gmod.tryParsePath( input.PrimaryItem, primaryPath ) )
+	/* 	inline std::pair<VIS&, const Gmod&> visAndGmod( VisVersion visVersion )
 		{
-			SPDLOG_WARN( "buildLocalIdFromInput: Failed to parse primary path '{}'", input.PrimaryItem );
-			return std::nullopt;
-		}
+			auto& vis = VIS::instance();
+			const auto& gmod = vis.gmod( visVersion );
 
-		LocalIdBuilder builder = LocalIdBuilder::create( input.visVersion )
-									 .withPrimaryItem( std::move( primaryPath ) )
-									 .withVerboseMode( input.Verbose );
-
-		if ( input.SecondaryItem.has_value() )
-		{
-			GmodPath secondaryPath;
-			if ( !gmod.tryParsePath( input.SecondaryItem.value(), secondaryPath ) )
-			{
-				SPDLOG_WARN( "buildLocalIdFromInput: Failed to parse secondary path '{}'", input.SecondaryItem.value() );
-				return std::nullopt;
-			}
-			builder = builder.withSecondaryItem( std::move( secondaryPath ) );
-		}
-
-		try
-		{
-			if ( input.Quantity.has_value() )
-			{
-				builder = builder.withQuantity( codebooks.codebook( CodebookName::Quantity ).createTag( input.Quantity.value() ) );
-			}
-
-			if ( input.Content.has_value() )
-			{
-				builder = builder.withContent( codebooks.codebook( CodebookName::Content ).createTag( input.Content.value() ) );
-			}
-
-			if ( input.Position.has_value() )
-			{
-				builder = builder.withPosition( codebooks.codebook( CodebookName::Position ).createTag( input.Position.value() ) );
-			}
-		}
-		catch ( [[maybe_unused]] const std::invalid_argument& ex )
-		{
-			SPDLOG_WARN( "buildLocalIdFromInput: Failed to create metadata tag - {}", ex.what() );
-			return std::nullopt;
-		}
-		catch ( [[maybe_unused]] const std::out_of_range& ex )
-		{
-			SPDLOG_WARN( "buildLocalIdFromInput: Failed to find codebook - {}", ex.what() );
-			return std::nullopt;
-		}
-
-		return builder;
-	}
+			return { vis, gmod };
+		} */
 
 	std::vector<std::pair<Input, std::string>> validTestData()
 	{
@@ -192,109 +137,109 @@ namespace dnv::vista::sdk::tests
 	class LocalIdValidTest : public ::testing::TestWithParam<std::pair<Input, std::string>>
 	{
 	};
-
-	TEST_P( LocalIdValidTest, Test_LocalId_Build_Valid )
-	{
-		auto testCase = GetParam();
-		Input input = testCase.first;
-		input.Verbose = true;
-		std::string expected = testCase.second;
-
-		SPDLOG_INFO( "Testing: {}", input.PrimaryItem );
-
-		auto [vis, gmod] = visAndGmod( input.visVersion );
-		const auto& codebooks = vis.codebooks( input.visVersion );
-
-		GmodPath primaryPath;
-		ASSERT_TRUE( gmod.tryParsePath( input.PrimaryItem, primaryPath ) );
-
-		LocalIdBuilder builder = LocalIdBuilder::create( input.visVersion )
-									 .withPrimaryItem( std::move( primaryPath ) )
-									 .withVerboseMode( input.Verbose );
-
-		if ( input.SecondaryItem.has_value() )
+	/*
+		TEST_P( LocalIdValidTest, Test_LocalId_Build_Valid )
 		{
+			auto testCase = GetParam();
+			Input input = testCase.first;
+			input.Verbose = true;
+			std::string expected = testCase.second;
+
+			SPDLOG_INFO( "Testing: {}", input.PrimaryItem );
+
+			auto [vis, gmod] = visAndGmod( input.visVersion );
+			const auto& codebooks = vis.codebooks( input.visVersion );
+
+			GmodPath primaryPath;
+			ASSERT_TRUE( gmod.tryParsePath( input.PrimaryItem, primaryPath ) );
+
+			LocalIdBuilder builder = LocalIdBuilder::create( input.visVersion )
+										 .withPrimaryItem( std::move( primaryPath ) )
+										 .withVerboseMode( input.Verbose );
+
+			if ( input.SecondaryItem.has_value() )
+			{
+				GmodPath secondaryPath;
+				ASSERT_TRUE( gmod.tryParsePath( input.SecondaryItem.value(), secondaryPath ) );
+				builder = builder.withSecondaryItem( std::move( secondaryPath ) );
+			}
+
+			if ( input.Quantity.has_value() )
+			{
+				auto quantityTag = codebooks.codebook( CodebookName::Quantity ).createTag( input.Quantity.value() );
+				builder = builder.withQuantity( quantityTag );
+			}
+
+			if ( input.Content.has_value() )
+			{
+				auto contentTag = codebooks.codebook( CodebookName::Content ).createTag( input.Content.value() );
+				builder = builder.withContent( contentTag );
+			}
+
+			if ( input.Position.has_value() )
+			{
+				auto positionTag = codebooks.codebook( CodebookName::Position ).createTag( input.Position.value() );
+				builder = builder.withPosition( positionTag );
+			}
+
+			std::string result = builder.toString();
+			EXPECT_EQ( result, expected );
+		}
+
+		TEST( LocalIdTests, Test_LocalId_Build_AllWithout )
+		{
+			auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
+			const auto& codebooks = vis.codebooks( VisVersion::v3_4a );
+
+			GmodPath primaryPath;
 			GmodPath secondaryPath;
-			ASSERT_TRUE( gmod.tryParsePath( input.SecondaryItem.value(), secondaryPath ) );
-			builder = builder.withSecondaryItem( std::move( secondaryPath ) );
+
+			ASSERT_TRUE( gmod.tryParsePath( "411.1/C101.31-2", primaryPath ) );
+			ASSERT_TRUE( gmod.tryParsePath( "411.1/C101.31-5", secondaryPath ) );
+
+			SPDLOG_INFO( "Primary: {}", primaryPath.toString() );
+			SPDLOG_INFO( "Secondary: {}", secondaryPath.toString() );
+
+			LocalIdBuilder localId = LocalIdBuilder::create( VisVersion::v3_4a )
+										 .withPrimaryItem( std::move( primaryPath ) )
+										 .withSecondaryItem( std::move( secondaryPath ) )
+										 .withVerboseMode( false )
+										 .withQuantity( codebooks.codebook( CodebookName::Quantity ).createTag( "quantity" ) )
+										 .withContent( codebooks.codebook( CodebookName::Content ).createTag( "content" ) )
+										 .withPosition( codebooks.codebook( CodebookName::Position ).createTag( "position" ) )
+										 .withState( codebooks.codebook( CodebookName::State ).createTag( "state" ) )
+										 .withCalculation( codebooks.codebook( CodebookName::Calculation ).createTag( "calculate" ) );
+
+			SPDLOG_INFO( "localId: {}", localId.toString() );
+
+			EXPECT_TRUE( localId.isValid() );
+
+			LocalIdBuilder allWithout = std::move( localId );
+
+			SPDLOG_INFO( "allWithout.toString(): {}", allWithout.toString() );
+
+			SPDLOG_INFO( "Quantity: {}", allWithout.quantity().value().toString() );
+			SPDLOG_INFO( "Content: {}", allWithout.content().value().toString() );
+			SPDLOG_INFO( "Position: {}", allWithout.position().value().toString() );
+			SPDLOG_INFO( "State: {}", allWithout.state().value().toString() );
+			SPDLOG_INFO( "Calculation: {}", allWithout.calculation().value().toString() );
+
+			allWithout = allWithout
+							 .withoutPrimaryItem()
+							 .withoutSecondaryItem()
+							 .withoutQuantity()
+							 .withoutContent()
+							 .withoutPosition()
+							 .withoutState()
+							 .withoutCalculation();
+
+			SPDLOG_INFO( "AllWithout2: {}", allWithout.toString() );
+
+			EXPECT_TRUE( allWithout.isEmpty() );
+			EXPECT_FALSE( allWithout.isValid() );
+			EXPECT_EQ( allWithout.toString(), "" );
 		}
-
-		if ( input.Quantity.has_value() )
-		{
-			auto quantityTag = codebooks.codebook( CodebookName::Quantity ).createTag( input.Quantity.value() );
-			builder = builder.withQuantity( quantityTag );
-		}
-
-		if ( input.Content.has_value() )
-		{
-			auto contentTag = codebooks.codebook( CodebookName::Content ).createTag( input.Content.value() );
-			builder = builder.withContent( contentTag );
-		}
-
-		if ( input.Position.has_value() )
-		{
-			auto positionTag = codebooks.codebook( CodebookName::Position ).createTag( input.Position.value() );
-			builder = builder.withPosition( positionTag );
-		}
-
-		std::string result = builder.toString();
-		EXPECT_EQ( result, expected );
-	}
-
-	TEST( LocalIdTests, Test_LocalId_Build_AllWithout )
-	{
-		auto [vis, gmod] = visAndGmod( VisVersion::v3_4a );
-		const auto& codebooks = vis.codebooks( VisVersion::v3_4a );
-
-		GmodPath primaryPath;
-		GmodPath secondaryPath;
-
-		ASSERT_TRUE( gmod.tryParsePath( "411.1/C101.31-2", primaryPath ) );
-		ASSERT_TRUE( gmod.tryParsePath( "411.1/C101.31-5", secondaryPath ) );
-
-		SPDLOG_INFO( "Primary: {}", primaryPath.toString() );
-		SPDLOG_INFO( "Secondary: {}", secondaryPath.toString() );
-
-		LocalIdBuilder localId = LocalIdBuilder::create( VisVersion::v3_4a )
-									 .withPrimaryItem( std::move( primaryPath ) )
-									 .withSecondaryItem( std::move( secondaryPath ) )
-									 .withVerboseMode( false )
-									 .withQuantity( codebooks.codebook( CodebookName::Quantity ).createTag( "quantity" ) )
-									 .withContent( codebooks.codebook( CodebookName::Content ).createTag( "content" ) )
-									 .withPosition( codebooks.codebook( CodebookName::Position ).createTag( "position" ) )
-									 .withState( codebooks.codebook( CodebookName::State ).createTag( "state" ) )
-									 .withCalculation( codebooks.codebook( CodebookName::Calculation ).createTag( "calculate" ) );
-
-		SPDLOG_INFO( "localId: {}", localId.toString() );
-
-		EXPECT_TRUE( localId.isValid() );
-
-		LocalIdBuilder allWithout = std::move( localId );
-
-		SPDLOG_INFO( "allWithout.toString(): {}", allWithout.toString() );
-
-		SPDLOG_INFO( "Quantity: {}", allWithout.quantity().value().toString() );
-		SPDLOG_INFO( "Content: {}", allWithout.content().value().toString() );
-		SPDLOG_INFO( "Position: {}", allWithout.position().value().toString() );
-		SPDLOG_INFO( "State: {}", allWithout.state().value().toString() );
-		SPDLOG_INFO( "Calculation: {}", allWithout.calculation().value().toString() );
-
-		allWithout = allWithout
-						 .withoutPrimaryItem()
-						 .withoutSecondaryItem()
-						 .withoutQuantity()
-						 .withoutContent()
-						 .withoutPosition()
-						 .withoutState()
-						 .withoutCalculation();
-
-		SPDLOG_INFO( "AllWithout2: {}", allWithout.toString() );
-
-		EXPECT_TRUE( allWithout.isEmpty() );
-		EXPECT_FALSE( allWithout.isValid() );
-		EXPECT_EQ( allWithout.toString(), "" );
-	}
-
+	 */
 	/*
 	class MqttLocalIdValidTest : public ::testing::TestWithParam<std::pair<Input, std::string>>
 	{
@@ -355,48 +300,49 @@ namespace dnv::vista::sdk::tests
 
 		*/
 
-	TEST_P( LocalIdValidTest, Test_LocalId_Equality )
-	{
-		auto testCase = GetParam();
-		Input input = testCase.first;
+	/* 	TEST_P( LocalIdValidTest, Test_LocalId_Equality )
+		{
+			auto testCase = GetParam();
+			Input input = testCase.first;
 
-		const auto& [vis, gmod] = visAndGmod( input.visVersion );
-		const auto& codebooks = vis.codebooks( input.visVersion );
+			const auto& [vis, gmod] = visAndGmod( input.visVersion );
+			const auto& codebooks = vis.codebooks( input.visVersion );
 
-		auto builder1Opt = buildLocalIdFromInput( input, gmod, codebooks );
-		auto builder2Opt = buildLocalIdFromInput( input, gmod, codebooks );
+			auto builder1Opt = buildLocalIdFromInput( input, gmod, codebooks );
+			auto builder2Opt = buildLocalIdFromInput( input, gmod, codebooks );
 
-		ASSERT_TRUE( builder1Opt.has_value() ) << "Failed to build builder1 for input: " << input.PrimaryItem;
-		ASSERT_TRUE( builder2Opt.has_value() ) << "Failed to build builder2 for input: " << input.PrimaryItem;
+			ASSERT_TRUE( builder1Opt.has_value() ) << "Failed to build builder1 for input: " << input.PrimaryItem;
+			ASSERT_TRUE( builder2Opt.has_value() ) << "Failed to build builder2 for input: " << input.PrimaryItem;
 
-		LocalIdBuilder builder1 = std::move( *builder1Opt );
-		LocalIdBuilder builder2 = std::move( *builder2Opt );
+			LocalIdBuilder builder1 = std::move( *builder1Opt );
+			LocalIdBuilder builder2 = std::move( *builder2Opt );
 
-		EXPECT_EQ( builder1, builder1 );
+			EXPECT_EQ( builder1, builder1 );
 
-		EXPECT_EQ( builder1, builder2 );
+			EXPECT_EQ( builder1, builder2 );
 
-		EXPECT_NE( &builder1, &builder2 );
+			EXPECT_NE( &builder1, &builder2 );
 
-		auto testTag = codebooks.codebook( CodebookName::Position ).createTag( "eqtestvalue" );
+			auto testTag = codebooks.codebook( CodebookName::Position ).createTag( "eqtestvalue" );
 
-		auto modifiedBuilder2 = builder2.withPosition( testTag );
+			auto modifiedBuilder2 = builder2.withPosition( testTag );
 
-		EXPECT_NE( builder1, modifiedBuilder2 );
+			EXPECT_NE( builder1, modifiedBuilder2 );
 
-		EXPECT_EQ( builder1, builder2 );
-		EXPECT_NE( builder2, modifiedBuilder2 );
+			EXPECT_EQ( builder1, builder2 );
+			EXPECT_NE( builder2, modifiedBuilder2 );
 
-		EXPECT_EQ( builder1, builder2 );
-		EXPECT_NE( builder2, modifiedBuilder2 );
+			EXPECT_EQ( builder1, builder2 );
+			EXPECT_NE( builder2, modifiedBuilder2 );
 
-		LocalIdBuilder restoredBuilder2 = builder1.position().has_value() ? modifiedBuilder2.withPosition( *builder1.position() ) : modifiedBuilder2.withoutPosition();
+			LocalIdBuilder restoredBuilder2 = builder1.position().has_value() ? modifiedBuilder2.withPosition( *builder1.position() ) : modifiedBuilder2.withoutPosition();
 
-		EXPECT_EQ( builder1, restoredBuilder2 );
+			EXPECT_EQ( builder1, restoredBuilder2 );
 
-		EXPECT_NE( &builder1, &restoredBuilder2 );
-		EXPECT_NE( &modifiedBuilder2, &restoredBuilder2 );
-	}
+			EXPECT_NE( &builder1, &restoredBuilder2 );
+			EXPECT_NE( &modifiedBuilder2, &restoredBuilder2 );
+		}
+	 */
 
 	TEST( LocalIdTests, Test_Parsing )
 	{

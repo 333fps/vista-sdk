@@ -3,6 +3,7 @@
 #include "dnv/vista/sdk/GmodVersioning.h"
 
 #include "dnv/vista/sdk/Gmod.h"
+#include "dnv/vista/sdk/GmodTraversal.h"
 #include "dnv/vista/sdk/GmodNode.h"
 #include "dnv/vista/sdk/GmodPath.h"
 #include "dnv/vista/sdk/LocalIdBuilder.h"
@@ -14,6 +15,7 @@ namespace dnv::vista::sdk
 	//=====================================================================
 	// GmodVersioning Class
 	//=====================================================================
+
 	//----------------------------------------------
 	// Construction / Destruction
 	//----------------------------------------------
@@ -167,7 +169,7 @@ namespace dnv::vista::sdk
 						std::vector<const GmodNode*> currentPathPrefixPtrs( pathPtrs.begin(), pathPtrs.begin() + ( j + 1 ) );
 
 						std::vector<const GmodNode*> remainingPathSegmentPtrs;
-						if ( !gmod.pathExistsBetween( currentPathPrefixPtrs, *nodePtr, remainingPathSegmentPtrs ) )
+						if ( !GmodTraversal::pathExistsBetween( gmod, currentPathPrefixPtrs, *nodePtr, remainingPathSegmentPtrs ) )
 						{
 							bool isLastAssetFunction = ancestorPtr->isAssetFunctionNode();
 							if ( isLastAssetFunction )

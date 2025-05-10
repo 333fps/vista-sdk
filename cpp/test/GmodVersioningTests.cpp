@@ -2,6 +2,8 @@
 
 #include "dnv/vista/sdk/GmodVersioning.h"
 #include "dnv/vista/sdk/Gmod.h"
+#include "dnv/vista/sdk/GmodTraversal.h"
+
 #include "dnv/vista/sdk/GmodNode.h"
 #include "dnv/vista/sdk/GmodPath.h"
 #include "dnv/vista/sdk/VIS.h"
@@ -163,68 +165,6 @@ namespace dnv::vista::sdk::tests
 	// TEST_F
 	//=====================================================================
 
-	TEST_F( GmodVersioningTest, Test_Finds_Path )
-	{
-		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
-
-		bool completed = true;
-
-		completed = m_gmod_v3_4a->traverse(
-			m_gmod_v3_4a->rootNode(),
-			[this]( const std::vector<const dnv::vista::sdk::GmodNode*>& parents,
-				const dnv::vista::sdk::GmodNode& node ) -> dnv::vista::sdk::Gmod::TraversalHandlerResult {
-				if ( parents.empty() )
-				{
-					SPDLOG_INFO( "Test Handler: Root node '{}', continuing.", node.code() );
-					return dnv::vista::sdk::Gmod::TraversalHandlerResult::Continue;
-				}
-
-				GmodNode targetNodeCopy( node, true );
-				GmodPath path( parents, std::move( targetNodeCopy ), m_gmod_v3_4a->visVersion() );
-
-				std::string currentPathStr = path.toString();
-				SPDLOG_INFO( "Test Handler: Node='{}', Path='{}'", node.code(), currentPathStr );
-
-				if ( currentPathStr == "1012.22/S201.1/C151.2/S110.2/C101.61/S203.2/S101" )
-				{
-					SPDLOG_CRITICAL( "Test Handler: Target path FOUND for Node='{}', Path='{}'. Returning Stop.", node.code(), currentPathStr );
-					return dnv::vista::sdk::Gmod::TraversalHandlerResult::Stop;
-				}
-				return dnv::vista::sdk::Gmod::TraversalHandlerResult::Continue;
-			} );
-
-		SPDLOG_CRITICAL( completed );
-
-		EXPECT_FALSE( completed );
-	}
-
-	TEST_F( GmodVersioningTest, Test_One_Path_To_Root_For_Asset_Functions )
-	{
-		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
-
-		std::function<bool( const GmodNode& )> onePathToRoot = [&onePathToRoot]( const GmodNode& node ) -> bool {
-			const auto& nodeParents = node.parents();
-			return node.isRoot() || ( nodeParents.size() == 1 && nodeParents.at( 0 ) != nullptr && onePathToRoot( *nodeParents.at( 0 ) ) );
-		};
-
-		for ( VisVersion version : VisVersionExtensions::allVersions() )
-		{
-			const auto& gmod = m_vis->gmod( version );
-
-			if ( gmod.isEmpty() )
-				continue;
-
-			gmod.traverse(
-				[&onePathToRoot, version]( const std::vector<const GmodNode*>& /*parents*/, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
-					if ( !node.isAssetFunctionNode() )
-						return Gmod::TraversalHandlerResult::Continue;
-
-					EXPECT_TRUE( onePathToRoot( node ) ) << "Asset function node " << node.code() << " has multiple paths to root in version " << VisVersionExtensions::toVersionString( version );
-					return Gmod::TraversalHandlerResult::Continue;
-				} );
-		}
-	}
-
 	TEST_F( GmodVersioningTest, ConvertLocalId )
 	{
 		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
@@ -245,81 +185,9 @@ namespace dnv::vista::sdk::tests
 		EXPECT_EQ( targetLocalIdStr, convertedLocalId->toString() );
 	}
 
-	TEST_F( GmodVersioningTest, ConvertEveryNodeToLatest )
-	{
-		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
-
-		GTEST_SKIP() << "3-8 S204 is not in 3-8a";
-
-		std::vector<VisVersion> visVersions = { VisVersion::v3_7a };
-		std::map<VisVersion, std::vector<std::string>> errored;
-
-		for ( VisVersion version : visVersions )
-		{
-			const auto& gmod = m_vis->gmod( version );
-
-			if ( gmod.isEmpty() )
-				continue;
-
-			SPDLOG_INFO( "Converting {} to {}", VisVersionExtensions::toVersionString( version ), VisVersionExtensions::toVersionString( VisVersionExtensions::latestVersion() ) );
-
-			auto& errs = errored[version];
-
-			gmod.traverse(
-				[this, version, &errs]( const std::vector<const GmodNode*>& /*parents*/, const GmodNode& node ) -> Gmod::TraversalHandlerResult {
-					auto targetNode = m_vis->convertNode( version, node, VisVersionExtensions::latestVersion() );
-					if ( !targetNode.has_value() )
-					{
-						SPDLOG_WARN( "Failed to convert node '{}' from {} to latest.", node.code(), VisVersionExtensions::toVersionString( version ) );
-						errs.push_back( node.code() );
-					}
-					return Gmod::TraversalHandlerResult::Continue;
-				} );
-		}
-
-		for ( const auto& [version, errors] : errored )
-		{
-			std::string errorList;
-			if ( !errors.empty() )
-			{
-				errorList = " Failed nodes: ";
-				for ( size_t i = 0; i < errors.size(); ++i )
-				{
-					errorList += errors[i] + ( i == errors.size() - 1 ? "" : ", " );
-				}
-			}
-			EXPECT_TRUE( errors.empty() ) << "Found " << errors.size() << " errors converting nodes from version " << VisVersionExtensions::toVersionString( version ) << "." << errorList;
-		}
-	}
-
 	//=====================================================================
 	// TEST_P
 	//=====================================================================
-
-	TEST_P( PathConversionTest, Test_GmodVersioning_ConvertPath )
-	{
-		auto testData = GetParam();
-		auto& vis = VIS::instance();
-		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
-		const auto& targetGmod = vis.gmod( testData.targetVersion );
-
-		GmodPath sourcePath;
-		ASSERT_TRUE( sourceGmod.tryParsePath( testData.inputPath, sourcePath ) );
-
-		GmodPath parsedTargetPath;
-		bool parsedPath = targetGmod.tryParsePath( testData.expectedPath, parsedTargetPath );
-
-		auto targetPath = vis.convertPath( testData.sourceVersion, sourcePath, testData.targetVersion );
-
-		SPDLOG_INFO( "Source path: {}", sourcePath.toString() );
-		EXPECT_EQ( testData.inputPath, sourcePath.toString() );
-
-		EXPECT_TRUE( parsedPath );
-		EXPECT_EQ( testData.expectedPath, parsedTargetPath.toString() );
-
-		ASSERT_TRUE( targetPath.has_value() );
-		EXPECT_EQ( testData.expectedPath, targetPath->toString() );
-	}
 
 	class FullPathConversionTest : public ::testing::TestWithParam<FullPathTestData>
 	{

@@ -384,8 +384,6 @@ namespace dnv::vista::sdk
 
 		if ( child->m_metadata.category().find( NODE_CATEGORY_PRODUCT ) == std::string::npos )
 		{
-			SPDLOG_CRITICAL( "22" );
-
 			SPDLOG_WARN( "Product selection check failed: expected PRODUCT category, found {}",
 				child->m_metadata.category() );
 

@@ -733,7 +733,7 @@ namespace dnv::vista::sdk
 		 * @param[in,out] i The current parsing index within the input string.
 		 * @param[in] segment The string view representing the segment just processed.
 		 */
-		static void advanceParser( size_t& i, const std::string_view& segment );
+		static void advanceParser( size_t& i, std::string_view segment );
 
 		/**
 		 * @brief Advances the parsing index `i` and updates the parsing `state`.
@@ -741,7 +741,7 @@ namespace dnv::vista::sdk
 		 * @param[in] segment The segment just processed.
 		 * @param[in,out] state The current parsing state (will be updated based on standard progression).
 		 */
-		static void advanceParser( size_t& i, const std::string_view& segment, LocalIdParsingState& state );
+		static void advanceParser( size_t& i, std::string_view segment, LocalIdParsingState& state );
 
 		/**
 		 * @brief Advances the parsing index `i` and explicitly sets the parsing `state` to `to`.
@@ -750,7 +750,7 @@ namespace dnv::vista::sdk
 		 * @param[in,out] state The current parsing state (will be set to `to`).
 		 * @param[in] to The target `LocalIdParsingState` to transition to.
 		 */
-		static void advanceParser( size_t& i, const std::string_view& segment, LocalIdParsingState& state, LocalIdParsingState to );
+		static void advanceParser( size_t& i, std::string_view segment, LocalIdParsingState& state, LocalIdParsingState to );
 
 		/**
 		 * @brief Explicitly sets the parsing `state` to `to`.
@@ -774,7 +774,7 @@ namespace dnv::vista::sdk
 		 * @return An `std::optional<LocalIdParsingState>` containing the state if the prefix is recognized,
 		 *         or `std::nullopt` otherwise.
 		 */
-		static std::optional<LocalIdParsingState> metaPrefixToState( const std::string_view& prefix );
+		static std::optional<LocalIdParsingState> metaPrefixToState( std::string_view prefix );
 
 		/**
 		 * @brief Determines the expected next parsing state in the standard metadata sequence.
@@ -796,7 +796,7 @@ namespace dnv::vista::sdk
 		 * @return True if the segment was successfully parsed as the expected tag, false otherwise.
 		 */
 		static bool parseMetaTag(
-			CodebookName codebookName, LocalIdParsingState& state, size_t& i, const std::string_view& segment,
+			CodebookName codebookName, LocalIdParsingState& state, size_t& i, std::string_view segment,
 			std::optional<MetadataTag>& tag, const std::shared_ptr<const Codebooks>& codebooks,
 			LocalIdParsingErrorBuilder& errorBuilder );
 

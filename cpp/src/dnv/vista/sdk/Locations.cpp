@@ -17,9 +17,9 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	Location::Location( const std::string& value )
-		: m_value( value )
+		: m_value{ value }
 	{
-		SPDLOG_INFO( "Created Location: '{}'", value );
+		SPDLOG_DEBUG( "Created Location: '{}'", value );
 	}
 
 	//----------------------------------------------
@@ -72,7 +72,7 @@ namespace dnv::vista::sdk
 		const std::optional<std::string> definition )
 		: m_code( code ), m_name( name ), m_location( location ), m_definition( definition )
 	{
-		SPDLOG_INFO( "Created RelativeLocation: code={}, name={}", code, name );
+		SPDLOG_DEBUG( "Created RelativeLocation: code={}, name={}", code, name );
 	}
 
 	//----------------------------------------------
@@ -175,7 +175,7 @@ namespace dnv::vista::sdk
 	Locations::Locations( VisVersion version, const LocationsDto& dto )
 		: m_visVersion( version )
 	{
-		SPDLOG_INFO( "Initializing Locations for VIS version {}", static_cast<int>( version ) );
+		SPDLOG_DEBUG( "Initializing Locations for VIS version {}", static_cast<int>( version ) );
 
 		m_locationCodes.reserve( dto.items().size() );
 		for ( const auto& item : dto.items() )

@@ -151,6 +151,7 @@ if(MSVC)
 	add_compile_options(/wd4710) # function not inlined
 	add_compile_options(/wd4711) # function 'function' selected for inline expansion
 	add_compile_options(/wd4820) # padding
+	add_compile_options(/wd4866) # compiler may not enforce left-to-right evaluation order for call to operator_name
 	#add_compile_options(/wd4868) # compiler may not enforce left-to-right evaluation order in braced initializer list
 	#add_compile_options(/wd5026) # move constructor was implicitly defined as deleted
 	#add_compile_options(/wd5027) # move assignement operator was implicitly defined as deleted
@@ -207,6 +208,7 @@ set(PUBLIC_HEADERS
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodDto.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodNode.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodPath.h
+	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodTraversal.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioning.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioningDto.h
 	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.h
@@ -244,6 +246,7 @@ set(PRIVATE_SOURCES
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodDto.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodNode.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodPath.cpp
+	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodTraversal.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodVersioning.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodVersioningDto.cpp
 	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/ImoNumber.cpp

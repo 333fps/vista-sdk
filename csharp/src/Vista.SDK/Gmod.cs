@@ -27,7 +27,7 @@ public sealed partial class Gmod : IEnumerable<GmodNode>
 #endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool IsProductTypeAssignment(string type)
+    internal static bool IsPotentialParent(string type)
     {
 #if NET8_0_OR_GREATER
         return PotentialParentScopeTypesSet.Contains(type);
