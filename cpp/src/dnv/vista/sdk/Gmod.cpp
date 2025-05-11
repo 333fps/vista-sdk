@@ -2,7 +2,6 @@
 #include "dnv/vista/sdk/Gmod.h"
 #include "dnv/vista/sdk/GmodPath.h"
 #include "dnv/vista/sdk/VisVersion.h"
-#include <algorithm>
 
 namespace dnv::vista::sdk
 {
@@ -284,22 +283,38 @@ namespace dnv::vista::sdk
 
 	GmodPath Gmod::parsePath( const std::string& item ) const
 	{
-		return GmodPath::parse( item, m_visVersion, *this );
+		return GmodPath::parse( *this, item );
 	}
 
 	bool Gmod::tryParsePath( const std::string& item, std::optional<GmodPath>& path ) const
 	{
-		return GmodPath::tryParse( item, m_visVersion, *this, path );
+		GmodNode* rootNodePtr = const_cast<GmodNode*>( &this->rootNode() );
+		GmodPath tempPath( *this, rootNodePtr );
+		if ( GmodPath::tryParse( *this, item, tempPath ) )
+		{
+			path = std::move( tempPath );
+			return true;
+		}
+		path = std::nullopt;
+		return false;
 	}
 
 	GmodPath Gmod::parseFromFullPath( const std::string& item ) const
 	{
-		return GmodPath::parseFullPath( item, m_visVersion, *this );
+		return GmodPath::parseFromFullPath( *this, item );
 	}
 
 	bool Gmod::tryParseFromFullPath( const std::string& item, std::optional<GmodPath>& path ) const
 	{
-		return GmodPath::tryParseFullPath( item, m_visVersion, *this, path );
+		GmodNode* rootNodePtr = const_cast<GmodNode*>( &this->rootNode() );
+		GmodPath tempPath( *this, rootNodePtr );
+		if ( GmodPath::tryParseFromFullPath( *this, item, tempPath ) )
+		{
+			path = std::move( tempPath );
+			return true;
+		}
+		path = std::nullopt;
+		return false;
 	}
 
 	//----------------------------------------------

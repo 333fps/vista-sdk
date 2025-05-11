@@ -79,8 +79,8 @@ FetchContent_Declare(
   GIT_TAG        v1.16.0
   GIT_SHALLOW    TRUE
   CMAKE_ARGS
-    -Dgtest_build_shared_libs=OFF
-    -DBUILD_SHARED_LIBS=OFF -DBUILD_GMOCK=OFF -DINSTALL_GTEST=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>DLL
+	-Dgtest_build_shared_libs=OFF
+	-DBUILD_SHARED_LIBS=OFF -DBUILD_GMOCK=OFF -DINSTALL_GTEST=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>DLL
 )
 
 FetchContent_MakeAvailable(fmt spdlog zlib cpuid googletest)

@@ -4,26 +4,22 @@
 
 namespace dnv::vista::sdk
 {
-	namespace
+	namespace GmodTraversal
 	{
-		class Parents
+		namespace detail
 		{
-			std::vector<const GmodNode*> m_parents;
-			std::unordered_map<std::string, int> m_occurrences;
-
-		public:
-			Parents()
+			Parents::Parents()
 			{
 				m_parents.reserve( 64 );
 			}
 
-			void push( const GmodNode* parent )
+			void Parents::push( const GmodNode* parent )
 			{
 				m_parents.push_back( parent );
 				m_occurrences[parent->code()]++;
 			}
 
-			void pop()
+			void Parents::pop()
 			{
 				if ( m_parents.empty() )
 					return;
@@ -41,48 +37,23 @@ namespace dnv::vista::sdk
 				m_parents.pop_back();
 			}
 
-			int getOccurrences( const GmodNode& node ) const
+			int Parents::occurrences( const GmodNode& node ) const
 			{
 				auto it = m_occurrences.find( node.code() );
 				return ( it != m_occurrences.end() ) ? it->second : 0;
 			}
 
-			const GmodNode* lastOrDefault() const
+			const GmodNode* Parents::lastOrDefault() const
 			{
 				return m_parents.empty() ? nullptr : m_parents.back();
 			}
 
-			const std::vector<const GmodNode*>& asList() const
+			const std::vector<const GmodNode*>& Parents::asList() const
 			{
 				return m_parents;
 			}
-		};
+		}
 
-		template <typename TState>
-		struct TraversalContext
-		{
-			Parents& parents_ref;
-			TraverseHandlerWithState<TState> handler_func;
-			TState& state_ref;
-			int maxTraversalOccurrence_val;
-
-			TraversalContext( Parents& parents, TraverseHandlerWithState<TState> handler, TState& s, int maxOcc )
-				: parents_ref( parents ), handler_func( handler ), state_ref( s ), maxTraversalOccurrence_val( maxOcc ) {}
-		};
-
-		struct PathExistsContext
-		{
-			const GmodNode& to_node_ref;
-			std::vector<const GmodNode*> remainingParents_list;
-			const std::vector<const GmodNode*>& fromPath_list_ref;
-
-			PathExistsContext( const GmodNode& to, const std::vector<const GmodNode*>& fromPath )
-				: to_node_ref( to ), fromPath_list_ref( fromPath ) {}
-		};
-	}
-
-	namespace GmodTraversal
-	{
 		bool traverse( const Gmod& gmodInstance, TraverseHandler handler, const TraversalOptions& options )
 		{
 			bool dummyState = false;
@@ -90,17 +61,17 @@ namespace dnv::vista::sdk
 				[handler]( [[maybe_unused]] bool& s, const std::vector<const GmodNode*>& parents_list, const GmodNode& node_ref ) {
 					return handler( parents_list, node_ref );
 				};
-			return GmodTraversal::traverse<bool>( gmodInstance, dummyState, gmodInstance.rootNode(), wrappedHandler, options );
+			return GmodTraversal::traverse<bool>( dummyState, gmodInstance.rootNode(), wrappedHandler, options );
 		}
 
-		bool traverse( const Gmod& gmodInstance, const GmodNode& rootNode, TraverseHandler handler, const TraversalOptions& options )
+		bool traverse( const GmodNode& rootNode, TraverseHandler handler, const TraversalOptions& options )
 		{
 			bool dummyState = false;
 			TraverseHandlerWithState<bool> wrappedHandler =
 				[handler]( [[maybe_unused]] bool& s, const std::vector<const GmodNode*>& parents_list, const GmodNode& node_ref ) {
 					return handler( parents_list, node_ref );
 				};
-			return GmodTraversal::traverse<bool>( gmodInstance, dummyState, rootNode, wrappedHandler, options );
+			return GmodTraversal::traverse<bool>( dummyState, rootNode, wrappedHandler, options );
 		}
 
 		namespace
@@ -112,7 +83,15 @@ namespace dnv::vista::sdk
 				const std::vector<const GmodNode*>& fromPath_list_ref;
 
 				PathExistsContext( const GmodNode& to, const std::vector<const GmodNode*>& fromPath )
-					: to_node_ref( to ), fromPath_list_ref( fromPath ) {}
+					: to_node_ref{ to },
+					  fromPath_list_ref{ fromPath }
+				{
+				}
+
+				PathExistsContext( const PathExistsContext& ) = delete;
+				PathExistsContext( PathExistsContext&& ) = delete;
+				PathExistsContext& operator=( const PathExistsContext& ) = delete;
+				PathExistsContext& operator=( PathExistsContext&& ) = delete;
 			};
 		}
 
@@ -205,7 +184,6 @@ namespace dnv::vista::sdk
 			};
 
 			bool traversalCompletedNaturally = GmodTraversal::traverse<PathExistsContext>(
-				gmodInstance,
 				context,
 				( lastAssetFunction ? *lastAssetFunction : gmodInstance.rootNode() ),
 				handler_func );

@@ -69,14 +69,14 @@ namespace dnv::vista::sdk
 	{
 		if ( m_primaryItem && m_primaryItem->length() > 0 )
 		{
-			m_primaryItem->toString( builder );
+			builder << m_primaryItem->toString();
 			builder << '/';
 		}
 
 		if ( m_secondaryItem )
 		{
 			builder << "sec/";
-			m_secondaryItem->toString( builder );
+			builder << m_secondaryItem->toString();
 			builder << '/';
 		}
 

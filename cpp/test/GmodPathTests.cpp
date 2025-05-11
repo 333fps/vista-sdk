@@ -337,6 +337,7 @@ namespace dnv::vista::sdk
 		// Test_ToFullPathString
 		//----------------------------------------------
 
+		/*
 		struct FullPathParsingParam
 		{
 			std::string shortPathStr;
@@ -353,14 +354,13 @@ namespace dnv::vista::sdk
 			VIS& m_vis;
 		};
 
-		// static std::vector<FullPathParsingParam> fullPathParsingData()
-		// {
-		// 	return {
-		// 		{ "411.1/C101.72/I101", "VE/400a/410/411/411i/411.1/CS1/C101/C101.7/C101.72/I101" },
-		// 		{ "612.21-1/C701.13/S93", "VE/600a/610/612/612.2/612.2i-1/612.21-1/CS10/C701/C701.1/C701.13/S93" } };
-		// }
+		static std::vector<FullPathParsingParam> fullPathParsingData()
+		{
+			return {
+				{ "411.1/C101.72/I101", "VE/400a/410/411/411i/411.1/CS1/C101/C101.7/C101.72/I101" },
+				{ "612.21-1/C701.13/S93", "VE/600a/610/612/612.2/612.2i-1/612.21-1/CS10/C701/C701.1/C701.13/S93" } };
+		}
 
-		/*
 		TEST_P( FullPathParsingTest, Test_FullPathParsing )
 		{
 			const auto& param = GetParam();
@@ -400,6 +400,7 @@ namespace dnv::vista::sdk
 		// Test_IndividualizableSets
 		//----------------------------------------------
 
+		/*
 		struct IndividualizableSetsParam
 		{
 			bool isFullPath;
@@ -467,7 +468,6 @@ namespace dnv::vista::sdk
 			return data;
 		}
 
-		/*
 		TEST_P( IndividualizableSetsTest, Test_IndividualizableSets )
 		{
 			const auto& param = GetParam();
@@ -523,30 +523,30 @@ namespace dnv::vista::sdk
 		// Test_FullPathParsing
 		//----------------------------------------------
 
-		// struct FullPathParsingParam
-		// {
-		// 	std::string shortPathStr;
-		// 	std::string expectedFullPathStr;
-		// };
-
-		// class FullPathParsingTest : public ::testing::TestWithParam<FullPathParsingParam>
-		// {
-		// protected:
-		// 	FullPathParsingTest()
-		// 		: m_vis( VIS::instance() )
-		// 	{
-		// 	}
-		// 	VIS& m_vis;
-		// };
-
-		// static std::vector<FullPathParsingParam> fullPathParsingData()
-		// {
-		// 	return {
-		// 		{ "411.1/C101.72/I101", "VE/400a/410/411/411i/411.1/CS1/C101/C101.7/C101.72/I101" },
-		// 		{ "612.21-1/C701.13/S93", "VE/600a/610/612/612.2/612.2i-1/612.21-1/CS10/C701/C701.1/C701.13/S93" } };
-		// }
-
 		/*
+		struct FullPathParsingParam
+		{
+			std::string shortPathStr;
+			std::string expectedFullPathStr;
+		};
+
+		class FullPathParsingTest : public ::testing::TestWithParam<FullPathParsingParam>
+		{
+		protected:
+			FullPathParsingTest()
+				: m_vis( VIS::instance() )
+			{
+			}
+			VIS& m_vis;
+		};
+
+		static std::vector<FullPathParsingParam> fullPathParsingData()
+		{
+			return {
+				{ "411.1/C101.72/I101", "VE/400a/410/411/411i/411.1/CS1/C101/C101.7/C101.72/I101" },
+				{ "612.21-1/C701.13/S93", "VE/600a/610/612/612.2/612.2i-1/612.21-1/CS10/C701/C701.1/C701.13/S93" } };
+		}
+
 		TEST_P( FullPathParsingTest, Test_FullPathParsing )
 		{
 			const auto& param = GetParam();
@@ -586,6 +586,7 @@ namespace dnv::vista::sdk
 		// Test_Valid_GmodPath_IndividualizableSets
 		//----------------------------------------------
 
+		/*
 		struct ValidGmodPathIndividualizableSetsParam
 		{
 			std::string visVersionStr;
@@ -625,7 +626,6 @@ namespace dnv::vista::sdk
 			return data;
 		}
 
-		/*
 		TEST_P( ValidGmodPathIndividualizableSetsTest, Test_Valid_GmodPath_IndividualizableSets )
 		{
 			const auto& param = GetParam();

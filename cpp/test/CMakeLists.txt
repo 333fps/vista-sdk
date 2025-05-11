@@ -25,55 +25,6 @@ set(TEST_SOURCES
 	LocationsTests.cpp
 )
 
-# --- Configure Each Test Target ---
-foreach(test_source ${TEST_SOURCES})
-	get_filename_component(test_target ${test_source} NAME_WE)
-
-	if(NOT TARGET ${test_target})
-		add_executable(${test_target} ${test_source})
-
-		target_precompile_headers(${test_target} PRIVATE pch.h)
-
-		target_link_libraries(${test_target} PRIVATE
-			vista-sdk-cpp
-			GTest::gtest_main
-			spdlog::spdlog
-			nlohmann_json::nlohmann_json
-			zlibstatic
-		)
-
-		# Add include directories.
-		target_include_directories(${test_target} PRIVATE
-			${VISTA_SDK_INCLUDE_DIR}
-		)
-
-		target_compile_definitions(${test_target} PRIVATE
-			 $<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_OFF>
-		)
-
-		set(TARGET_OUTPUT_DIR "$<TARGET_FILE_DIR:${test_target}>")
-
-		# Discover tests.
-		gtest_discover_tests(${test_target}
-			WORKING_DIRECTORY ${TARGET_OUTPUT_DIR}
-			DISCOVERY_VERBOSE_OUTPUT TRUE
-		)
-
-		# Apply MSVC-specific warning suppressions.
-		if(MSVC)
-			target_compile_options(${test_target} PRIVATE
-				/wd4625 # copy constructor was implicitly defined as deleted
-				/wd4626 # assignement operator was implicitly defined as deleted
-				/wd4702 # unreachable code
-				/wd4834 # discarding return value of function with [[nodiscard]] attribute
-				/wd5026 # move constructor was implicitly defined as deleted
-				/wd5027 # move assignment operator was implicitly defined as deleted
-			)
-		endif()
-
-	endif()
-endforeach()
-
 # --- Copy Test Data (Build Time) ---
 if(EXISTS ${VISTA_SDK_TEST_DATA_DIR})
 	set(VISTA_SDK_TESTDATA_OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/testdata)
@@ -91,3 +42,50 @@ if(EXISTS ${VISTA_SDK_TEST_DATA_DIR})
 else()
 	message(WARNING "testdata directory not found: ${VISTA_SDK_TEST_DATA_DIR}. Skipping testdata copy.")
 endif()
+
+# --- Configure Each Test Target (Modified Loop) ---
+foreach(test_source ${TEST_SOURCES})
+    get_filename_component(test_target ${test_source} NAME_WE)
+
+    if(NOT TARGET ${test_target})
+        add_executable(${test_target} ${test_source})
+
+        target_precompile_headers(${test_target} PRIVATE pch.h)
+
+        target_link_libraries(${test_target} PRIVATE
+            vista-sdk-cpp
+            GTest::gtest_main
+            spdlog::spdlog
+            nlohmann_json::nlohmann_json
+            zlibstatic
+        )
+
+        # Add include directories.
+        target_include_directories(${test_target} PRIVATE
+            ${VISTA_SDK_INCLUDE_DIR}
+        )
+
+        # Ensure CopyTestData runs before this test target is built/run for discovery
+        if(TARGET CopyTestData)
+            add_dependencies(${test_target} CopyTestData)
+        endif()
+
+        # Discover tests.
+        gtest_discover_tests(${test_target}
+            WORKING_DIRECTORY "$<TARGET_FILE_DIR:${test_target}>"
+            DISCOVERY_VERBOSE_OUTPUT TRUE
+        )
+
+        # Apply MSVC-specific warning suppressions.
+        if(MSVC)
+            target_compile_options(${test_target} PRIVATE
+                /wd4625 # copy constructor was implicitly defined as deleted
+                /wd4626 # assignement operator was implicitly defined as deleted
+                /wd4702 # unreachable code
+                /wd4834 # discarding return value of function with [[nodiscard]] attribute
+                /wd5026 # move constructor was implicitly defined as deleted
+                /wd5027 # move assignment operator was implicitly defined as deleted
+            )
+        endif()
+    endif()
+endforeach()

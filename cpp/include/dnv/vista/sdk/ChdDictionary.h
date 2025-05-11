@@ -377,15 +377,6 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] static bool stringsEqual( std::string_view a, const std::string& b ) noexcept;
 
-		/**
-		 * @brief Performs a no-exception comparison between two character spans.
-		 * @details Useful for comparing raw character arrays or memory buffers efficiently.
-		 * @param[in] a The first character span to compare.
-		 * @param[in] b The second character span to compare.
-		 * @return `true` if the spans have the same size and identical character sequences, `false` otherwise.
-		 */
-		[[nodiscard]] static bool stringsEqual( std::span<const char> a, std::span<const char> b ) noexcept;
-
 		//----------------------------------------------
 		// Private Member Variables
 		//----------------------------------------------

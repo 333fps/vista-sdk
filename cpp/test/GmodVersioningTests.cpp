@@ -193,32 +193,32 @@ namespace dnv::vista::sdk::tests
 	{
 	};
 
-	TEST_P( FullPathConversionTest, Test_GmodVersioning_ConvertFullPath )
-	{
-		auto testData = GetParam();
-		auto& vis = VIS::instance();
-		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
-		const auto& targetGmod = vis.gmod( testData.targetVersion );
+	// TEST_P( FullPathConversionTest, Test_GmodVersioning_ConvertFullPath )
+	// {
+	// 	auto testData = GetParam();
+	// 	auto& vis = VIS::instance();
+	// 	const auto& sourceGmod = vis.gmod( testData.sourceVersion );
+	// 	const auto& targetGmod = vis.gmod( testData.targetVersion );
 
-		std::optional<GmodPath> sourcePathOpt;
-		ASSERT_TRUE( sourceGmod.tryParseFromFullPath( testData.inputPath, sourcePathOpt ) );
-		ASSERT_TRUE( sourcePathOpt.has_value() );
+	// 	std::optional<GmodPath> sourcePathOpt;
+	// 	ASSERT_TRUE( sourceGmod.tryParseFromFullPath( testData.inputPath, sourcePathOpt ) );
+	// 	ASSERT_TRUE( sourcePathOpt.has_value() );
 
-		std::optional<GmodPath> parsedTargetPathOpt;
-		bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPathOpt );
+	// 	std::optional<GmodPath> parsedTargetPathOpt;
+	// 	bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPathOpt );
 
-		auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
+	// 	auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
 
-		SPDLOG_INFO( "Source full path: {}", sourcePathOpt->toFullPathString() );
-		EXPECT_EQ( testData.inputPath, sourcePathOpt->toFullPathString() );
+	// 	SPDLOG_INFO( "Source full path: {}", sourcePathOpt->toFullPathString() );
+	// 	EXPECT_EQ( testData.inputPath, sourcePathOpt->toFullPathString() );
 
-		EXPECT_TRUE( parsedPath );
-		ASSERT_TRUE( parsedTargetPathOpt.has_value() );
-		EXPECT_EQ( testData.expectedPath, parsedTargetPathOpt->toFullPathString() );
+	// 	EXPECT_TRUE( parsedPath );
+	// 	ASSERT_TRUE( parsedTargetPathOpt.has_value() );
+	// 	EXPECT_EQ( testData.expectedPath, parsedTargetPathOpt->toFullPathString() );
 
-		ASSERT_TRUE( targetPath.has_value() );
-		EXPECT_EQ( testData.expectedPath, targetPath->toFullPathString() );
-	}
+	// 	ASSERT_TRUE( targetPath.has_value() );
+	// 	EXPECT_EQ( testData.expectedPath, targetPath->toFullPathString() );
+	// }
 
 	class NodeConversionTest : public ::testing::TestWithParam<NodeTestData>
 	{

@@ -89,28 +89,36 @@ namespace dnv::vista::sdk
 		VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const
 	{
 		SPDLOG_INFO( "Converting path with end node {} from version {} to {}",
-			sourcePath.targetNode().code(),
+			sourcePath.node()->code(),
 			static_cast<int>( sourceVersion ),
 			static_cast<int>( targetVersion ) );
 
 		validateSourceAndTargetVersions( sourceVersion, targetVersion );
 
-		auto targetEndNodeOpt = convertNodeInternal( sourceVersion, sourcePath.targetNode(), targetVersion );
+		auto targetEndNodeOpt = convertNodeInternal( sourceVersion, *sourcePath.node(), targetVersion );
 		if ( !targetEndNodeOpt.has_value() )
 		{
-			SPDLOG_ERROR( "Failed to convert end node: {}", sourcePath.targetNode().code() );
+			SPDLOG_ERROR( "Failed to convert end node: {}", sourcePath.node()->code() );
 			return std::nullopt;
 		}
 		GmodNode targetEndNode = std::move( *targetEndNodeOpt );
 
+		const auto& targetGmod = VIS::instance().gmod( targetVersion );
+
 		if ( targetEndNode.isRoot() )
 		{
 			SPDLOG_INFO( "End node is a root node, returning simple path" );
-			return GmodPath( std::vector<const GmodNode*>{}, std::move( targetEndNode ), targetEndNode.visVersion(), true );
+			const GmodNode* nodeInTargetGmod = nullptr;
+			if ( !targetGmod.tryGetNode( targetEndNode.code(), nodeInTargetGmod ) || nodeInTargetGmod == nullptr )
+			{
+				SPDLOG_ERROR( "Converted root node {} not found in target GMOD {}.", targetEndNode.code(), static_cast<int>( targetVersion ) );
+				return std::nullopt;
+			}
+
+			std::vector<GmodNode*> parentPointers;
+
+			return GmodPath( targetGmod, const_cast<GmodNode*>( nodeInTargetGmod ), std::move( parentPointers ) );
 		}
-
-		const auto& targetGmod = VIS::instance().gmod( targetVersion );
-
 		std::vector<std::pair<std::reference_wrapper<const GmodNode>, GmodNode>> qualifyingNodes;
 
 		for ( const auto& pathNodePairRef : sourcePath.fullPath() )
@@ -150,7 +158,21 @@ namespace dnv::vista::sdk
 		if ( GmodPath::isValid( potentialParentPtrs, targetEndNode ) )
 		{
 			SPDLOG_INFO( "Found valid direct path" );
-			return GmodPath( std::move( potentialParentPtrs ), std::move( targetEndNode ), targetEndNode.visVersion(), true );
+			std::vector<GmodNode*> nonConstParentPtrs;
+			nonConstParentPtrs.reserve( potentialParentPtrs.size() );
+			for ( const GmodNode* cnstPtr : potentialParentPtrs )
+			{
+				nonConstParentPtrs.push_back( const_cast<GmodNode*>( cnstPtr ) );
+			}
+
+			const GmodNode* finalNodeInTargetGmod = nullptr;
+			if ( !targetGmod.tryGetNode( targetEndNode.code(), finalNodeInTargetGmod ) || finalNodeInTargetGmod == nullptr )
+			{
+				SPDLOG_ERROR( "Final target node {} not found in target GMOD {}.", targetEndNode.code(), static_cast<int>( targetVersion ) );
+				return std::nullopt;
+			}
+
+			return GmodPath( targetGmod, const_cast<GmodNode*>( finalNodeInTargetGmod ), std::move( nonConstParentPtrs ) );
 		}
 
 		auto addToPath = [&]( const Gmod& gmod, std::vector<const GmodNode*>& pathPtrs, const GmodNode* nodePtr ) -> bool {
@@ -265,7 +287,22 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_INFO( "Successfully created path with {} parents after reconstruction", reconstructedPathPtrs.size() );
-		return GmodPath( reconstructedPathPtrs, std::move( targetEndNode ), targetEndNode.visVersion(), true );
+
+		std::vector<GmodNode*> finalParentPtrs;
+		finalParentPtrs.reserve( reconstructedPathPtrs.size() );
+		for ( const GmodNode* cnstPtr : reconstructedPathPtrs )
+		{
+			finalParentPtrs.push_back( const_cast<GmodNode*>( cnstPtr ) );
+		}
+
+		const GmodNode* finalNodeInTargetGmodPtr = nullptr;
+		if ( !targetGmod.tryGetNode( targetEndNode.code(), finalNodeInTargetGmodPtr ) || finalNodeInTargetGmodPtr == nullptr )
+		{
+			SPDLOG_ERROR( "Final target node {} for path construction not found in target GMOD {}.", targetEndNode.code(), static_cast<int>( targetVersion ) );
+			return std::nullopt;
+		}
+
+		return GmodPath( targetGmod, const_cast<GmodNode*>( finalNodeInTargetGmodPtr ), std::move( finalParentPtrs ) );
 	}
 
 	std::optional<LocalIdBuilder> GmodVersioning::convertLocalId(

@@ -19,6 +19,7 @@ namespace dnv::vista::sdk
 			if ( !loaded )
 			{
 				std::string jsonFilePath = "testdata/Codebook.json";
+
 				std::ifstream jsonFile( jsonFilePath );
 				if ( !jsonFile.is_open() )
 				{
@@ -31,7 +32,11 @@ namespace dnv::vista::sdk
 				}
 				catch ( const nlohmann::json::parse_error& e )
 				{
-					throw std::runtime_error( std::string( "Failed to parse global test data file: " ) + jsonFilePath + " - " + e.what() );
+					std::string errMsg = "JSON parse error in '" + jsonFilePath +
+										 "'. Type: " + std::to_string( e.id ) +
+										 ", Byte: " + std::to_string( e.byte ) +
+										 ". Original what() likely too long.";
+					throw std::runtime_error( errMsg );
 				}
 			}
 

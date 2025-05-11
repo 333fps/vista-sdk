@@ -525,7 +525,8 @@ namespace dnv::vista::sdk
 		SPDLOG_DEBUG( "Removing primary item (resetting to empty path)." );
 		LocalIdBuilder result( std::move( *this ) );
 
-		result.m_items = LocalIdItems( std::move( result.m_items ), GmodPath{} );
+		result.m_items = LocalIdItems( std::move( result.m_items ), std::nullopt );
+		return result;
 		return result;
 	}
 
@@ -997,7 +998,7 @@ namespace dnv::vista::sdk
 		std::shared_ptr<const Gmod> gmod = nullptr;
 		std::shared_ptr<const Codebooks> codebooks = nullptr;
 
-		std::optional<GmodPath> parsedPrimaryItem = GmodPath{};
+		std::optional<GmodPath> parsedPrimaryItem = std::nullopt;
 		std::optional<GmodPath> parsedSecondaryItem = std::nullopt;
 
 		std::optional<MetadataTag> qty{}, cnt{}, calc{}, stateTag{}, cmd{}, type{}, pos{}, detail{};
@@ -1265,7 +1266,7 @@ namespace dnv::vista::sdk
 			}
 			else
 			{
-				builder.m_items = LocalIdItems( std::move( builder.m_items ), GmodPath{} );
+				builder.m_items = LocalIdItems( std::move( builder.m_items ), std::nullopt );
 			}
 
 			if ( parsedSecondaryItem.has_value() )

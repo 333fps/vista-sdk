@@ -3,8 +3,6 @@
  * @brief Template implementation of CHD Dictionary class
  */
 
-#pragma once
-
 #include "ChdDictionary.h"
 
 namespace dnv::vista::sdk
@@ -115,13 +113,6 @@ namespace dnv::vista::sdk
 	// Construction / Destruction
 	//----------------------------------------------
 
-	/**
-	 * @brief Constructs the dictionary from a vector of key-value pairs.
-	 * @details Builds the perfect hash function based on the provided `items`.
-	 *          The input `items` vector is moved into the dictionary.
-	 * @param[in] items A `std::vector` of `std::pair<std::string, TValue>` used to populate the dictionary.
-	 *                  The keys within this vector must be unique.
-	 */
 	template <typename TValue>
 	ChdDictionary<TValue>::ChdDictionary( std::vector<std::pair<std::string, TValue>> items )
 		: m_table{},
@@ -134,6 +125,28 @@ namespace dnv::vista::sdk
 			SPDLOG_DEBUG( "Created empty CHD Dictionary from empty input" );
 			return;
 		}
+
+		SPDLOG_TRACE( "Validating input items for duplicate keys..." );
+		std::unordered_set<std::string_view> unique_keys;
+		unique_keys.reserve( items.size() ); //
+		for ( size_t i = 0; i < items.size(); ++i )
+		{
+			const auto& key = items[i].first;
+			if ( key.empty() )
+			{
+				std::string errorMsg = fmt::format( "Input item at index {} has an empty key, which is not allowed.", i );
+				SPDLOG_ERROR( errorMsg );
+				throw std::invalid_argument( errorMsg );
+			}
+			auto [_, inserted] = unique_keys.insert( key );
+			if ( !inserted )
+			{
+				std::string errorMsg = fmt::format( "Duplicate key found in input items: '{}' at index {}.", key, i );
+				SPDLOG_ERROR( errorMsg );
+				throw std::invalid_argument( errorMsg );
+			}
+		}
+		SPDLOG_TRACE( "Input items validated, no duplicate or empty keys found." );
 
 		uint64_t size{ 1 };
 		/* Ensure table size is a power of 2 and at least 2x item count for efficient modulo operations (using '&') */
@@ -189,7 +202,7 @@ namespace dnv::vista::sdk
 					/* Calculate final position using secondary hash with current seed */
 					auto finalHash{ internal::Hashing::seed( current_seed_value, k.second, size ) };
 					bool slotOccupied = indices[finalHash] != 0;
-					bool entryClaimedThisTry = entries.count( finalHash );
+					bool entryClaimedThisTry = entries.count( finalHash ) != 0;
 
 					if ( !slotOccupied && !entryClaimedThisTry )
 					{
@@ -550,36 +563,6 @@ namespace dnv::vista::sdk
 		{
 			return std::memcmp( a.data(), b.data(), aLen ) == 0;
 		}
-	}
-
-	template <typename TValue>
-	bool ChdDictionary<TValue>::stringsEqual( std::span<const char> a, std::span<const char> b ) noexcept
-	{
-		const auto aLen{ a.size() };
-
-		if ( aLen != b.size() )
-		{
-			return false;
-		}
-
-		if ( aLen == 0 )
-		{
-			return true;
-		}
-
-		if ( aLen < 16 )
-		{
-			for ( size_t i{ 0 }; i < aLen; ++i )
-			{
-				if ( a[i] != b[i] )
-				{
-					return false;
-				}
-			}
-			return true;
-		}
-
-		return std::memcmp( a.data(), b.data(), aLen ) == 0;
 	}
 
 	//----------------------------------------------
