@@ -97,30 +97,24 @@ namespace dnv::vista::sdk
 			template <typename TState>
 			TraversalHandlerResult TraverseNodeRecursive( TraversalContext<TState>& context, const GmodNode& node )
 			{
-				if ( node.metadata().installSubstructure().has_value() && !node.metadata().installSubstructure().value() )
-				{
-					return TraversalHandlerResult::Continue;
-				}
-
 				TraversalHandlerResult result = context.handler_func( context.state_ref, context.parents_ref.asList(), node );
 
 				if ( result == TraversalHandlerResult::Stop || result == TraversalHandlerResult::SkipSubtree )
 				{
 					return result;
 				}
+				if ( node.metadata().installSubstructure().has_value() && !node.metadata().installSubstructure().value() )
+				{
+					return TraversalHandlerResult::Continue;
+				}
 
 				bool skipOccurrenceCheck = Gmod::isProductSelectionAssignment( context.parents_ref.lastOrDefault(), &node );
-
 				if ( !skipOccurrenceCheck )
 				{
 					int occ = context.parents_ref.getOccurrences( node );
-					if ( occ == context.maxTraversalOccurrence_val )
+					if ( occ >= context.maxTraversalOccurrence_val )
 					{
 						return TraversalHandlerResult::SkipSubtree;
-					}
-					if ( occ > context.maxTraversalOccurrence_val )
-					{
-						throw std::runtime_error( "Invalid state - node occurred more than expected" );
 					}
 				}
 
@@ -131,16 +125,12 @@ namespace dnv::vista::sdk
 					if ( !child )
 						continue;
 
-					result = TraverseNodeRecursive<TState>( context, *child );
+					TraversalHandlerResult child_result = TraverseNodeRecursive<TState>( context, *child );
 
-					if ( result == TraversalHandlerResult::Stop )
+					if ( child_result == TraversalHandlerResult::Stop )
 					{
 						context.parents_ref.pop();
-						return result;
-					}
-					else if ( result == TraversalHandlerResult::SkipSubtree )
-					{
-						continue;
+						return TraversalHandlerResult::Stop;
 					}
 				}
 

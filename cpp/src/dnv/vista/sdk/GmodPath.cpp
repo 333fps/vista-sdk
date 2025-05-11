@@ -314,6 +314,7 @@ namespace dnv::vista::sdk
 
 	GmodPath::GmodPath()
 		: m_visVersion{ VisVersion::Unknown },
+		  m_ownedTargetNode{ VisVersion::Unknown, {} },
 		  m_isEmpty{ true }
 	{
 		SPDLOG_DEBUG( "GmodPath default constructed (empty)." );
@@ -323,7 +324,8 @@ namespace dnv::vista::sdk
 		const GmodNode& initialTargetNodeTemplate,
 		VisVersion visVersion,
 		bool skipVerify )
-		: m_visVersion( visVersion )
+		: m_visVersion( visVersion ),
+		  m_ownedTargetNode( initialTargetNodeTemplate )
 	{
 		std::vector<GmodNode> workingParentNodes;
 
@@ -763,7 +765,9 @@ namespace dnv::vista::sdk
 	void GmodPath::toFullPathString( std::stringstream& builder ) const
 	{
 		if ( m_isEmpty )
+		{
 			return;
+		}
 
 		for ( size_t i = 0; i < m_ownedParentNodes.size(); ++i )
 		{
@@ -772,6 +776,7 @@ namespace dnv::vista::sdk
 			builder << '/';
 		}
 
+		SPDLOG_WARN( "Full path string: {}", builder.str() );
 		m_ownedTargetNode.toString( builder );
 	}
 
@@ -1186,6 +1191,132 @@ namespace dnv::vista::sdk
 		}
 	}
 
+	std::unique_ptr<GmodParsePathResult> GmodPath::parseFullPathInternal( std::string_view pathStr, const Gmod& gmod, const Locations& locations )
+	{
+		SPDLOG_INFO( "Parsing full path '{}' using GMOD version {} and provided Locations", pathStr, static_cast<int>( gmod.visVersion() ) );
+
+		if ( pathStr.empty() || std::all_of( pathStr.begin(), pathStr.end(), []( char c ) { return std::isspace( c ); } ) )
+		{
+			SPDLOG_ERROR( "Cannot parse empty or whitespace-only full path string." );
+			return std::make_unique<GmodParsePathResult::Err>( "Path string cannot be empty or whitespace." );
+		}
+
+		try
+		{
+			std::vector<std::string_view> parts;
+			size_t start = 0;
+			size_t end;
+			while ( ( end = pathStr.find( '/', start ) ) != std::string_view::npos )
+			{
+				if ( end >= start )
+
+				{
+					parts.push_back( pathStr.substr( start, end - start ) );
+				}
+				start = end + 1;
+			}
+			if ( start <= pathStr.length() )
+			{
+				parts.push_back( pathStr.substr( start ) );
+			}
+
+			if ( parts.empty() )
+			{
+				SPDLOG_ERROR( "No parts found after splitting full path string: '{}'", pathStr );
+				return std::make_unique<GmodParsePathResult::Err>( fmt::format( "Path string yielded no parts: {}", pathStr ) );
+			}
+
+			std::vector<const GmodNode*> parentNodeTemplates;
+			parentNodeTemplates.reserve( parts.size() > 0 ? parts.size() - 1 : 0 );
+			GmodNode targetNodeInstance{ gmod.visVersion(), {} };
+
+			for ( size_t i = 0; i < parts.size(); ++i )
+			{
+				const auto& part = parts[i];
+				if ( part.empty() )
+				{
+					SPDLOG_ERROR( "Empty part encountered in full path string: '{}' at segment {}", pathStr, i );
+					return std::make_unique<GmodParsePathResult::Err>( "Empty segment in path string at index " + std::to_string( i ) );
+				}
+
+				std::string_view codeView;
+				std::optional<Location> locationFromPart;
+				size_t dashPos = part.find( '-' );
+
+				if ( dashPos != std::string_view::npos )
+				{
+					codeView = part.substr( 0, dashPos );
+					std::string_view locStrView = part.substr( dashPos + 1 );
+					std::string locStr( locStrView );
+
+					Location parsedLocation;
+					if ( !locations.tryParse( locStr, parsedLocation ) )
+					{
+						SPDLOG_ERROR( "Failed to parse location string '{}' from part '{}' in full path '{}'", locStr, part, pathStr );
+						return std::make_unique<GmodParsePathResult::Err>( "Failed to parse location: " + locStr );
+					}
+					locationFromPart = parsedLocation;
+				}
+				else
+				{
+					codeView = part;
+				}
+				std::string code( codeView );
+
+				const GmodNode* nodeTemplatePtr = nullptr;
+				if ( !gmod.tryGetNode( code, nodeTemplatePtr ) || !nodeTemplatePtr )
+				{
+					SPDLOG_ERROR( "Node template with code '{}' not found in GMOD for full path '{}'", code, pathStr );
+					return std::make_unique<GmodParsePathResult::Err>( "Node template not found: " + code );
+				}
+
+				if ( i < parts.size() - 1 )
+				{
+					parentNodeTemplates.push_back( nodeTemplatePtr );
+					if ( locationFromPart.has_value() )
+					{
+						SPDLOG_DEBUG( "Location '{}' specified for intermediate parent node '{}' in full path string '{}'. "
+									  "The GmodPath constructor will use the node template's original location for its working copy; "
+									  "the LocationSetsVisitor will then determine the final location.",
+							locationFromPart->toString(), code, pathStr );
+					}
+				}
+				else
+				{
+					targetNodeInstance = *nodeTemplatePtr;
+					if ( locationFromPart.has_value() )
+					{
+						targetNodeInstance = targetNodeInstance.withLocation( *locationFromPart );
+						SPDLOG_DEBUG( "Applied location '{}' from string to target node '{}'", locationFromPart->toString(), code );
+					}
+				}
+			}
+
+			GmodPath path( parentNodeTemplates, targetNodeInstance, gmod.visVersion(), false );
+			return std::make_unique<GmodParsePathResult::Ok>( std::move( path ) );
+		}
+		catch ( const std::invalid_argument& ex )
+		{
+			SPDLOG_ERROR( "Invalid argument during full path parsing for '{}': {}", pathStr, ex.what() );
+			return std::make_unique<GmodParsePathResult::Err>( fmt::format( "Invalid argument: {}", ex.what() ) );
+		}
+		catch ( const std::runtime_error& ex )
+		{
+			SPDLOG_ERROR( "Runtime error during full path parsing for '{}': {}", pathStr, ex.what() );
+			return std::make_unique<GmodParsePathResult::Err>( fmt::format( "Runtime error: {}", ex.what() ) );
+		}
+		catch ( const std::exception& ex )
+		{
+			SPDLOG_ERROR( "Generic exception during full path parsing for '{}': {}", pathStr, ex.what() );
+			return std::make_unique<GmodParsePathResult::Err>( fmt::format( "Exception: {}", ex.what() ) );
+		}
+		catch ( ... )
+		{
+			SPDLOG_ERROR( "Unknown exception during full path parsing for '{}'", pathStr );
+			return std::make_unique<GmodParsePathResult::Err>( "Unknown exception during full path parsing." );
+		}
+	}
+
 	std::unique_ptr<GmodParsePathResult> GmodPath::parseInternal(
 		std::string_view item_sv, const Gmod& gmod, const Locations& locations )
 	{
@@ -1240,110 +1371,61 @@ namespace dnv::vista::sdk
 
 		std::vector<const GmodNode*> relativePathTemplates;
 
-		if ( parsedSegments.size() == 1 )
+		relativePathTemplates.push_back( baseNodeTemplate );
+
+		if ( parsedSegments.size() > 1 )
 		{
-			relativePathTemplates.push_back( baseNodeTemplate );
-		}
-		else
-		{
-			struct RelativePathResolveState
+			const GmodNode* currentSearchBaseNode = baseNodeTemplate;
+
+			for ( size_t i = 1; i < parsedSegments.size(); ++i )
 			{
-				const std::vector<ParsedPathNodeFromString>& allParsedSegmentsGlobal;
-				const GmodNode* const baseNodeTemplateForContext;
-				std::vector<const GmodNode*>& outputFinalRelativePath;
-				bool pathFullyMatched = false;
+				const ParsedPathNodeFromString& segmentToFind = parsedSegments[i];
+				bool foundCurrentSegment = false;
+				const GmodNode* nextNodeInPath = nullptr;
 
-				RelativePathResolveState( const std::vector<ParsedPathNodeFromString>& allSegs,
-					const GmodNode* baseTpl,
-					std::vector<const GmodNode*>& outputVec )
-					: allParsedSegmentsGlobal( allSegs ),
-					  baseNodeTemplateForContext( baseTpl ),
-					  outputFinalRelativePath( outputVec ) {}
-			};
-
-			RelativePathResolveState traversalState( parsedSegments, baseNodeTemplate, relativePathTemplates );
-
-			auto relativePathHandler = [&](
-										   RelativePathResolveState& state,
-										   const std::vector<const GmodNode*>& pathFromGMODRootToCurrentNodesParent,
-										   const GmodNode& currentNode ) -> TraversalHandlerResult {
-				if ( state.pathFullyMatched )
+				struct SegmentSearchState
 				{
-					return TraversalHandlerResult::Stop;
-				}
+					const ParsedPathNodeFromString& targetSegmentCode;
+					const GmodNode*& outFoundNode;
+					bool& successFlag;
 
-				std::vector<const GmodNode*> pathFromTraversalStartToCurrentNodeInclusive;
-				if ( &currentNode == state.baseNodeTemplateForContext )
-				{
-					pathFromTraversalStartToCurrentNodeInclusive.push_back( &currentNode );
-				}
-				else
-				{
-					auto it_base_in_parent_path = std::find( pathFromGMODRootToCurrentNodesParent.begin(),
-						pathFromGMODRootToCurrentNodesParent.end(),
-						state.baseNodeTemplateForContext );
-
-					if ( it_base_in_parent_path != pathFromGMODRootToCurrentNodesParent.end() )
+					SegmentSearchState( const ParsedPathNodeFromString& target, const GmodNode*& outNode, bool& success )
+						: targetSegmentCode( target ), outFoundNode( outNode ), successFlag( success )
 					{
-						for ( auto it = it_base_in_parent_path; it != pathFromGMODRootToCurrentNodesParent.end(); ++it )
-						{
-							pathFromTraversalStartToCurrentNodeInclusive.push_back( *it );
-						}
-						pathFromTraversalStartToCurrentNodeInclusive.push_back( &currentNode );
 					}
-					else
+				};
+
+				SegmentSearchState currentSegmentSearchState( segmentToFind, nextNodeInPath, foundCurrentSegment );
+
+				auto segmentSearchHandler = [&](
+												SegmentSearchState& state,
+												[[maybe_unused]] const std::vector<const GmodNode*>& parentsFromGmodRoot,
+												const GmodNode& currentNode ) -> TraversalHandlerResult {
+					if ( currentNode.code() == state.targetSegmentCode.code )
 					{
-						return TraversalHandlerResult::SkipSubtree;
-					}
-				}
-
-				size_t segmentIndexInGlobalList = pathFromTraversalStartToCurrentNodeInclusive.size() - 1;
-
-				if ( segmentIndexInGlobalList >= state.allParsedSegmentsGlobal.size() )
-				{
-					return TraversalHandlerResult::SkipSubtree;
-				}
-
-				if ( currentNode.code() == state.allParsedSegmentsGlobal[segmentIndexInGlobalList].code )
-				{
-					if ( segmentIndexInGlobalList == state.allParsedSegmentsGlobal.size() - 1 )
-					{
-						state.pathFullyMatched = true;
-						state.outputFinalRelativePath.assign(
-							pathFromTraversalStartToCurrentNodeInclusive.begin(),
-							pathFromTraversalStartToCurrentNodeInclusive.end() );
+						state.outFoundNode = &currentNode;
+						state.successFlag = true;
 						return TraversalHandlerResult::Stop;
 					}
-					else
-					{
-						return TraversalHandlerResult::Continue;
-					}
+					return TraversalHandlerResult::Continue;
+				};
+
+				TraversalOptions travOptions;
+
+				GmodTraversal::traverse<SegmentSearchState>( gmod, currentSegmentSearchState, *currentSearchBaseNode, segmentSearchHandler, travOptions );
+
+				if ( foundCurrentSegment && nextNodeInPath )
+				{
+					relativePathTemplates.push_back( nextNodeInPath );
+					currentSearchBaseNode = nextNodeInPath;
 				}
 				else
 				{
-					return TraversalHandlerResult::SkipSubtree;
+					std::string previousSegmentCode = ( i > 0 && !relativePathTemplates.empty() ) ? relativePathTemplates.back()->code() : baseNodeTemplate->code();
+					return std::make_unique<GmodParsePathResult::Err>(
+						"Failed to resolve relative path. Could not find segment '" + segmentToFind.code +
+						"' after '" + previousSegmentCode + "'." );
 				}
-			};
-
-			TraversalOptions travOptions;
-			GmodTraversal::traverse<RelativePathResolveState>( gmod, traversalState, *baseNodeTemplate, relativePathHandler, travOptions );
-
-			if ( !traversalState.pathFullyMatched )
-			{
-				std::string nextExpectedCode = "unknown";
-				size_t numFoundIncludingBase = relativePathTemplates.empty() ? 0 : relativePathTemplates.size();
-				if ( numFoundIncludingBase < parsedSegments.size() )
-				{
-					nextExpectedCode = parsedSegments[numFoundIncludingBase].code;
-				}
-				else if ( !parsedSegments.empty() && numFoundIncludingBase > 0 && relativePathTemplates.back()->code() != parsedSegments.back().code )
-				{
-					nextExpectedCode = parsedSegments.back().code;
-				}
-
-				return std::make_unique<GmodParsePathResult::Err>(
-					"Failed to resolve full relative path from base '" + baseNodeTemplate->code() +
-					"'. Next expected segment: '" + nextExpectedCode + "'." );
 			}
 		}
 
@@ -1445,132 +1527,6 @@ namespace dnv::vista::sdk
 		}
 
 		return std::make_unique<GmodParsePathResult::Ok>( std::move( path ) );
-	}
-
-	std::unique_ptr<GmodParsePathResult> GmodPath::parseFullPathInternal( std::string_view pathStr, const Gmod& gmod, const Locations& locations )
-	{
-		SPDLOG_INFO( "Parsing full path '{}' using GMOD version {} and provided Locations", pathStr, static_cast<int>( gmod.visVersion() ) );
-
-		if ( pathStr.empty() || std::all_of( pathStr.begin(), pathStr.end(), []( char c ) { return std::isspace( c ); } ) )
-		{
-			SPDLOG_ERROR( "Cannot parse empty or whitespace-only full path string." );
-			return std::make_unique<GmodParsePathResult::Err>( "Path string cannot be empty or whitespace." );
-		}
-
-		try
-		{
-			std::vector<std::string_view> parts;
-			size_t start = 0;
-			size_t end;
-			while ( ( end = pathStr.find( '/', start ) ) != std::string_view::npos )
-			{
-				if ( end >= start )
-
-				{
-					parts.push_back( pathStr.substr( start, end - start ) );
-				}
-				start = end + 1;
-			}
-			if ( start <= pathStr.length() )
-			{
-				parts.push_back( pathStr.substr( start ) );
-			}
-
-			if ( parts.empty() )
-			{
-				SPDLOG_ERROR( "No parts found after splitting full path string: '{}'", pathStr );
-				return std::make_unique<GmodParsePathResult::Err>( fmt::format( "Path string yielded no parts: {}", pathStr ) );
-			}
-
-			std::vector<const GmodNode*> parentNodeTemplates;
-			parentNodeTemplates.reserve( parts.size() > 0 ? parts.size() - 1 : 0 );
-			GmodNode targetNodeInstance;
-
-			for ( size_t i = 0; i < parts.size(); ++i )
-			{
-				const auto& part = parts[i];
-				if ( part.empty() )
-				{
-					SPDLOG_ERROR( "Empty part encountered in full path string: '{}' at segment {}", pathStr, i );
-					return std::make_unique<GmodParsePathResult::Err>( "Empty segment in path string at index " + std::to_string( i ) );
-				}
-
-				std::string_view codeView;
-				std::optional<Location> locationFromPart;
-				size_t dashPos = part.find( '-' );
-
-				if ( dashPos != std::string_view::npos )
-				{
-					codeView = part.substr( 0, dashPos );
-					std::string_view locStrView = part.substr( dashPos + 1 );
-					std::string locStr( locStrView );
-
-					Location parsedLocation;
-					if ( !locations.tryParse( locStr, parsedLocation ) )
-					{
-						SPDLOG_ERROR( "Failed to parse location string '{}' from part '{}' in full path '{}'", locStr, part, pathStr );
-						return std::make_unique<GmodParsePathResult::Err>( "Failed to parse location: " + locStr );
-					}
-					locationFromPart = parsedLocation;
-				}
-				else
-				{
-					codeView = part;
-				}
-				std::string code( codeView );
-
-				const GmodNode* nodeTemplatePtr = nullptr;
-				if ( !gmod.tryGetNode( code, nodeTemplatePtr ) || !nodeTemplatePtr )
-				{
-					SPDLOG_ERROR( "Node template with code '{}' not found in GMOD for full path '{}'", code, pathStr );
-					return std::make_unique<GmodParsePathResult::Err>( "Node template not found: " + code );
-				}
-
-				if ( i < parts.size() - 1 )
-				{
-					parentNodeTemplates.push_back( nodeTemplatePtr );
-					if ( locationFromPart.has_value() )
-					{
-						SPDLOG_DEBUG( "Location '{}' specified for intermediate parent node '{}' in full path string '{}'. "
-									  "The GmodPath constructor will use the node template's original location for its working copy; "
-									  "the LocationSetsVisitor will then determine the final location.",
-							locationFromPart->toString(), code, pathStr );
-					}
-				}
-				else
-				{
-					targetNodeInstance = *nodeTemplatePtr;
-					if ( locationFromPart.has_value() )
-					{
-						targetNodeInstance = targetNodeInstance.withLocation( *locationFromPart );
-						SPDLOG_DEBUG( "Applied location '{}' from string to target node '{}'", locationFromPart->toString(), code );
-					}
-				}
-			}
-
-			GmodPath path( parentNodeTemplates, targetNodeInstance, gmod.visVersion(), false );
-			return std::make_unique<GmodParsePathResult::Ok>( std::move( path ) );
-		}
-		catch ( const std::invalid_argument& ex )
-		{
-			SPDLOG_ERROR( "Invalid argument during full path parsing for '{}': {}", pathStr, ex.what() );
-			return std::make_unique<GmodParsePathResult::Err>( fmt::format( "Invalid argument: {}", ex.what() ) );
-		}
-		catch ( const std::runtime_error& ex )
-		{
-			SPDLOG_ERROR( "Runtime error during full path parsing for '{}': {}", pathStr, ex.what() );
-			return std::make_unique<GmodParsePathResult::Err>( fmt::format( "Runtime error: {}", ex.what() ) );
-		}
-		catch ( const std::exception& ex )
-		{
-			SPDLOG_ERROR( "Generic exception during full path parsing for '{}': {}", pathStr, ex.what() );
-			return std::make_unique<GmodParsePathResult::Err>( fmt::format( "Exception: {}", ex.what() ) );
-		}
-		catch ( ... )
-		{
-			SPDLOG_ERROR( "Unknown exception during full path parsing for '{}'", pathStr );
-			return std::make_unique<GmodParsePathResult::Err>( "Unknown exception during full path parsing." );
-		}
 	}
 
 	//----------------------------------------------

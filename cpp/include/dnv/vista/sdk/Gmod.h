@@ -351,7 +351,7 @@ namespace dnv::vista::sdk
 		 * @details This pointer refers to a GmodNode instance managed within m_nodeMap.
 		 *          It is initialized during Gmod construction.
 		 */
-		GmodNode* m_rootNode{ nullptr };
+		GmodNode* m_rootNode;
 
 		/**
 		 * @brief The primary storage for GMOD nodes.

@@ -213,15 +213,15 @@ namespace dnv::vista::sdk
 		// Construction / Destruction
 		//----------------------------------------------
 
-		/** @brief Default constructor. Initializes an empty/invalid node. */
-		GmodNode();
-
 		/**
 		 * @brief Constructs a GmodNode from a Data Transfer Object (DTO).
 		 * @param version The VIS version associated with this node.
 		 * @param dto The DTO containing the node's data.
 		 */
 		GmodNode( VisVersion version, const GmodNodeDto& dto );
+
+		/** @brief Default constructor. */
+		GmodNode() = delete;
 
 		/** @brief Copy constructor */
 		GmodNode( const GmodNode& ) = default;

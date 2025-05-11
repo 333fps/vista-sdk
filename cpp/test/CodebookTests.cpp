@@ -1,27 +1,239 @@
+/**
+ * @file CodebookTests.cpp
+ * @brief Unit tests for the Codebook and related functionalities.
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/VIS.h"
-#include "dnv/vista/sdk/Codebooks.h"
-#include "dnv/vista/sdk/Codebook.h"
-#include "dnv/vista/sdk/CodebookName.h"
-#include "dnv/vista/sdk/VisVersion.h"
 #include "dnv/vista/sdk/MetadataTag.h"
 
 namespace dnv::vista::sdk
 {
-	namespace TestData
+	namespace
 	{
-		static std::vector<std::pair<std::string, std::string>> getPositionValidationTestData()
+		static const nlohmann::json& testData()
 		{
-			return { { "upper", "Valid" }, { "lower", "Valid" } };
+			static nlohmann::json globalJsonData;
+			static bool loaded = false;
+			if ( !loaded )
+			{
+				std::string jsonFilePath = "testdata/Codebook.json";
+				std::ifstream jsonFile( jsonFilePath );
+				if ( !jsonFile.is_open() )
+				{
+					throw std::runtime_error( "Failed to open global test data file: " + jsonFilePath );
+				}
+				try
+				{
+					jsonFile >> globalJsonData;
+					loaded = true;
+				}
+				catch ( const nlohmann::json::parse_error& e )
+				{
+					throw std::runtime_error( std::string( "Failed to parse global test data file: " ) + jsonFilePath + " - " + e.what() );
+				}
+			}
+
+			return globalJsonData;
+		}
+	}
+
+	namespace CodebookTestFixture
+	{
+		class CodebookTest : public ::testing::Test
+		{
+		protected:
+			CodebookTest()
+				: m_vis{ VIS::instance() },
+				  m_codebooks{ m_vis.codebooks( VisVersion::v3_4a ) },
+				  m_jsonData{ testData() }
+			{
+			}
+
+			VIS& m_vis;
+			const Codebooks& m_codebooks;
+			const nlohmann::json& m_jsonData;
+		};
+
+		//=====================================================================
+		// Tests
+		//=====================================================================
+
+		//----------------------------------------------
+		// Test_Standard_Values
+		//----------------------------------------------
+
+		TEST_F( CodebookTest, Test_Standard_Values )
+		{
+			const auto& positions = m_codebooks[CodebookName::Position];
+
+			EXPECT_TRUE( positions.hasStandardValue( "upper" ) );
+
+			const auto& rawData = positions.rawData();
+
+			EXPECT_TRUE( rawData.find( "Vertical" ) != rawData.end() );
+
+			auto it = rawData.find( "Vertical" );
+			ASSERT_NE( it, rawData.end() ) << "Group 'Vertical' not found in raw data.";
+
+			const auto& verticalGroupValues = it->second;
+			EXPECT_NE( std::find( verticalGroupValues.begin(), verticalGroupValues.end(), "upper" ), verticalGroupValues.end() );
 		}
 
-		static std::vector<std::pair<std::string, std::string>> getPositionStandardValuesTestData()
+		//----------------------------------------------
+		// Test_Get_Groups
+		//----------------------------------------------
+
+		TEST_F( CodebookTest, Test_Get_Groups )
 		{
-			return { { "invalidValue", "upper" } };
+			const auto& groups = m_codebooks[CodebookName::Position].groups();
+			EXPECT_GT( groups.count(), 1 );
+
+			EXPECT_TRUE( groups.contains( "Vertical" ) );
+
+			const auto& rawData = m_codebooks[CodebookName::Position].rawData();
+
+			EXPECT_EQ( groups.count(), rawData.size() - 1 );
+			EXPECT_TRUE( rawData.find( "Vertical" ) != rawData.end() );
 		}
 
-		struct StatesTestData
+		//----------------------------------------------
+		// Test_Iterate_Groups
+		//----------------------------------------------
+
+		TEST_F( CodebookTest, Test_Iterate_Groups )
+		{
+			const auto& groups = m_codebooks[CodebookName::Position].groups();
+			int iterated_count = 0;
+
+			for ( [[maybe_unused]] const auto& group : groups )
+			{
+				iterated_count++;
+			}
+			EXPECT_EQ( iterated_count, 11 );
+		}
+
+		//----------------------------------------------
+		// Test_Iterate_Values
+		//----------------------------------------------
+
+		TEST_F( CodebookTest, Test_Iterate_Values )
+		{
+			const auto& positionCodebook = m_codebooks[CodebookName::Position];
+			const auto& values = positionCodebook.standardValues();
+			int iterated_count = 0;
+			for ( [[maybe_unused]] const auto& value_item : values )
+			{
+				iterated_count++;
+			}
+			EXPECT_EQ( iterated_count, 28 );
+		}
+	}
+
+	namespace CodebookTestParametrized
+	{
+		//=====================================================================
+		// Tests
+		//=====================================================================
+
+		//----------------------------------------------
+		// Test_Position_Validation
+		//----------------------------------------------
+
+		struct PositionValidationParam
+		{
+			std::string input;
+			std::string expectedOutput;
+		};
+
+		class PositionValidationTest : public ::testing::TestWithParam<PositionValidationParam>
+		{
+		};
+
+		static std::vector<PositionValidationParam> positionValidationData()
+		{
+			std::vector<PositionValidationParam> data;
+			const nlohmann::json& jsonDataFromFile = testData();
+
+			if ( jsonDataFromFile.contains( "ValidPosition" ) && jsonDataFromFile["ValidPosition"].is_array() )
+			{
+				for ( const auto& item : jsonDataFromFile["ValidPosition"] )
+				{
+					if ( item.is_array() && item.size() == 2 && item[0].is_string() && item[1].is_string() )
+					{
+						data.push_back( { item[0].get<std::string>(), item[1].get<std::string>() } );
+					}
+				}
+			}
+
+			return data;
+		}
+
+		TEST_P( PositionValidationTest, Test_Position_Validation )
+		{
+			const auto& param = GetParam();
+
+			VIS& vis = VIS::instance();
+			const Codebooks& codebooks = vis.codebooks( VisVersion::v3_4a );
+
+			const auto& codebookType = codebooks[CodebookName::Position];
+			auto validPosition = codebookType.validatePosition( param.input );
+			auto parsedExpectedOutput = PositionValidationResults::fromString( param.expectedOutput );
+
+			EXPECT_EQ( parsedExpectedOutput, validPosition );
+		}
+
+		//----------------------------------------------
+		// Test_Positions
+		//----------------------------------------------
+
+		struct PositionsParam
+		{
+			std::string invalidStandardValue;
+			std::string validStandardValue;
+		};
+
+		class PositionsTest : public ::testing::TestWithParam<PositionsParam>
+		{
+		};
+
+		static std::vector<PositionsParam> positionsData()
+		{
+			std::vector<PositionsParam> data;
+			const nlohmann::json& jsonDataFromFile = testData();
+
+			if ( jsonDataFromFile.contains( "Positions" ) && jsonDataFromFile["Positions"].is_array() )
+			{
+				for ( const auto& item : jsonDataFromFile["Positions"] )
+				{
+					if ( item.is_array() && item.size() == 2 && item[0].is_string() && item[1].is_string() )
+					{
+						data.push_back( { item[0].get<std::string>(), item[1].get<std::string>() } );
+					}
+				}
+			}
+			return data;
+		}
+
+		TEST_P( PositionsTest, Test_Positions )
+		{
+			const auto& param = GetParam();
+
+			VIS& vis = VIS::instance();
+			const Codebooks& codebooks = vis.codebooks( VisVersion::v3_4a );
+
+			const auto& positions = codebooks[CodebookName::Position];
+
+			EXPECT_FALSE( positions.hasStandardValue( param.invalidStandardValue ) );
+			EXPECT_TRUE( positions.hasStandardValue( param.validStandardValue ) );
+		}
+
+		//----------------------------------------------
+		// Test_States
+		//----------------------------------------------
+
+		struct StatesParam
 		{
 			std::string invalidGroup;
 			std::string validValue;
@@ -29,12 +241,52 @@ namespace dnv::vista::sdk
 			std::string secondValidValue;
 		};
 
-		static std::vector<StatesTestData> getStatesTestData()
+		class StatesTest : public ::testing::TestWithParam<StatesParam>
 		{
-			return { { "NonExistentGroup", "on", "On / off", "off" } };
+		};
+
+		static std::vector<StatesParam> statesData()
+		{
+			std::vector<StatesParam> data;
+			const nlohmann::json& jsonDataFromFile = testData();
+
+			if ( jsonDataFromFile.contains( "States" ) && jsonDataFromFile["States"].is_array() )
+			{
+				for ( const auto& item : jsonDataFromFile["States"] )
+				{
+					if ( item.is_array() && item.size() == 4 &&
+						 item[0].is_string() && item[1].is_string() &&
+						 item[2].is_string() && item[3].is_string() )
+					{
+						data.push_back( { item[0].get<std::string>(),
+							item[1].get<std::string>(),
+							item[2].get<std::string>(),
+							item[3].get<std::string>() } );
+					}
+				}
+			}
+			return data;
 		}
 
-		struct TagTestData
+		TEST_P( StatesTest, Test_States )
+		{
+			const auto& param = GetParam();
+
+			VIS& vis = VIS::instance();
+			const Codebooks& codebooks = vis.codebooks( VisVersion::v3_4a );
+			const auto& states = codebooks[CodebookName::State];
+
+			EXPECT_FALSE( states.hasGroup( param.invalidGroup ) );
+			EXPECT_TRUE( states.hasStandardValue( param.validValue ) );
+			EXPECT_TRUE( states.hasGroup( param.validGroup ) );
+			EXPECT_TRUE( states.hasStandardValue( param.secondValidValue ) );
+		}
+
+		//----------------------------------------------
+		// Test_Create_Tag
+		//----------------------------------------------
+
+		struct TagParam
 		{
 			std::string firstTag;
 			std::string secondTag;
@@ -46,201 +298,152 @@ namespace dnv::vista::sdk
 			std::string secondInvalidTag;
 		};
 
-		static std::vector<TagTestData> getTagTestData()
+		class TagTest : public ::testing::TestWithParam<TagParam>
 		{
-			return { { "upper", "lower", "port", '-', "~customTag", '~', "##invalid1", "##invalid2" } };
+		};
+
+		static std::vector<TagParam> tagData()
+		{
+			std::vector<TagParam> data;
+			const nlohmann::json& jsonDataFromFile = testData();
+
+			if ( jsonDataFromFile.contains( "Tag" ) && jsonDataFromFile["Tag"].is_array() )
+			{
+				for ( const auto& item : jsonDataFromFile["Tag"] )
+				{
+					if ( item.is_array() && item.size() == 8 &&
+						 item[0].is_string() && item[1].is_string() && item[2].is_string() &&
+						 item[3].is_string() && !item[3].get<std::string>().empty() &&
+						 item[4].is_string() &&
+						 item[5].is_string() && !item[5].get<std::string>().empty() &&
+						 item[6].is_string() && item[7].is_string() )
+					{
+						data.push_back( { item[0].get<std::string>(),
+							item[1].get<std::string>(),
+							item[2].get<std::string>(),
+							item[3].get<std::string>()[0],
+							item[4].get<std::string>(),
+							item[5].get<std::string>()[0],
+							item[6].get<std::string>(),
+							item[7].get<std::string>() } );
+					}
+				}
+			}
+			return data;
 		}
 
-		struct DetailTagTestData
+		TEST_P( TagTest, Test_Create_Tag )
+		{
+			const auto& param = GetParam();
+
+			VIS& vis = VIS::instance();
+			const Codebooks& codebooks = vis.codebooks( VisVersion::v3_4a );
+			const auto& codebookType = codebooks[CodebookName::Position];
+
+			auto metadataTag1 = codebookType.createTag( param.firstTag );
+			EXPECT_EQ( param.firstTag, metadataTag1.value() );
+			EXPECT_FALSE( metadataTag1.isCustom() );
+
+			auto metadataTag2 = codebookType.createTag( param.secondTag );
+			EXPECT_EQ( param.secondTag, metadataTag2.value() );
+			EXPECT_FALSE( metadataTag2.isCustom() );
+
+			auto metadataTag3 = codebookType.createTag( param.thirdTag );
+			EXPECT_EQ( param.thirdTag, metadataTag3.value() );
+			EXPECT_FALSE( metadataTag3.isCustom() );
+			EXPECT_EQ( param.thirdTagPrefix, metadataTag3.prefix() );
+
+			auto metadataTag4 = codebookType.createTag( param.customTag );
+			EXPECT_EQ( param.customTag, metadataTag4.value() );
+			EXPECT_TRUE( metadataTag4.isCustom() );
+			EXPECT_EQ( param.customTagPrefix, metadataTag4.prefix() );
+
+			EXPECT_THROW( codebookType.createTag( param.firstInvalidTag ), std::invalid_argument );
+			EXPECT_EQ( codebookType.tryCreateTag( param.firstInvalidTag ), std::nullopt );
+
+			EXPECT_THROW( codebookType.createTag( param.secondInvalidTag ), std::invalid_argument );
+			EXPECT_EQ( codebookType.tryCreateTag( param.secondInvalidTag ), std::nullopt );
+		}
+
+		//----------------------------------------------
+		// Test_Detail_Tag
+		//----------------------------------------------
+
+		struct DetailTagParam
 		{
 			std::string validCustomTag;
 			std::string firstInvalidCustomTag;
 			std::string secondInvalidCustomTag;
 		};
 
-		static std::vector<DetailTagTestData> getDetailTagTestData()
+		class DetailTagTest : public ::testing::TestWithParam<DetailTagParam>
 		{
-			return { { "validCustomTag", "#invalidTag1", "@invalidTag2" } };
-		}
-	}
+		};
 
-	class CodebookTest : public ::testing::Test
-	{
-	public:
-	protected:
-		CodebookTest()
-			: m_vis{ VIS::instance() },
-			  m_codebooks{ m_vis.codebooks( VisVersion::v3_4a ) }
+		static std::vector<DetailTagParam> detailTagData()
 		{
-		}
+			std::vector<DetailTagParam> data;
+			const nlohmann::json& jsonDataFromFile = testData();
 
-		VIS& m_vis;
-		const Codebooks& m_codebooks;
-	};
-
-	TEST_F( CodebookTest, Test_Position_Validation )
-	{
-		auto testCases = TestData::getPositionValidationTestData();
-		const auto& codebookType = m_codebooks[CodebookName::Position];
-
-		for ( const auto& [input, expectedOutput] : testCases )
-		{
-			auto validPosition = codebookType.validatePosition( input );
-			auto parsedExpectedOutput = PositionValidationResults::fromString( expectedOutput );
-
-			EXPECT_EQ( parsedExpectedOutput, validPosition ) << "Failed for position: " << input;
-		}
-	}
-
-	TEST_F( CodebookTest, Test_Positions )
-	{
-		auto testCases = TestData::getPositionStandardValuesTestData();
-
-		for ( const auto& [invalidStandardValue, validStandardValue] : testCases )
-		{
-			const auto& positions = m_codebooks[CodebookName::Position];
-
-			EXPECT_FALSE( positions.hasStandardValue( invalidStandardValue ) );
-			EXPECT_TRUE( positions.hasStandardValue( validStandardValue ) );
-		}
-	}
-
-	TEST_F( CodebookTest, Test_Standard_Values )
-	{
-		const auto& positions = m_codebooks[CodebookName::Position];
-
-		EXPECT_TRUE( positions.hasStandardValue( "upper" ) );
-
-		const auto& rawData = positions.rawData();
-		EXPECT_TRUE( rawData.find( "Vertical" ) != rawData.end() );
-		EXPECT_NE( std::find( rawData.at( "Vertical" ).begin(), rawData.at( "Vertical" ).end(), "upper" ), rawData.at( "Vertical" ).end() );
-	}
-
-	TEST_F( CodebookTest, Test_States )
-	{
-		auto testCases = TestData::getStatesTestData();
-
-		for ( const auto& data : testCases )
-		{
-			const auto& states = m_codebooks[CodebookName::State];
-
-			EXPECT_FALSE( states.hasGroup( data.invalidGroup ) );
-			EXPECT_TRUE( states.hasStandardValue( data.validValue ) );
-			EXPECT_TRUE( states.hasGroup( data.validGroup ) );
-			EXPECT_TRUE( states.hasStandardValue( data.secondValidValue ) );
-		}
-	}
-
-	TEST_F( CodebookTest, Test_Create_Tag )
-	{
-		auto testCases = TestData::getTagTestData();
-
-		for ( const auto& data : testCases )
-		{
-			const auto& codebookType = m_codebooks[CodebookName::Position];
-
-			auto metadataTag1 = codebookType.createTag( data.firstTag );
-			EXPECT_EQ( metadataTag1.value(), data.firstTag );
-			EXPECT_FALSE( metadataTag1.isCustom() );
-
-			auto metadataTag2 = codebookType.createTag( data.secondTag );
-			EXPECT_EQ( metadataTag2.value(), data.secondTag );
-			EXPECT_FALSE( metadataTag2.isCustom() );
-
-			auto metadataTag3 = codebookType.createTag( data.thirdTag );
-			EXPECT_EQ( metadataTag3.value(), data.thirdTag );
-			EXPECT_FALSE( metadataTag3.isCustom() );
-			EXPECT_EQ( metadataTag3.prefix(), data.thirdTagPrefix );
-
-			auto metadataTag4 = codebookType.createTag( data.customTag );
-			EXPECT_EQ( metadataTag4.value(), data.customTag );
-			EXPECT_TRUE( metadataTag4.isCustom() );
-			EXPECT_EQ( metadataTag4.prefix(), data.customTagPrefix );
-
-			EXPECT_THROW( codebookType.createTag( data.firstInvalidTag ), std::invalid_argument );
-			EXPECT_EQ( codebookType.tryCreateTag( data.firstInvalidTag ), std::nullopt );
-
-			EXPECT_THROW( codebookType.createTag( data.secondInvalidTag ), std::invalid_argument );
-			EXPECT_EQ( codebookType.tryCreateTag( data.secondInvalidTag ), std::nullopt );
-		}
-	}
-
-	TEST_F( CodebookTest, Test_Get_Groups )
-	{
-		const auto& groups = m_codebooks[CodebookName::Position].groups();
-		EXPECT_GT( groups.count(), 1 );
-
-		EXPECT_TRUE( groups.contains( "Vertical" ) );
-
-		const auto& rawData = m_codebooks[CodebookName::Position].rawData();
-
-		EXPECT_EQ( groups.count(), rawData.size() - 1 );
-		EXPECT_TRUE( rawData.find( "Vertical" ) != rawData.end() );
-	}
-
-	TEST_F( CodebookTest, Test_Iterate_Groups )
-	{
-		const auto& groups = m_codebooks[CodebookName::Position].groups();
-		int count = 0;
-
-		for ( [[maybe_unused]] const auto& group : groups )
-		{
-			count++;
+			if ( jsonDataFromFile.contains( "DetailTag" ) && jsonDataFromFile["DetailTag"].is_array() )
+			{
+				for ( const auto& item : jsonDataFromFile["DetailTag"] )
+				{
+					if ( item.is_array() && item.size() == 3 &&
+						 item[0].is_string() && item[1].is_string() && item[2].is_string() )
+					{
+						data.push_back( { item[0].get<std::string>(),
+							item[1].get<std::string>(),
+							item[2].get<std::string>() } );
+					}
+				}
+			}
+			return data;
 		}
 
-		EXPECT_EQ( count, 11 );
-	}
-
-	TEST_F( CodebookTest, Test_Iterate_Values )
-	{
-		const auto& values = m_codebooks[CodebookName::Position].standardValues();
-		int count = 0;
-
-		for ( [[maybe_unused]] const auto& value : values )
+		TEST_P( DetailTagTest, Test_Detail_Tag )
 		{
-			count++;
+			const auto& param = GetParam();
+
+			VIS& vis = VIS::instance();
+			const Codebooks& codebooks = vis.codebooks( VisVersion::v3_4a );
+			const auto& codebook = codebooks[CodebookName::Detail];
+
+			EXPECT_NE( codebook.tryCreateTag( param.validCustomTag ), std::nullopt );
+			EXPECT_EQ( codebook.tryCreateTag( param.firstInvalidCustomTag ), std::nullopt );
+			EXPECT_EQ( codebook.tryCreateTag( param.secondInvalidCustomTag ), std::nullopt );
+
+			EXPECT_THROW( codebook.createTag( param.firstInvalidCustomTag ), std::invalid_argument );
+			EXPECT_THROW( codebook.createTag( param.secondInvalidCustomTag ), std::invalid_argument );
 		}
 
-		EXPECT_EQ( count, 28 );
+		//=====================================================================
+		// Instantiate
+		//=====================================================================
+
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookPositionValidationSuite,
+			PositionValidationTest,
+			::testing::ValuesIn( positionValidationData() ) );
+
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookPositionsSuite,
+			PositionsTest,
+			::testing::ValuesIn( positionsData() ) );
+
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookStatesSuite,
+			StatesTest,
+			::testing::ValuesIn( statesData() ) );
+
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookTagSuite,
+			TagTest,
+			::testing::ValuesIn( tagData() ) );
+
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookDetailTagSuite,
+			DetailTagTest,
+			::testing::ValuesIn( detailTagData() ) );
 	}
-
-	TEST_F( CodebookTest, Test_Detail_Tag )
-	{
-		auto testCases = TestData::getDetailTagTestData();
-
-		for ( const auto& data : testCases )
-		{
-			const auto& codebook = m_codebooks[CodebookName::Detail];
-
-			EXPECT_TRUE( codebook.tryCreateTag( data.validCustomTag ).has_value() );
-			EXPECT_EQ( codebook.tryCreateTag( data.firstInvalidCustomTag ), std::nullopt );
-			EXPECT_EQ( codebook.tryCreateTag( data.secondInvalidCustomTag ), std::nullopt );
-
-			EXPECT_THROW( codebook.createTag( data.firstInvalidCustomTag ), std::invalid_argument );
-			EXPECT_THROW( codebook.createTag( data.secondInvalidCustomTag ), std::invalid_argument );
-		}
-	}
-
-	class PositionValidationTest : public ::testing::TestWithParam<std::pair<std::string, std::string>>
-	{
-	};
-
-	TEST_P( PositionValidationTest, ValidatesPositionsCorrectly )
-	{
-		auto [input, expectedOutput] = GetParam();
-
-		VIS& vis = VIS::instance();
-		const auto& codebooks = vis.codebooks( VisVersion::v3_4a );
-		const auto& codebookType = codebooks[CodebookName::Position];
-
-		auto validPosition = codebookType.validatePosition( input );
-		auto parsedExpectedOutput = PositionValidationResults::fromString( expectedOutput );
-
-		EXPECT_EQ( parsedExpectedOutput, validPosition ) << "Failed for position: " << input;
-	}
-
-	INSTANTIATE_TEST_SUITE_P(
-		PositionValidation,
-		PositionValidationTest,
-		::testing::ValuesIn( TestData::getPositionValidationTestData() ) );
 }

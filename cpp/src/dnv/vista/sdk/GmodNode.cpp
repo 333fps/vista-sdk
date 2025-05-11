@@ -139,26 +139,14 @@ namespace dnv::vista::sdk
 	// Construction / Destruction
 	//----------------------------------------------
 
-	GmodNode::GmodNode()
-		: m_code{ "" },
-		  m_location{ std::nullopt },
-		  m_visVersion{ VisVersion::v3_8a },
-		  m_metadata{ "", "", "", std::nullopt, std::nullopt, std::nullopt, std::nullopt, {} },
-		  m_children{},
-		  m_parents{},
-		  m_childrenSet{}
-	{
-		SPDLOG_TRACE( "Created empty GmodNode" );
-	}
-
 	GmodNode::GmodNode( const GmodNode& other, [[maybe_unused]] bool b )
 		: m_code{ other.m_code },
 		  m_location{ other.m_location },
 		  m_visVersion{ other.m_visVersion },
 		  m_metadata{ other.m_metadata },
-		  m_children{},
-		  m_parents{},
-		  m_childrenSet{}
+		  m_children{ other.m_children },
+		  m_parents{ other.m_parents },
+		  m_childrenSet{ other.m_childrenSet }
 	{
 		SPDLOG_TRACE( "Copied GmodNode {} for location modification", m_code );
 	}
@@ -189,7 +177,7 @@ namespace dnv::vista::sdk
 
 	GmodNode& GmodNode::operator=( const GmodNode& other )
 	{
-		if ( this == &other )
+		if ( this == &other ) // Check for self-assignment
 		{
 			return *this;
 		}
@@ -203,9 +191,9 @@ namespace dnv::vista::sdk
 			m_metadata = GmodNodeMetadata( other.m_metadata );
 		}
 
-		m_children.clear();
-		m_parents.clear();
-		m_childrenSet.clear();
+		m_children = other.m_children;
+		m_parents = other.m_parents;
+		m_childrenSet = other.m_childrenSet;
 
 		return *this;
 	}
@@ -707,7 +695,7 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_DEBUG( "Adding child {} to parent {}", child->code(), m_code );
-		m_children.push_back( child );
+		m_children.push_back( std::move( child ) );
 		m_childrenSet.insert( child->code() );
 	}
 
@@ -720,7 +708,7 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_DEBUG( "Adding parent {} to child {}", parent->code(), m_code );
-		m_parents.push_back( parent );
+		m_parents.push_back( std::move( parent ) );
 	}
 
 	void GmodNode::trim()

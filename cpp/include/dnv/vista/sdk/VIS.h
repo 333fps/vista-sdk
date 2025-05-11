@@ -12,6 +12,7 @@
 #include "GmodVersioning.h"
 #include "Codebooks.h"
 #include "Gmod.h"
+#include "VisVersion.h"
 
 namespace dnv::vista::sdk
 {
@@ -19,7 +20,6 @@ namespace dnv::vista::sdk
 	// Forward declarations
 	//=====================================================================
 
-	enum class VisVersion;
 	class GmodNode;
 	class GmodPath;
 	class LocalId;

@@ -14,7 +14,6 @@
 #include "dnv/vista/sdk/LocalIdBuilder.h"
 #include "dnv/vista/sdk/Locations.h"
 #include "dnv/vista/sdk/LocationsDto.h"
-#include "dnv/vista/sdk/VisVersion.h"
 #include "dnv/vista/sdk/Gmod.h"
 
 namespace dnv::vista::sdk

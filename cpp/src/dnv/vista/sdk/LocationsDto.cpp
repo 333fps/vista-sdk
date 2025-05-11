@@ -371,7 +371,7 @@ namespace dnv::vista::sdk
 		}
 		else if ( itemCount > 0 )
 		{
-			SPDLOG_INFO( "Successfully parsed {}/{} locations very quickly.", successCount, itemCount );
+			SPDLOG_INFO( "Successfully parsed {}/{} locations.", successCount, itemCount );
 		}
 
 		if ( dto.m_items.size() > 1000 )

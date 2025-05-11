@@ -40,7 +40,7 @@ namespace dnv::vista::sdk
 		: m_visVersion{ version },
 		  m_rootNode{ nullptr }
 	{
-		SPDLOG_INFO( "Gmod constructor: Starting for VIS version {}", dto.visVersion() );
+		SPDLOG_CRITICAL( "Gmod constructor: Starting for VIS version {}", dto.visVersion() );
 
 		std::vector<std::pair<std::string, GmodNode>> nodePairs;
 		nodePairs.reserve( dto.items().size() );
@@ -160,7 +160,7 @@ namespace dnv::vista::sdk
 			  return ChdDictionary<GmodNode>( std::move( pairs ) );
 		  }() }
 	{
-		SPDLOG_INFO( "Creating Gmod from existing map with {} nodes for VIS version {}.", nodeMap.size(), VisVersionExtensions::toVersionString( version ) );
+		SPDLOG_CRITICAL( "Creating Gmod from existing map with {} nodes for VIS version {}.", nodeMap.size(), VisVersionExtensions::toVersionString( version ) );
 
 		try
 		{
@@ -432,5 +432,4 @@ namespace dnv::vista::sdk
 			m_currentMapIterator = m_sourceMapPtr->begin();
 		}
 	}
-
 }
