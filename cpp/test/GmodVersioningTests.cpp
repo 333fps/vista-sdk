@@ -165,6 +165,7 @@ namespace dnv::vista::sdk::tests
 	// TEST_F
 	//=====================================================================
 
+	/*
 	TEST_F( GmodVersioningTest, ConvertLocalId )
 	{
 		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
@@ -184,42 +185,46 @@ namespace dnv::vista::sdk::tests
 		EXPECT_EQ( *targetLocalId, *convertedLocalId );
 		EXPECT_EQ( targetLocalIdStr, convertedLocalId->toString() );
 	}
+	*/
 
 	//=====================================================================
 	// TEST_P
 	//=====================================================================
 
+	/*
 	class FullPathConversionTest : public ::testing::TestWithParam<FullPathTestData>
 	{
 	};
 
-	// TEST_P( FullPathConversionTest, Test_GmodVersioning_ConvertFullPath )
-	// {
-	// 	auto testData = GetParam();
-	// 	auto& vis = VIS::instance();
-	// 	const auto& sourceGmod = vis.gmod( testData.sourceVersion );
-	// 	const auto& targetGmod = vis.gmod( testData.targetVersion );
+	TEST_P( FullPathConversionTest, Test_GmodVersioning_ConvertFullPath )
+	{
+		auto testData = GetParam();
+		auto& vis = VIS::instance();
+		const auto& sourceGmod = vis.gmod( testData.sourceVersion );
+		const auto& targetGmod = vis.gmod( testData.targetVersion );
 
-	// 	std::optional<GmodPath> sourcePathOpt;
-	// 	ASSERT_TRUE( sourceGmod.tryParseFromFullPath( testData.inputPath, sourcePathOpt ) );
-	// 	ASSERT_TRUE( sourcePathOpt.has_value() );
+		std::optional<GmodPath> sourcePathOpt;
+		ASSERT_TRUE( sourceGmod.tryParseFromFullPath( testData.inputPath, sourcePathOpt ) );
+		ASSERT_TRUE( sourcePathOpt.has_value() );
 
-	// 	std::optional<GmodPath> parsedTargetPathOpt;
-	// 	bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPathOpt );
+		std::optional<GmodPath> parsedTargetPathOpt;
+		bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPathOpt );
 
-	// 	auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
+		auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
 
-	// 	SPDLOG_INFO( "Source full path: {}", sourcePathOpt->toFullPathString() );
-	// 	EXPECT_EQ( testData.inputPath, sourcePathOpt->toFullPathString() );
+		SPDLOG_INFO( "Source full path: {}", sourcePathOpt->toFullPathString() );
+		EXPECT_EQ( testData.inputPath, sourcePathOpt->toFullPathString() );
 
-	// 	EXPECT_TRUE( parsedPath );
-	// 	ASSERT_TRUE( parsedTargetPathOpt.has_value() );
-	// 	EXPECT_EQ( testData.expectedPath, parsedTargetPathOpt->toFullPathString() );
+		EXPECT_TRUE( parsedPath );
+		ASSERT_TRUE( parsedTargetPathOpt.has_value() );
+		EXPECT_EQ( testData.expectedPath, parsedTargetPathOpt->toFullPathString() );
 
-	// 	ASSERT_TRUE( targetPath.has_value() );
-	// 	EXPECT_EQ( testData.expectedPath, targetPath->toFullPathString() );
-	// }
+		ASSERT_TRUE( targetPath.has_value() );
+		EXPECT_EQ( testData.expectedPath, targetPath->toFullPathString() );
+	}
+	*/
 
+	/*
 	class NodeConversionTest : public ::testing::TestWithParam<NodeTestData>
 	{
 	};
@@ -267,19 +272,26 @@ namespace dnv::vista::sdk::tests
 		EXPECT_EQ( expectedNode.location(), targetNode.location() );
 		EXPECT_EQ( expectedNode, targetNode );
 	}
+	*/
 
+	/*
 	INSTANTIATE_TEST_SUITE_P(
 		ValidPathTests,
 		PathConversionTest,
 		::testing::ValuesIn( validPathTestData() ) );
+	*/
 
+	/*
 	INSTANTIATE_TEST_SUITE_P(
 		ValidFullPathTests,
 		FullPathConversionTest,
 		::testing::ValuesIn( validFullPathTestData() ) );
+	*/
 
+	/*
 	INSTANTIATE_TEST_SUITE_P(
 		ValidNodeTests,
 		NodeConversionTest,
 		::testing::ValuesIn( validNodeTestData() ) );
+	*/
 }

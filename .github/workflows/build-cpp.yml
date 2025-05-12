@@ -145,16 +145,26 @@ jobs:
       run: |
         ls -lR bin # Focus on the bin directory
 
-    # --- Test Step ---
+# --- Test Step ---
     - name: Run Tests (Windows)
       if: runner.os == 'Windows'
       working-directory: ${{ github.workspace }}/cpp/build
       shell: pwsh
-      run: ctest -C ${{ matrix.build_type }} --output-on-failure -VV
+      run: |
+          if ("${{ matrix.build_type }}" -eq "Debug") {
+              ctest -C ${{ matrix.build_type }} --output-on-failure -VV
+          } else {
+          ctest -C ${{ matrix.build_type }} --output-on-failure
+          }
 
     - name: Run Tests (Linux)
       if: runner.os == 'Linux'
       working-directory: ${{ github.workspace }}/cpp/build
       shell: bash
-      run: ctest -C ${{ matrix.build_type }} --output-on-failure -VV
+      run: |
+          if [ "${{ matrix.build_type }}" = "Debug" ]; then
+              ctest -C ${{ matrix.build_type }} --output-on-failure -VV
+          else
+              ctest -C ${{ matrix.build_type }} --output-on-failure
+          fi
 

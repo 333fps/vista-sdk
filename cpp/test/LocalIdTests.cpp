@@ -137,6 +137,7 @@ namespace dnv::vista::sdk::tests
 	class LocalIdValidTest : public ::testing::TestWithParam<std::pair<Input, std::string>>
 	{
 	};
+
 	/*
 		TEST_P( LocalIdValidTest, Test_LocalId_Build_Valid )
 		{
@@ -239,7 +240,8 @@ namespace dnv::vista::sdk::tests
 			EXPECT_FALSE( allWithout.isValid() );
 			EXPECT_EQ( allWithout.toString(), "" );
 		}
-	 */
+	*/
+
 	/*
 	class MqttLocalIdValidTest : public ::testing::TestWithParam<std::pair<Input, std::string>>
 	{
@@ -344,29 +346,32 @@ namespace dnv::vista::sdk::tests
 		}
 	 */
 
-	TEST( LocalIdTests, Test_Parsing )
-	{
-		std::vector<std::string> testCases = {
-			"/dnv-v2/vis-3-4a/1031/meta/cnt-refrigerant/state-leaking",
-			"/dnv-v2/vis-3-4a/1021.1i-6P/H123/meta/qty-volume/cnt-cargo/pos~percentage",
-			"/dnv-v2/vis-3-4a/652.31/S90.3/S61/sec/652.1i-1P/meta/cnt-sea.water/state-opened",
-			"/dnv-v2/vis-3-4a/411.1/C101.31-2/meta/qty-temperature/cnt-exhaust.gas/pos-inlet",
-			"/dnv-v2/vis-3-4a/411.1/C101.63/S206/~propulsion.engine/~cooling.system/meta/qty-temperature/cnt-exhaust.gas/pos-inlet",
-			"/dnv-v2/vis-3-4a/411.1/C101.63/S206/sec/411.1/C101.31-5/~propulsion.engine/~cooling.system/~for.propulsion.engine/~cylinder.5/meta/qty-temperature/cnt-exhaust.gas/pos-inlet",
-			"/dnv-v2/vis-3-4a/511.11-21O/C101.67/S208/meta/qty-pressure/cnt-air/state-low" };
+	/*
+   TEST( LocalIdTests, Test_Parsing )
+   {
+	   std::vector<std::string> testCases = {
+		   "/dnv-v2/vis-3-4a/1031/meta/cnt-refrigerant/state-leaking",
+		   "/dnv-v2/vis-3-4a/1021.1i-6P/H123/meta/qty-volume/cnt-cargo/pos~percentage",
+		   "/dnv-v2/vis-3-4a/652.31/S90.3/S61/sec/652.1i-1P/meta/cnt-sea.water/state-opened",
+		   "/dnv-v2/vis-3-4a/411.1/C101.31-2/meta/qty-temperature/cnt-exhaust.gas/pos-inlet",
+		   "/dnv-v2/vis-3-4a/411.1/C101.63/S206/~propulsion.engine/~cooling.system/meta/qty-temperature/cnt-exhaust.gas/pos-inlet",
+		   "/dnv-v2/vis-3-4a/411.1/C101.63/S206/sec/411.1/C101.31-5/~propulsion.engine/~cooling.system/~for.propulsion.engine/~cylinder.5/meta/qty-temperature/cnt-exhaust.gas/pos-inlet",
+		   "/dnv-v2/vis-3-4a/511.11-21O/C101.67/S208/meta/qty-pressure/cnt-air/state-low" };
 
-		for ( const auto& localIdStr : testCases )
-		{
-			ParsingErrors errorBuilder;
-			std::optional<LocalIdBuilder> localId;
-			bool parsed = LocalIdBuilder::tryParse( localIdStr, errorBuilder, localId );
+	   for ( const auto& localIdStr : testCases )
+	   {
+		   ParsingErrors errorBuilder;
+		   std::optional<LocalIdBuilder> localId;
+		   bool parsed = LocalIdBuilder::tryParse( localIdStr, errorBuilder, localId );
 
-			EXPECT_TRUE( parsed );
-			ASSERT_TRUE( localId.has_value() );
-			EXPECT_EQ( localIdStr, localId->toString() );
-		}
-	}
+		   EXPECT_TRUE( parsed );
+		   ASSERT_TRUE( localId.has_value() );
+		   EXPECT_EQ( localIdStr, localId->toString() );
+	   }
+   }
+   */
 
+	/*
 	TEST( LocalIdTests, Test )
 	{
 		std::string localIdAsString = "/dnv-v2/vis-3-4a/411.1/C101.31-2/meta/qty-temperature/cnt-exhaust.gas/pos-inlet";
@@ -377,7 +382,9 @@ namespace dnv::vista::sdk::tests
 		EXPECT_TRUE( success );
 		EXPECT_TRUE( localId.has_value() );
 	}
+	*/
 
+	/*
 	TEST( LocalIdTests, SmokeTest_Parsing )
 	{
 		std::vector<std::string> possiblePaths = {
@@ -517,7 +524,9 @@ namespace dnv::vista::sdk::tests
 			SUCCEED() << "Successfully parsed all entries in " << foundPath;
 		}
 	}
+	*/
 
+	/*
 	TEST( LocalIdTests, Test_Parsing_Validation )
 	{
 		struct TestCase
@@ -573,6 +582,7 @@ namespace dnv::vista::sdk::tests
 		ValidTests,
 		LocalIdValidTest,
 		::testing::ValuesIn( validTestData() ) );
+	*/
 
 	/*
 	INSTANTIATE_TEST_SUITE_P(

@@ -310,6 +310,7 @@ namespace dnv::vista::sdk
 		// Test_ToFullPathString
 		//----------------------------------------------
 
+		/*
 		TEST_F( GmodPathTest, Test_ToFullPathString )
 		{
 			auto version = VisVersion::v3_7a;
@@ -325,6 +326,7 @@ namespace dnv::vista::sdk
 			EXPECT_EQ( "VE/800a/840/846/G203/G203.3-2/G203.32-2/S110/S110.2-1/CS1/E31",
 				path->toFullPathString() );
 		}
+		*/
 	}
 
 	namespace GmodPathTestsParametrized

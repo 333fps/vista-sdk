@@ -7,8 +7,6 @@ namespace dnv::vista::sdk
 	class ImoNumberTests : public ::testing::Test
 	{
 	protected:
-		// ImoNumberTests() = default;
-
 		struct TestDataItem
 		{
 			std::string value;

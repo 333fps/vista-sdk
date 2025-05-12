@@ -86,9 +86,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(fmt spdlog zlib cpuid googletest)
 
 # --- Build Options ---
-option(VISTA_SDK_BUILD_TESTS		"Build tests"							ON	)
-option(VISTA_SDK_COPY_RESOURCES		"Copy resources to build directory" 	ON	)
-option(VISTA_SDK_BUILD_SAMPLES		"Build vista-sdk-cpp samples"			ON	)
+option(VISTA_SDK_CPP_BUILD_TESTS		"Build tests"							ON	)
+option(VISTA_SDK_CPP_COPY_RESOURCES		"Copy resources to build directory" 	ON	)
+option(VISTA_SDK_CPP_BUILD_SAMPLES		"Build vista-sdk-cpp samples"			ON	)
 
 # --- Platform Specific Settings ---
 if(MSVC)
@@ -114,10 +114,10 @@ else()
 endif()
 
 # --- Output Directories ---
-set(VISTA_SDK_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${VISTA_SDK_BIN_DIR}/$<CONFIG>)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VISTA_SDK_BIN_DIR}/$<CONFIG>)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${VISTA_SDK_BIN_DIR}/$<CONFIG>)
+set(VISTA_SDK_CPP_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${VISTA_SDK_CPP_BIN_DIR}/$<CONFIG>)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VISTA_SDK_CPP_BIN_DIR}/$<CONFIG>)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${VISTA_SDK_CPP_BIN_DIR}/$<CONFIG>)
 
 # --- Compiler Settings ---
 include(CheckCXXSourceCompiles)
@@ -178,94 +178,94 @@ else() # GCC / Clang
 endif()
 
 # --- Copy Resources (Build Time) ---
-if(VISTA_SDK_COPY_RESOURCES)
+if(VISTA_SDK_CPP_COPY_RESOURCES)
 	if(EXISTS ${VISTA_SDK_RESOURCE_DIR})
-		set(VISTA_SDK_RESOURCE_OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources)
+		set(VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources)
 		add_custom_target(CopyResources ALL
-			COMMAND ${CMAKE_COMMAND} -E make_directory ${VISTA_SDK_RESOURCE_OUTPUT_DIR}
+			COMMAND ${CMAKE_COMMAND} -E make_directory ${VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR}
 			COMMAND ${CMAKE_COMMAND} -E copy_directory
-				${VISTA_SDK_RESOURCE_DIR} ${VISTA_SDK_RESOURCE_OUTPUT_DIR}
+				${VISTA_SDK_RESOURCE_DIR} ${VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR}
 			COMMENT "Copying VISTA SDK resources to build directory ($<CONFIG>)"
 			VERBATIM
 		)
-		message(STATUS "Resources will be copied from ${VISTA_SDK_RESOURCE_DIR} to ${VISTA_SDK_RESOURCE_OUTPUT_DIR} at build time")
+		message(STATUS "Resources will be copied from ${VISTA_SDK_RESOURCE_DIR} to ${VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR} at build time")
 	else()
 		message(WARNING "Resources directory not found: ${VISTA_SDK_RESOURCE_DIR}. Skipping resource copy.")
 	endif()
 else()
-	message(STATUS "Skipping resource copy based on VISTA_SDK_COPY_RESOURCES option.")
+	message(STATUS "Skipping resource copy based on VISTA_SDK_CPP_COPY_RESOURCES option.")
 endif()
 
 # --- Source Files ---
 
 set(PUBLIC_HEADERS
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ChdDictionary.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ChdDictionary.inl
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/Codebook.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/Codebooks.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/CodebookName.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/CodebooksDto.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/EmbeddedResource.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/Gmod.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodDto.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodNode.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodPath.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodTraversal.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioning.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioningDto.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.inl
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ILocalIdBuilder.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ILocalIdBuilder.inl
-	# ${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/IUniversalIdBuilder.h
-	# ${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/IUniversalId.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ImoNumber.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ISO19848Dtos.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocalId.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocalIdBuilder.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocalIdItems.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocalIdParsingErrorBuilder.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocationParsingErrorBuilder.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/Locations.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/LocationsDto.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/MetadataTag.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/ParsingErrors.h
-	# ${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/UniversalIdBuilder.h
-	# ${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/UniversalId.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/VIS.h
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/VIS.inl
-	${VISTA_SDK_INCLUDE_DIR}/dnv/vista/sdk/VisVersion.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ChdDictionary.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ChdDictionary.inl
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/Codebook.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/Codebooks.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/CodebookName.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/CodebooksDto.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/EmbeddedResource.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/Gmod.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodDto.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodNode.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodPath.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodTraversal.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioning.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioningDto.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.inl
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalIdBuilder.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalIdBuilder.inl
+	# ${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/IUniversalIdBuilder.h
+	# ${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/IUniversalId.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ImoNumber.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ISO19848Dtos.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalId.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalIdBuilder.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalIdItems.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalIdParsingErrorBuilder.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocationParsingErrorBuilder.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/Locations.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocationsDto.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/MetadataTag.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ParsingErrors.h
+	# ${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/UniversalIdBuilder.h
+	# ${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/UniversalId.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VIS.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VIS.inl
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VisVersion.h
 )
 
 set(PRIVATE_SOURCES
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/ChdDictionary.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/Codebook.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/Codebooks.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/CodebookName.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/CodebooksDto.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/EmbeddedResource.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/Gmod.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodDto.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodNode.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodPath.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodTraversal.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodVersioning.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/GmodVersioningDto.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/ImoNumber.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/ISO19848Dtos.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocalId.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocalIdBuilder.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocalIdItems.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocalIdParsingErrorBuilder.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocationParsingErrorBuilder.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/Locations.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/LocationsDto.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/MetadataTag.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/ParsingErrors.cpp
-	# ${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/UniversalIdBuilder.cpp
-	# ${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/UniversalId.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/VIS.cpp
-	${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/VisVersion.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/ChdDictionary.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/Codebook.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/Codebooks.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/CodebookName.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/CodebooksDto.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/EmbeddedResource.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/Gmod.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodDto.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodNode.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodPath.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodTraversal.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodVersioning.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodVersioningDto.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/ImoNumber.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/ISO19848Dtos.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocalId.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocalIdBuilder.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocalIdItems.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocalIdParsingErrorBuilder.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocationParsingErrorBuilder.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/Locations.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocationsDto.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/MetadataTag.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/ParsingErrors.cpp
+	# ${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/UniversalIdBuilder.cpp
+	# ${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/UniversalId.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/VIS.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/VisVersion.cpp
 )
 
 # --- Library Definition ---
@@ -280,15 +280,15 @@ target_sources(${PROJECT_NAME}
 )
 
 # --- Precompiled Headers ---
-target_precompile_headers(${PROJECT_NAME} PRIVATE ${VISTA_SDK_SOURCE_DIR}/dnv/vista/sdk/pch.h)
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/pch.h)
 
 # --- Include Directories ---
 target_include_directories(${PROJECT_NAME}
 	PUBLIC
-		$<BUILD_INTERFACE:${VISTA_SDK_INCLUDE_DIR}>
+		$<BUILD_INTERFACE:${VISTA_SDK_CPP_INCLUDE_DIR}>
 		$<INSTALL_INTERFACE:include>
 	PRIVATE
-		${VISTA_SDK_SOURCE_DIR}
+		${VISTA_SDK_CPP_SOURCE_DIR}
 		${zlib_SOURCE_DIR}
 )
 
@@ -306,14 +306,13 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 # --- Samples ---
-if(VISTA_SDK_BUILD_SAMPLES)
-	#add_subdirectory(${VISTA_SDK_SAMPLES_DIR} samples)
+if(VISTA_SDK_CPP_BUILD_SAMPLES)
+	#add_subdirectory(${VISTA_SDK_CPP_SAMPLES_DIR} samples)
 endif()
 
 # --- Tests ---
-if(VISTA_SDK_BUILD_TESTS)
-	enable_testing()
-	add_subdirectory(${VISTA_SDK_TEST_DIR} test)
+if(VISTA_SDK_CPP_BUILD_TESTS)
+	add_subdirectory(${VISTA_SDK_CPP_TEST_DIR} test)
 endif()
 
 # --- Configuration Summary ---
@@ -336,14 +335,14 @@ message(STATUS "Build Shared Libs:       ${BUILD_SHARED_LIBS}")
 message(STATUS "C++ Compiler:            ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "C++ Compiler Path:       ${CMAKE_CXX_COMPILER}")
 message(STATUS "C++ Standard:            ${CMAKE_CXX_STANDARD}")
-message(STATUS "Build Tests:             ${VISTA_SDK_BUILD_TESTS}")
-message(STATUS "Build Samples:           ${VISTA_SDK_BUILD_SAMPLES}")
-message(STATUS "Copy Resources:          ${VISTA_SDK_COPY_RESOURCES}")
-if(VISTA_SDK_COPY_RESOURCES)
+message(STATUS "Build Tests:             ${VISTA_SDK_CPP_BUILD_TESTS}")
+message(STATUS "Build Samples:           ${VISTA_SDK_CPP_BUILD_SAMPLES}")
+message(STATUS "Copy Resources:          ${VISTA_SDK_CPP_COPY_RESOURCES}")
+if(VISTA_SDK_CPP_COPY_RESOURCES)
 	message(STATUS "Resources Source:        ${VISTA_SDK_RESOURCE_DIR}")
-	message(STATUS "Resources Target:        ${VISTA_SDK_BIN_DIR}/<CONFIG>/resources")
+	message(STATUS "Resources Target:        ${VISTA_SDK_CPP_BIN_DIR}/<CONFIG>/resources")
 endif()
-message(STATUS "Output Base Directory:   ${VISTA_SDK_BIN_DIR}")
+message(STATUS "Output Base Directory:   ${VISTA_SDK_CPP_BIN_DIR}")
 if(CCACHE_PROGRAM)
 	message(STATUS "ccache Enabled:          ${CCACHE_PROGRAM}")
 else()
