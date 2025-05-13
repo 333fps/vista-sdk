@@ -39,7 +39,7 @@ namespace dnv::vista::sdk
 		: m_visVersion{ version },
 		  m_rootNode{ nullptr }
 	{
-		SPDLOG_CRITICAL( "Gmod constructor: Starting for VIS version {}", dto.visVersion() );
+		SPDLOG_DEBUG( "Gmod constructor: Starting for VIS version {}", dto.visVersion() );
 
 		std::vector<std::pair<std::string, GmodNode>> nodePairs;
 		nodePairs.reserve( dto.items().size() );

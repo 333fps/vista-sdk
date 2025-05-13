@@ -1,7 +1,6 @@
 # ==============================================================================
 # VISTA-SDK-CPP - Top-Level CMake Configuration
 # ==============================================================================
-# DNV VISTA SDK C++ Implementation
 
 # --- Project Definition ---
 cmake_minimum_required(VERSION 3.20)
@@ -12,6 +11,7 @@ project(vista-sdk-cpp
 	LANGUAGES CXX
 )
 
+# --- Testing Setup ---
 enable_testing()
 
 # --- Build Configuration ---
@@ -27,15 +27,15 @@ set(VISTA_SDK_CPP_SAMPLES_DIR	"${CMAKE_CURRENT_SOURCE_DIR}/cpp/samples"	CACHE PA
 set(VISTA_SDK_RESOURCE_DIR		"${CMAKE_CURRENT_SOURCE_DIR}/resources"		CACHE PATH "Path to the SDK resources directory")
 set(VISTA_SDK_TEST_DATA_DIR		"${CMAKE_CURRENT_SOURCE_DIR}/testdata"		CACHE PATH "Path to the SDK test data directory")
 
-# --- Add Subdirectories ---
+# --- Add Core C++ Library Subdirectory ---
 add_subdirectory(cpp/cmake)
 
-# --- Configuration Summary ---
-message(STATUS "--- VISTA SDK Configuration Summary ---")
+# --- Top-Level Configuration Summary ---
+message(STATUS "--- VISTA SDK Top-Level Configuration Summary ---")
 message(STATUS "Build Type		: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Build Directory	: ${CMAKE_BINARY_DIR}")
 message(STATUS "Source Directory: ${CMAKE_SOURCE_DIR}")
 message(STATUS "Include Dir		: ${VISTA_SDK_CPP_INCLUDE_DIR}")
 message(STATUS "Resource Dir	: ${VISTA_SDK_RESOURCE_DIR}")
 message(STATUS "Test Data Dir	: ${VISTA_SDK_TEST_DATA_DIR}")
-message(STATUS "---------------------------------------")
+message(STATUS "-------------------------------------------------")

@@ -39,6 +39,10 @@ Each SDK makes use of the contents of the resources and schemas folders to gener
 
 ```
 📦vista-sdk
+ ┣ 📂cpp
+ ┣ 📂csharp
+ ┣ 📂js
+ ┣ 📂python
  ┣ 📂resources
  ┃ ┣ 📜codebooks-vis-3-4a.json.gz
  ┃ ┣ 📜codebooks-vis-3-5a.json.gz
@@ -74,9 +78,6 @@ Each SDK makes use of the contents of the resources and schemas folders to gener
  ┃ ┃ ┣ 📜DataChannelList.xsd
  ┃ ┃ ┗ 📜TimeSeriesData.xsd
  ┣ 📂testdata
- ┣ 📂csharp
- ┣ 📂python
- ┣ 📂js
  ┣ 📜LICENSE
  ┗ 📜README.md
 ```
@@ -184,8 +185,9 @@ The C++ SDK uses CMake and its [FetchContent](https://cmake.org/cmake/help/lates
 - [spdlog](https://github.com/gabime/spdlog): For structured logging
 - [zlib](https://www.zlib.net/): For compression and decompression of resources
 - [libcpuid](https://github.com/anrieff/libcpuid): For CPU feature detection
-- [GoogleTest](https://github.com/google/googletest): For unit testing framework
 - [{fmt}](https://fmt.dev/): Formatting library
+- [GoogleTest](https://github.com/google/googletest): For unit testing framework
+
 
 #### Building with CMake
 

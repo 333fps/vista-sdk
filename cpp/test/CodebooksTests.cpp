@@ -9,37 +9,34 @@
 
 namespace dnv::vista::sdk::tests
 {
-	//=====================================================================
-	// Helper Functions
-	//=====================================================================
-
-	inline std::pair<VIS&, const Gmod&> visAndGmod()
-	{
-		VIS& vis = VIS::instance();
-		const Gmod& gmod = vis.gmod( VisVersion::v3_4a );
-
-		return { vis, gmod };
-	}
-
 	//----------------------------------------------
 	// Test_Codebooks_Loads
 	//----------------------------------------------
 
 	TEST( CodebooksTests, Test_Codebooks_Loads )
 	{
-		[[maybe_unused]] auto [vis, gmod_unused] = visAndGmod();
+		VIS& vis = VIS::instance();
+		const auto allVersions = VisVersionExtensions::allVersions();
 
-		const Codebooks* codebooksPtr = nullptr;
-		ASSERT_NO_THROW( {
-			codebooksPtr = &vis.codebooks( VisVersion::v3_4a );
-		} );
-		ASSERT_NE( nullptr, codebooksPtr );
+		for ( const auto& version : allVersions )
+		{
+			if ( version == VisVersion::Unknown )
+				continue;
 
-		const Codebook* positionCodebookPtr = nullptr;
-		ASSERT_NO_THROW( {
-			positionCodebookPtr = &codebooksPtr->codebook( CodebookName::Position );
-		} );
-		ASSERT_NE( nullptr, positionCodebookPtr );
+			SCOPED_TRACE( "Testing VisVersion: " + VisVersionExtensions::toVersionString( version ) );
+
+			const Codebooks* codebooksPtr = nullptr;
+			ASSERT_NO_THROW( {
+				codebooksPtr = &vis.codebooks( version );
+			} );
+			ASSERT_NE( nullptr, codebooksPtr );
+
+			const Codebook* positionCodebookPtr = nullptr;
+			ASSERT_NO_THROW( {
+				positionCodebookPtr = &codebooksPtr->codebook( CodebookName::Position );
+			} );
+			ASSERT_NE( nullptr, positionCodebookPtr );
+		}
 	}
 
 	//----------------------------------------------
@@ -48,7 +45,7 @@ namespace dnv::vista::sdk::tests
 
 	TEST( CodebooksTests, Test_Codebooks_Equality )
 	{
-		auto [vis, gmod] = visAndGmod();
+		VIS& vis = VIS::instance();
 
 		const auto& codebooks = vis.codebooks( VisVersion::v3_4a );
 

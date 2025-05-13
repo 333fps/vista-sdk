@@ -11,7 +11,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # --- Dependencies ---
-
 # --- nlohmann/json (Header-only, manual download) ---
 set(NLOHMANN_JSON_VERSION "v3.12.0")
 set(NLOHMANN_JSON_URL "https://github.com/nlohmann/json/releases/download/${NLOHMANN_JSON_VERSION}/json.hpp")
@@ -48,7 +47,6 @@ FetchContent_Declare(
   GIT_SHALLOW    TRUE
   CMAKE_ARGS     -DSPDLOG_BUILD_SHARED=OFF -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_BUILD_TESTING=OFF -DSPDLOG_FMT_EXTERNAL=OFF -DSPDLOG_BUILD_BENCH=OFF
 )
-
 FetchContent_Declare(
   zlib
   GIT_REPOSITORY https://github.com/madler/zlib.git
@@ -56,7 +54,6 @@ FetchContent_Declare(
   GIT_SHALLOW    TRUE
   CMAKE_ARGS     -DZLIB_BUILD_SHARED=OFF -DZLIB_BUILD_TESTING=OFF -DZLIB_BUILD_STATIC=ON -DZLIB_BUILD_MINIZIP=OFF -DZLIB_INSTALL=OFF
 )
-
 FetchContent_Declare(
   cpuid
   GIT_REPOSITORY https://github.com/anrieff/libcpuid.git
@@ -64,7 +61,6 @@ FetchContent_Declare(
   GIT_SHALLOW    TRUE
   CMAKE_ARGS     -DBUILD_SHARED_LIBS=OFF -DLIBCPUID_ENABLE_TESTS=OFF -DLIBCPUID_BUILD_DRIVERS=OFF -DLIBCPUID_ENABLE_DOCS=OFF
 )
-
 FetchContent_Declare(
   fmt
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
@@ -72,7 +68,6 @@ FetchContent_Declare(
   GIT_SHALLOW    TRUE
   CMAKE_ARGS     -DBUILD_SHARED_LIBS=OFF -DFMT_TEST=OFF -DFMT_DOC=OFF -DFMT_INSTALL=OFF
 )
-
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
@@ -82,13 +77,13 @@ FetchContent_Declare(
 	-Dgtest_build_shared_libs=OFF
 	-DBUILD_SHARED_LIBS=OFF -DBUILD_GMOCK=OFF -DINSTALL_GTEST=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>DLL
 )
-
 FetchContent_MakeAvailable(fmt spdlog zlib cpuid googletest)
 
 # --- Build Options ---
-option(VISTA_SDK_CPP_BUILD_TESTS		"Build tests"							ON	)
-option(VISTA_SDK_CPP_COPY_RESOURCES		"Copy resources to build directory" 	ON	)
-option(VISTA_SDK_CPP_BUILD_SAMPLES		"Build vista-sdk-cpp samples"			ON	)
+option(VISTA_SDK_CPP_BUILD_TESTS        "Build tests"                                               ON     )
+option(VISTA_SDK_CPP_COPY_RESOURCES     "Copy resources to build directory"                         ON     )
+option(VISTA_SDK_CPP_BUILD_SAMPLES      "Build vista-sdk-cpp samples"                               ON     )
+option(CI_FORCE_DEBUG_SPDLOG_WARN       "For CI Debug builds, force SPDLOG_ACTIVE_LEVEL to WARN"    OFF    )
 
 # --- Platform Specific Settings ---
 if(MSVC)
@@ -197,7 +192,6 @@ else()
 endif()
 
 # --- Source Files ---
-
 set(PUBLIC_HEADERS
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ChdDictionary.h
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ChdDictionary.inl
@@ -271,18 +265,13 @@ set(PRIVATE_SOURCES
 # --- Library Definition ---
 add_library(${PROJECT_NAME} SHARED)
 
-# Add sources to the target.
 target_sources(${PROJECT_NAME}
 	PUBLIC
 		${PUBLIC_HEADERS}
 	PRIVATE
 		${PRIVATE_SOURCES}
 )
-
-# --- Precompiled Headers ---
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/pch.h)
-
-# --- Include Directories ---
 target_include_directories(${PROJECT_NAME}
 	PUBLIC
 		$<BUILD_INTERFACE:${VISTA_SDK_CPP_INCLUDE_DIR}>
@@ -291,8 +280,6 @@ target_include_directories(${PROJECT_NAME}
 		${VISTA_SDK_CPP_SOURCE_DIR}
 		${zlib_SOURCE_DIR}
 )
-
-# --- Link Libraries ---
 target_link_libraries(${PROJECT_NAME} PRIVATE
 	spdlog::spdlog
 	nlohmann_json::nlohmann_json
@@ -300,22 +287,22 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	cpuid
 	fmt::fmt
 )
-
 target_compile_definitions(${PROJECT_NAME} PRIVATE
 	$<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_OFF>
+	$<$<AND:$<CONFIG:Debug>,$<BOOL:${CI_FORCE_DEBUG_SPDLOG_WARN}>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_WARN>
 )
 
-# --- Samples ---
+# --- Samples Subdirectory ---
 if(VISTA_SDK_CPP_BUILD_SAMPLES)
 	#add_subdirectory(${VISTA_SDK_CPP_SAMPLES_DIR} samples)
 endif()
 
-# --- Tests ---
+# --- Tests Subdirectory ---
 if(VISTA_SDK_CPP_BUILD_TESTS)
 	add_subdirectory(${VISTA_SDK_CPP_TEST_DIR} test)
 endif()
 
-# --- Configuration Summary ---
+# --- C++ Library Configuration Summary ---
 get_directory_property(COMPILE_OPTIONS COMPILE_OPTIONS)
 get_directory_property(COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
 get_directory_property(LINK_OPTIONS LINK_OPTIONS)
@@ -323,7 +310,7 @@ string(REPLACE ";" " " FORMATTED_COMPILE_OPTIONS "${COMPILE_OPTIONS}")
 string(REPLACE ";" " " FORMATTED_COMPILE_DEFINITIONS "${COMPILE_DEFINITIONS}")
 string(REPLACE ";" " " FORMATTED_LINK_OPTIONS "${LINK_OPTIONS}")
 
-message(STATUS "========== VISTA SDK C++ Configuration ==========")
+message(STATUS "========== VISTA SDK C++ Library Configuration ==========")
 message(STATUS "Project:                 ${PROJECT_NAME} ${PROJECT_VERSION}")
 message(STATUS "Description:             ${PROJECT_DESCRIPTION}")
 message(STATUS "Top-Level Source Dir:    ${CMAKE_SOURCE_DIR}")
@@ -354,7 +341,6 @@ message(STATUS "Compile Options:         ${FORMATTED_COMPILE_OPTIONS}")
 message(STATUS "Compile Definitions:     ${FORMATTED_COMPILE_DEFINITIONS}")
 message(STATUS "Link Options:            ${FORMATTED_LINK_OPTIONS}")
 
-# --- ccache Statistics ---
 if(CCACHE_PROGRAM)
 	message(STATUS "")
 	message(STATUS "---------- ccache Statistics ----------")
@@ -368,5 +354,4 @@ if(CCACHE_PROGRAM)
 		message(STATUS "${LINE}")
 	endforeach()
 endif()
-
-message(STATUS "========================================")
+message(STATUS "=======================================================")

@@ -134,6 +134,53 @@ namespace dnv::vista::sdk
 			}
 			EXPECT_EQ( iterated_count, 28 );
 		}
+
+		TEST( CodebooksTests, Test_CodebookName_Prefix_Conversions )
+		{
+			const std::map<dnv::vista::sdk::CodebookName, std::string_view> expectedMappings = {
+				{ dnv::vista::sdk::CodebookName::Quantity, "qty" },
+				{ dnv::vista::sdk::CodebookName::Content, "cnt" },
+				{ dnv::vista::sdk::CodebookName::Calculation, "calc" },
+				{ dnv::vista::sdk::CodebookName::State, "state" },
+				{ dnv::vista::sdk::CodebookName::Command, "cmd" },
+				{ dnv::vista::sdk::CodebookName::Type, "type" },
+				{ dnv::vista::sdk::CodebookName::FunctionalServices, "funct.svc" },
+				{ dnv::vista::sdk::CodebookName::MaintenanceCategory, "maint.cat" },
+				{ dnv::vista::sdk::CodebookName::ActivityType, "act.type" },
+				{ dnv::vista::sdk::CodebookName::Position, "pos" },
+				{ dnv::vista::sdk::CodebookName::Detail, "detail" } };
+
+			for ( const auto& pair : expectedMappings )
+			{
+				const auto cbName = pair.first;
+				const auto expectedPrefix = pair.second;
+
+				SCOPED_TRACE( "Testing CodebookName toPrefix: " + std::string( expectedPrefix ) );
+				std::string_view actualPrefix;
+				ASSERT_NO_THROW( {
+					actualPrefix = dnv::vista::sdk::CodebookNames::toPrefix( cbName );
+				} );
+				ASSERT_EQ( expectedPrefix, actualPrefix );
+
+				SCOPED_TRACE( "Testing fromPrefix round trip for: " + std::string( expectedPrefix ) );
+				dnv::vista::sdk::CodebookName roundTripName;
+				ASSERT_NO_THROW( {
+					roundTripName = dnv::vista::sdk::CodebookNames::fromPrefix( actualPrefix );
+				} );
+				ASSERT_EQ( cbName, roundTripName );
+			}
+
+			ASSERT_THROW( dnv::vista::sdk::CodebookNames::fromPrefix( "" ), std::invalid_argument );
+			ASSERT_THROW( dnv::vista::sdk::CodebookNames::fromPrefix( "invalid_prefix" ), std::invalid_argument );
+			ASSERT_THROW( dnv::vista::sdk::CodebookNames::fromPrefix( "po" ), std::invalid_argument );
+
+			ASSERT_THROW( dnv::vista::sdk::CodebookNames::fromPrefix( "QTY" ), std::invalid_argument );
+			ASSERT_THROW( dnv::vista::sdk::CodebookNames::fromPrefix( "Pos" ), std::invalid_argument );
+			ASSERT_THROW( dnv::vista::sdk::CodebookNames::fromPrefix( "funct.SVC" ), std::invalid_argument );
+
+			const auto invalidCbName = static_cast<dnv::vista::sdk::CodebookName>( 999 );
+			ASSERT_THROW( dnv::vista::sdk::CodebookNames::toPrefix( invalidCbName ), std::invalid_argument );
+		}
 	}
 
 	namespace CodebookTestParametrized

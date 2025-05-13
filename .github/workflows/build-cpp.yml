@@ -33,7 +33,7 @@ jobs:
 
     - name: Install build essentials (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y build-essential ninja-build
+      run: sudo apt-get update && sudo apt-get install -y build-essential ninja-build tree
       shell: bash
 
     # --- Common Setup ---
@@ -69,8 +69,7 @@ jobs:
         New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/.ccache"
         ccache --set-config=cache_dir="${{ github.workspace }}/.ccache"
         ccache --set-config=max_size=2G
-        # ccache --set-config=hash_dir=false # Optional: Consider if needed for your setup
-        ccache -z # Zero statistics before build
+        ccache -z
       shell: pwsh
 
     - name: Configure ccache settings (Linux)
@@ -79,8 +78,7 @@ jobs:
         mkdir -p "${{ github.workspace }}/.ccache"
         ccache --set-config=cache_dir="${{ github.workspace }}/.ccache"
         ccache --set-config=max_size=2G
-        # ccache --set-config=hash_dir=false # Optional: Consider if needed for your setup
-        ccache -z # Zero statistics before build
+        ccache -z
       shell: bash
 
     # --- FetchContent Cache ---
@@ -89,7 +87,7 @@ jobs:
       id: fetchcontent-cache
       with:
         path: ${{ github.workspace }}/cpp/build/_deps
-        key: fetchcontent-${{ runner.os }}-${{ hashFiles('cpp/CMakeLists.txt') }}-v1
+        key: fetchcontent-${{ runner.os }}-${{ hashFiles('cpp/CMakeLists.txt', 'cpp/cmake/CMakeLists.txt') }}-v1
         restore-keys: |
           fetchcontent-${{ runner.os }}-v1
 
@@ -97,21 +95,44 @@ jobs:
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
       run: |
-        cmake -B ${{ github.workspace }}/cpp/build -S ${{ github.workspace }} -G "Ninja" `
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
-        -DCMAKE_CXX_STANDARD=20 `
-        -DCMAKE_C_COMPILER_LAUNCHER=ccache `
-        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        $cmakeArgs = @(
+          "-B", "${{ github.workspace }}/cpp/build",
+          "-S", "${{ github.workspace }}",
+          "-G", "Ninja",
+          "-DCMAKE_BUILD_TYPE=${{ matrix.build_type }}",
+          "-DCMAKE_CXX_STANDARD=20",
+          "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+          "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+          "-DVISTA_SDK_CPP_BUILD_TESTS=ON",
+          "-DVISTA_SDK_CPP_COPY_RESOURCES=ON",
+          "-DVISTA_SDK_CPP_BUILD_SAMPLES=ON"
+        )
+        if ("${{ matrix.build_type }}" -eq "Debug") {
+          $cmakeArgs += "-DCI_FORCE_DEBUG_SPDLOG_WARN=ON"
+        }
+        cmake $cmakeArgs
       shell: pwsh
 
     - name: Configure CMake (Linux)
       if: runner.os == 'Linux'
       run: |
-        cmake -B ${{ github.workspace }}/cpp/build -S ${{ github.workspace }} -G "Ninja" \
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-        -DCMAKE_CXX_STANDARD=20 \
-        -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        CMAKE_ARGS=(
+          "-B" "${{ github.workspace }}/cpp/build"
+          "-S" "${{ github.workspace }}"
+          "-G" "Ninja"
+          "-DCMAKE_BUILD_TYPE=${{ matrix.build_type }}"
+          "-DCMAKE_CXX_STANDARD=20"
+          "-DCMAKE_C_COMPILER_LAUNCHER=ccache"
+          "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          "-DVISTA_SDK_CPP_BUILD_TESTS=ON"
+          "-DVISTA_SDK_CPP_COPY_RESOURCES=ON"
+          "-DVISTA_SDK_CPP_BUILD_SAMPLES=ON"
+        )
+        if [ "${{ matrix.build_type }}" = "Debug" ]; then
+          CMAKE_ARGS+=("-DCI_FORCE_DEBUG_SPDLOG_WARN=ON")
+        fi
+        echo "CMake arguments: ${CMAKE_ARGS[@]}" # Optional: for debugging
+        cmake "${CMAKE_ARGS[@]}"
       shell: bash
 
     - name: Build (Windows)
@@ -136,25 +157,48 @@ jobs:
       working-directory: ${{ github.workspace }}/cpp/build
       shell: pwsh
       run: |
-       Get-ChildItem -Recurse bin | Select-Object FullName, Length # Focus on the bin directory
+       if (Test-Path bin) {
+         Write-Host "--- Contents of bin directory ---"
+         Get-ChildItem -Recurse bin | Select-Object FullName, Length
+         Write-Host "--- Tree view of bin directory ---"
+         cmd /c tree bin /F /A || Write-Host "tree command not available or bin is empty/not found"
+       } else {
+         Write-Host "bin directory not found in ${{ github.workspace }}/cpp/build"
+       }
 
     - name: List Build Directory Contents (Linux)
       if: runner.os == 'Linux'
       working-directory: ${{ github.workspace }}/cpp/build
       shell: bash
       run: |
-        ls -lR bin # Focus on the bin directory
+        if [ -d "bin" ]; then
+          echo "--- Contents of bin directory ---"
+          find bin -type f -printf "%p (%s bytes)\n"
+          echo "--- Tree view of bin directory ---"
+          tree bin || echo "tree command not available or bin is empty/not found"
+        else
+          echo "bin directory not found in ${{ github.workspace }}/cpp/build"
+        fi
 
-# --- Test Step ---
+    # --- Test Step ---
     - name: Run Tests (Windows)
       if: runner.os == 'Windows'
       working-directory: ${{ github.workspace }}/cpp/build
       shell: pwsh
       run: |
           if ("${{ matrix.build_type }}" -eq "Debug") {
+              Write-Host "--------------------------------------------------------------------------------"
+              Write-Host "INFO: Running tests in DEBUG mode with spdlog level set to WARN."
+              Write-Host "Any warnings or errors displayed below may be from internal library logging"
+              Write-Host "for diagnostic purposes. This can also highlight potentially ill-formed"
+              Write-Host "values in JSON resources, or demonstrate correct error handling within"
+              Write-Host "test cases when expected issues are encountered. These messages do not"
+              Write-Host "necessarily reflect test case failures. Check CTest summary for actual"
+              Write-Host "test pass/fail status."
+              Write-Host "--------------------------------------------------------------------------------"
               ctest -C ${{ matrix.build_type }} --output-on-failure -VV
           } else {
-          ctest -C ${{ matrix.build_type }} --output-on-failure
+              ctest -C ${{ matrix.build_type }} --output-on-failure
           }
 
     - name: Run Tests (Linux)
@@ -163,8 +207,24 @@ jobs:
       shell: bash
       run: |
           if [ "${{ matrix.build_type }}" = "Debug" ]; then
+              echo "--------------------------------------------------------------------------------"
+              echo "INFO: Running tests in DEBUG mode with spdlog level set to WARN."
+              echo "Any warnings or errors displayed below may be from internal library logging"
+              echo "for diagnostic purposes. This can also highlight potentially ill-formed"
+              echo "values in JSON resources, or demonstrate correct error handling within"
+              echo "test cases when expected issues are encountered. These messages do not"
+              echo "necessarily reflect test case failures. Check CTest summary for actual"
+              echo "test pass/fail status."
+              echo "--------------------------------------------------------------------------------"
               ctest -C ${{ matrix.build_type }} --output-on-failure -VV
           else
               ctest -C ${{ matrix.build_type }} --output-on-failure
           fi
 
+    # --- Upload Artifacts ---
+    - name: Upload Bin Directory Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cpp-bin-artifacts-${{ runner.os }}-${{ matrix.build_type }}
+        path: ${{ github.workspace }}/cpp/build/bin/
+        if-no-files-found: warn

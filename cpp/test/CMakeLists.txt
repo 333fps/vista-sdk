@@ -12,7 +12,7 @@ project(vista-sdk-cpp-tests
 # --- GoogleTest Integration ---
 include(GoogleTest)
 
-# --- Test Executable Definitions ---
+# --- Test Source Files ---
 set(TEST_SOURCES
 	CodebookTests.cpp
 	CodebooksTests.cpp
@@ -27,32 +27,32 @@ set(TEST_SOURCES
 
 # --- Copy Test Data (Build Time) ---
 if(EXISTS ${VISTA_SDK_TEST_DATA_DIR})
-	set(VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/testdata)
+	set(VISTA_SDK_CPP_TEST_DATA_OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/testdata)
 
 	if(NOT TARGET CopyTestData)
 		add_custom_target(CopyTestData ALL
-			COMMAND ${CMAKE_COMMAND} -E make_directory ${VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR}
+			COMMAND ${CMAKE_COMMAND} -E make_directory ${VISTA_SDK_CPP_TEST_DATA_OUTPUT_DIR}
 			COMMAND ${CMAKE_COMMAND} -E copy_directory
-				${VISTA_SDK_TEST_DATA_DIR} ${VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR}
+				${VISTA_SDK_TEST_DATA_DIR} ${VISTA_SDK_CPP_TEST_DATA_OUTPUT_DIR}
 			COMMENT "Copying VISTA SDK testdata to build directory ($<CONFIG>)"
 			VERBATIM
 		)
-		message(STATUS "testdata will be copied from ${VISTA_SDK_TEST_DATA_DIR} to ${VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR} at build time")
+		message(STATUS "Test data will be copied from ${VISTA_SDK_TEST_DATA_DIR} to ${VISTA_SDK_CPP_TEST_DATA_OUTPUT_DIR} at build time")
 	endif()
 else()
-	message(WARNING "testdata directory not found: ${VISTA_SDK_TEST_DATA_DIR}. Skipping testdata copy.")
+	message(WARNING "Test data directory not found: ${VISTA_SDK_TEST_DATA_DIR}. Skipping test data copy.")
 endif()
 
-# --- Configure Each Test Target (Modified Loop) ---
+# --- Configure Test Executables ---
 foreach(test_source ${TEST_SOURCES})
-	get_filename_component(test_target ${test_source} NAME_WE)
+	get_filename_component(test_target_name ${test_source} NAME_WE)
 
-	if(NOT TARGET ${test_target})
-		add_executable(${test_target} ${test_source})
+	if(NOT TARGET ${test_target_name})
+		add_executable(${test_target_name} ${test_source})
 
-		target_precompile_headers(${test_target} PRIVATE pch.h)
+		target_precompile_headers(${test_target_name} PRIVATE pch.h)
 
-		target_link_libraries(${test_target} PRIVATE
+		target_link_libraries(${test_target_name} PRIVATE
 			vista-sdk-cpp
 			GTest::gtest_main
 			spdlog::spdlog
@@ -60,25 +60,26 @@ foreach(test_source ${TEST_SOURCES})
 			zlibstatic
 		)
 
-		# Add include directories.
-		target_include_directories(${test_target} PRIVATE
+		target_compile_definitions(${test_target_name} PRIVATE
+			$<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_OFF>
+			$<$<AND:$<CONFIG:Debug>,$<BOOL:${CI_FORCE_DEBUG_SPDLOG_WARN}>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_WARN>
+		)
+
+		target_include_directories(${test_target_name} PRIVATE
 			${VISTA_SDK_CPP_INCLUDE_DIR}
 		)
 
-		# Ensure CopyTestData runs before this test target is built/run for discovery
 		if(TARGET CopyTestData)
-			add_dependencies(${test_target} CopyTestData)
+			add_dependencies(${test_target_name} CopyTestData)
 		endif()
 
-		# Discover tests.
-		gtest_discover_tests(${test_target}
-			WORKING_DIRECTORY "$<TARGET_FILE_DIR:${test_target}>"
+		gtest_discover_tests(${test_target_name}
+			WORKING_DIRECTORY "$<TARGET_FILE_DIR:${test_target_name}>"
 			DISCOVERY_VERBOSE_OUTPUT TRUE
 		)
 
-		# Apply MSVC-specific warning suppressions.
 		if(MSVC)
-			target_compile_options(${test_target} PRIVATE
+			target_compile_options(${test_target_name} PRIVATE
 				/wd4625 # copy constructor was implicitly defined as deleted
 				/wd4626 # assignement operator was implicitly defined as deleted
 				/wd4702 # unreachable code
