@@ -56,7 +56,7 @@ namespace dnv::vista::sdk
 		return m_name;
 	}
 
-	const std::string& MetadataTag::value() const noexcept
+	std::string_view MetadataTag::value() const noexcept
 	{
 		return m_value;
 	}

@@ -76,7 +76,7 @@ namespace dnv::vista::sdk
 		 * @brief Get the name of this codebook
 		 * @return The codebook name
 		 */
-		[[nodiscard]] const std::string& name() const;
+		[[nodiscard]] std::string_view name() const;
 
 		/**
 		 * @brief Get the values map of this codebook

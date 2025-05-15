@@ -84,7 +84,7 @@ This C++ implementation follows the same core design principles (Immutability, B
     *   Review DTO immutability strategy: The current DTOs use non-`const` members to allow population by ADL `from_json` hooks, while deleting assignment operators and providing `const` accessors. For stricter immutability (i.e., `const` members ensuring objects are only ever populated at construction via parameterized constructors or static factory methods), a refactor would be needed. This would likely involve removing or significantly altering the ADL `from_json` hooks that modify existing instances.
 *   **Refactoring & Performance:**
     *   Investigate C++20 heterogeneous lookup for `std::unordered_map` instances for potential performance improvements.
-    *   Address potential performance issue of creating temporary `std::string` for lookups in methods like `Codebook::validatePosition` by consistently using `std::string_view` where feasible.
+    *   Address potential performance issue of creating temporary `std::string` by consistently using `std::string_view` where feasible.
     *   Consider adding support for other hash functions in `ChdDictionary` or making the hash function selection configurable.
 *   **Benchmarking:**
     *   Develop a benchmarking suite comparable to the C# SDK to track and improve performance.

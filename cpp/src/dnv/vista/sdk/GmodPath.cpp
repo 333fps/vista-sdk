@@ -143,12 +143,16 @@ namespace dnv::vista::sdk
 			}
 
 			GmodNode*& nodePtrRef = m_path[static_cast<size_t>( nodeIndexInSet )];
-
 			GmodNode* oldNodePtr = nodePtrRef;
 
-			GmodNode newGmodNodeValue = location.has_value()
-											? oldNodePtr->withLocation( location.value() )
-											: oldNodePtr->withoutLocation();
+			if ( !oldNodePtr )
+			{
+				SPDLOG_WARN( "Old node pointer is null in GmodIndividualizableSet::setLocation for index {}", nodeIndexInSet );
+				continue;
+			}
+
+			GmodNode newGmodNodeValue = oldNodePtr->tryWithLocation( location );
+
 			GmodNode* newHeapAllocatedNode = new GmodNode( newGmodNodeValue );
 
 			nodePtrRef = newHeapAllocatedNode;

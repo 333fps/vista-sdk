@@ -33,7 +33,7 @@ namespace dnv::vista::sdk
 	// Public Static Methods
 	//----------------------------------------------
 
-	PositionValidationResult PositionValidationResults::fromString( const std::string& name )
+	PositionValidationResult PositionValidationResults::fromString( std::string_view name )
 	{
 		static const std::unordered_map<std::string, PositionValidationResult> nameMap{
 			{ "Valid", PositionValidationResult::Valid },
@@ -42,14 +42,14 @@ namespace dnv::vista::sdk
 			{ "InvalidGrouping", PositionValidationResult::InvalidGrouping },
 			{ "Custom", PositionValidationResult::Custom } };
 
-		auto it{ nameMap.find( name ) };
+		auto it{ nameMap.find( std::string( name ) ) };
 		if ( it != nameMap.end() )
 		{
 			return it->second;
 		}
 
-		SPDLOG_INFO( "Unknown position validation result: {}", name );
-		throw std::invalid_argument( "Unknown position validation result: " + name );
+		SPDLOG_INFO( "Unknown position validation result: {}", std::string( name ) );
+		throw std::invalid_argument( "Unknown position validation result: " + std::string( name ) );
 	}
 
 	//=====================================================================
@@ -178,10 +178,10 @@ namespace dnv::vista::sdk
 			{ "activity_type", CodebookName::ActivityType },
 			{ "detail", CodebookName::Detail } };
 
-		auto it{ nameMap.find( dto.name() ) };
+		auto it{ nameMap.find( std::string( dto.name() ) ) };
 		if ( it == nameMap.end() )
 		{
-			const std::string errorMsg = "Unknown codebook name: " + dto.name();
+			const std::string errorMsg = "Unknown codebook name: " + std::string( dto.name() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
@@ -291,12 +291,12 @@ namespace dnv::vista::sdk
 		return m_rawData;
 	}
 
-	bool Codebook::hasGroup( const std::string& group ) const
+	bool Codebook::hasGroup( std::string_view group ) const
 	{
 		return m_groups.contains( group );
 	}
 
-	bool Codebook::hasStandardValue( const std::string& value ) const
+	bool Codebook::hasStandardValue( std::string_view value ) const
 	{
 		return m_standardValues.contains( value );
 	}

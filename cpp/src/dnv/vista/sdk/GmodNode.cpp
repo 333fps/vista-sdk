@@ -409,7 +409,7 @@ namespace dnv::vista::sdk
 		return result;
 	}
 
-	GmodNode GmodNode::withLocation( const std::string& locationStr ) const
+	GmodNode GmodNode::withLocation( std::string_view locationStr ) const
 	{
 		SPDLOG_DEBUG( "Adding location '{}' to node: {}", locationStr, m_code );
 		Locations locations = VIS::instance().locations( m_visVersion );
@@ -421,31 +421,27 @@ namespace dnv::vista::sdk
 		return result;
 	}
 
-	GmodNode GmodNode::withLocation( const Location& location ) const
-	{
-		SPDLOG_DEBUG( "Adding location object to node: {}", m_code );
-
-		GmodNode result( *this, true );
-		result.m_location = location;
-		return result;
-	}
-
-	GmodNode GmodNode::tryWithLocation( const std::string& locationStr ) const
+	GmodNode GmodNode::tryWithLocation( std::string_view locationStr ) const
 	{
 		SPDLOG_DEBUG( "Attempting to add location '{}' to node: {}", locationStr, m_code );
 		Locations locations = VIS::instance().locations( m_visVersion );
-		Location location;
 
-		if ( !locations.tryParse( std::string_view( locationStr ), location ) )
+		Location parsedLocation;
+
+		if ( !locations.tryParse( locationStr, parsedLocation ) )
 		{
 			SPDLOG_ERROR( "Location parsing failed for: {}", locationStr );
+
 			return GmodNode( *this, true );
 		}
 
-		return withLocation( location );
+		GmodNode result( *this, true );
+		result.m_location = parsedLocation;
+
+		return result;
 	}
 
-	GmodNode GmodNode::tryWithLocation( const std::string& locationStr, ParsingErrors& errors ) const
+	GmodNode GmodNode::tryWithLocation( std::string_view locationStr, ParsingErrors& errors ) const
 	{
 		SPDLOG_DEBUG( "Attempting to add location '{}' to node: {} with error capture",
 			locationStr, m_code );

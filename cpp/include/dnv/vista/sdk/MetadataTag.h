@@ -98,7 +98,7 @@ namespace dnv::vista::sdk
 		 * @brief Gets the value of the metadata tag.
 		 * @return A constant reference to the string value of the metadata tag.
 		 */
-		[[nodiscard]] const std::string& value() const noexcept;
+		[[nodiscard]] std::string_view value() const noexcept;
 
 		/**
 		 * @brief Checks if the metadata tag is custom.

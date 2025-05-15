@@ -57,6 +57,7 @@ namespace dnv::vista::sdk
 		if ( !currentNodeOpt.has_value() )
 		{
 			SPDLOG_ERROR( "Node conversion failed going from version {} to {}", static_cast<int>( currentVersion ), static_cast<int>( firstStepTargetVersion ) );
+
 			return std::nullopt;
 		}
 
@@ -72,6 +73,7 @@ namespace dnv::vista::sdk
 				SPDLOG_ERROR( "Node conversion failed going from version {} to {}",
 					static_cast<int>( currentVersion ),
 					static_cast<int>( nextVersion ) );
+
 				return std::nullopt;
 			}
 			currentVersion = nextVersion;
@@ -99,6 +101,7 @@ namespace dnv::vista::sdk
 		if ( !targetEndNodeOpt.has_value() )
 		{
 			SPDLOG_ERROR( "Failed to convert end node: {}", sourcePath.node()->code() );
+
 			return std::nullopt;
 		}
 		GmodNode targetEndNode = std::move( *targetEndNodeOpt );
@@ -112,6 +115,7 @@ namespace dnv::vista::sdk
 			if ( !targetGmod.tryGetNode( targetEndNode.code(), nodeInTargetGmod ) || nodeInTargetGmod == nullptr )
 			{
 				SPDLOG_ERROR( "Converted root node {} not found in target GMOD {}.", targetEndNode.code(), static_cast<int>( targetVersion ) );
+
 				return std::nullopt;
 			}
 
@@ -129,6 +133,7 @@ namespace dnv::vista::sdk
 			if ( !convertedNodeOpt.has_value() )
 			{
 				SPDLOG_ERROR( "Failed to convert path node: {}", originalNodeRef.code() );
+
 				return std::nullopt;
 			}
 
@@ -139,6 +144,7 @@ namespace dnv::vista::sdk
 				 []( const auto& pair ) { return pair.second.code().empty(); } ) )
 		{
 			SPDLOG_ERROR( "Failed to convert node forward (resulted in empty code)" );
+
 			return std::nullopt;
 		}
 
@@ -224,6 +230,7 @@ namespace dnv::vista::sdk
 			}
 
 			pathPtrs.push_back( nodePtr );
+
 			return true;
 		};
 
@@ -236,24 +243,28 @@ namespace dnv::vista::sdk
 			if ( !targetGmod.tryGetNode( targetOwnedNode.code(), targetNodePtr ) || targetNodePtr == nullptr )
 			{
 				SPDLOG_ERROR( "Failed to find node '{}' in target GMOD during reconstruction loop.", targetOwnedNode.code() );
+
 				return std::nullopt;
 			}
 
 			if ( i > 0 && !reconstructedPathPtrs.empty() && targetNodePtr->code() == reconstructedPathPtrs.back()->code() )
 			{
 				SPDLOG_DEBUG( "Skipping duplicate consecutive node: {}", targetNodePtr->code() );
+
 				continue;
 			}
 
 			if ( !addToPath( targetGmod, reconstructedPathPtrs, targetNodePtr ) )
 			{
 				SPDLOG_ERROR( "Failed to add node '{}' to path during reconstruction: parent-child relationship broken or reconstruction failed.", targetNodePtr->code() );
+
 				return std::nullopt;
 			}
 
 			if ( !reconstructedPathPtrs.empty() && reconstructedPathPtrs.back()->code() == targetEndNode.code() )
 			{
 				SPDLOG_DEBUG( "Target node '{}' reached during reconstruction.", targetEndNode.code() );
+
 				break;
 			}
 		}
@@ -261,12 +272,14 @@ namespace dnv::vista::sdk
 		if ( reconstructedPathPtrs.empty() )
 		{
 			SPDLOG_ERROR( "Failed to build path: no nodes added after reconstruction attempt" );
+
 			return std::nullopt;
 		}
 
 		if ( reconstructedPathPtrs.back()->code() != targetEndNode.code() )
 		{
 			SPDLOG_ERROR( "Path reconstruction failed: final node {} does not match expected target {}", reconstructedPathPtrs.back()->code(), targetEndNode.code() );
+
 			return std::nullopt;
 		}
 
@@ -283,6 +296,7 @@ namespace dnv::vista::sdk
 			}
 			ss << "/" << targetEndNode.code();
 			SPDLOG_DEBUG( "Invalid reconstructed path: {}", ss.str() );
+
 			return std::nullopt;
 		}
 
@@ -299,6 +313,7 @@ namespace dnv::vista::sdk
 		if ( !targetGmod.tryGetNode( targetEndNode.code(), finalNodeInTargetGmodPtr ) || finalNodeInTargetGmodPtr == nullptr )
 		{
 			SPDLOG_ERROR( "Final target node {} for path construction not found in target GMOD {}.", targetEndNode.code(), static_cast<int>( targetVersion ) );
+
 			return std::nullopt;
 		}
 
@@ -362,7 +377,9 @@ namespace dnv::vista::sdk
 
 		auto builder = convertLocalId( sourceLocalId.builder(), targetVersion );
 		if ( !builder.has_value() )
+		{
 			return std::nullopt;
+		}
 
 		return builder->build();
 	}
@@ -426,8 +443,10 @@ namespace dnv::vista::sdk
 			{
 				SPDLOG_INFO( "Found code change: {} -> {}", code, *nodeChanges.target );
 			}
+
 			return true;
 		}
+
 		return false;
 	}
 
@@ -475,7 +494,7 @@ namespace dnv::vista::sdk
 
 			if ( targetNodePtr->isIndividualizable( false, true ) )
 			{
-				GmodNode resultWithLocation = targetNodePtr->withLocation( sourceLocation );
+				GmodNode resultWithLocation = targetNodePtr->tryWithLocation( std::optional<Location>( sourceLocation ) );
 				SPDLOG_INFO( "Applied source location '{}' to node '{}', resulting location: '{}'",
 					sourceLocation.value(), resultWithLocation.code(),
 					resultWithLocation.location().has_value() ? resultWithLocation.location()->value() : "none" );
@@ -487,11 +506,11 @@ namespace dnv::vista::sdk
 					targetNodePtr->code(), sourceLocation.value() );
 				if ( targetNodePtr->location().has_value() )
 				{
-					return targetNodePtr->withLocation( *targetNodePtr->location() );
+					return targetNodePtr->tryWithLocation( targetNodePtr->location() );
 				}
 				else
 				{
-					return targetNodePtr->withoutLocation();
+					return targetNodePtr->tryWithLocation( std::nullopt );
 				}
 			}
 		}
@@ -500,11 +519,11 @@ namespace dnv::vista::sdk
 			SPDLOG_INFO( "No source location to apply for node {}. Returning target node as is.", targetNodePtr->code() );
 			if ( targetNodePtr->location().has_value() )
 			{
-				return targetNodePtr->withLocation( *targetNodePtr->location() );
+				return targetNodePtr->tryWithLocation( targetNodePtr->location() );
 			}
 			else
 			{
-				return targetNodePtr->withoutLocation();
+				return targetNodePtr->tryWithLocation( std::nullopt );
 			}
 		}
 	}
@@ -519,6 +538,7 @@ namespace dnv::vista::sdk
 		{
 			return &it->second;
 		}
+
 		return nullptr;
 	}
 

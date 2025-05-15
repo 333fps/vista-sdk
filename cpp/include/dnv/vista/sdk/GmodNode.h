@@ -361,14 +361,7 @@ namespace dnv::vista::sdk
 		 * @return A new `GmodNode` instance with the parsed location.
 		 * @throws std::invalid_argument If the `locationStr` is invalid or cannot be parsed.
 		 */
-		[[nodiscard]] GmodNode withLocation( const std::string& locationStr ) const;
-
-		/**
-		 * @brief Creates a new GmodNode instance identical to this one but with the specified Location object.
-		 * @param location The `Location` object to set.
-		 * @return A new `GmodNode` instance with the given location.
-		 */
-		[[nodiscard]] GmodNode withLocation( const Location& location ) const;
+		[[nodiscard]] GmodNode withLocation( std::string_view locationStr ) const;
 
 		/**
 		 * @brief Tries to create a new GmodNode instance with the specified location string, returning a copy on failure.
@@ -378,7 +371,7 @@ namespace dnv::vista::sdk
 		 * @param locationStr The location string to parse and set.
 		 * @return A new `GmodNode` instance, with the location set if parsing was successful.
 		 */
-		[[nodiscard]] GmodNode tryWithLocation( const std::string& locationStr ) const;
+		[[nodiscard]] GmodNode tryWithLocation( std::string_view locationStr ) const;
 
 		/**
 		 * @brief Tries to create a new GmodNode instance with the specified location string, capturing parsing errors.
@@ -389,7 +382,7 @@ namespace dnv::vista::sdk
 		 * @param errors A `ParsingErrors` object to collect detailed error information if parsing fails.
 		 * @return A new `GmodNode` instance, with the location set if parsing was successful.
 		 */
-		[[nodiscard]] GmodNode tryWithLocation( const std::string& locationStr, ParsingErrors& errors ) const;
+		[[nodiscard]] GmodNode tryWithLocation( std::string_view locationStr, ParsingErrors& errors ) const;
 
 		/**
 		 * @brief Tries to create a new GmodNode instance with the specified optional Location object.

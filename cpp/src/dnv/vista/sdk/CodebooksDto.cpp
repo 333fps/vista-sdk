@@ -40,7 +40,7 @@ namespace dnv::vista::sdk
 	// Accessor
 	//----------------------------------------------
 
-	const std::string& CodebookDto::name() const
+	std::string_view CodebookDto::name() const
 	{
 		return m_name;
 	}

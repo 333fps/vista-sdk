@@ -84,7 +84,7 @@ namespace dnv::vista::sdk
 		 * @return The matching `PositionValidationResult` enum value.
 		 * @throws std::invalid_argument If the provided `name` does not correspond to any known validation result.
 		 */
-		static PositionValidationResult fromString( const std::string& name );
+		static PositionValidationResult fromString( std::string_view name );
 	};
 
 	//=====================================================================
@@ -359,14 +359,14 @@ namespace dnv::vista::sdk
 		 * @param group The group to check
 		 * @return True if the group exists
 		 */
-		[[nodiscard]] bool hasGroup( const std::string& group ) const;
+		[[nodiscard]] bool hasGroup( std::string_view group ) const;
 
 		/**
 		 * @brief Check if a value is a standard value
 		 * @param value The value to check
 		 * @return True if the value is standard
 		 */
-		[[nodiscard]] bool hasStandardValue( const std::string& value ) const;
+		[[nodiscard]] bool hasStandardValue( std::string_view value ) const;
 
 		/**
 		 * @brief Try to create a metadata tag
