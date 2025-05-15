@@ -271,21 +271,6 @@ namespace dnv::vista::sdk
 	// Public Methods - Parsing
 	//----------------------------------------------
 
-	Location Locations::parse( const std::string& locationStr ) const
-	{
-		SPDLOG_INFO( "Parsing location string: '{}'", locationStr );
-		Location location;
-		if ( !tryParse( locationStr, location ) )
-		{
-			SPDLOG_ERROR( "Failed to parse location: '{}'", locationStr );
-			throw std::invalid_argument( "Invalid location: " + locationStr );
-		}
-
-		SPDLOG_INFO( "Successfully parsed location: '{}'", location.value() );
-
-		return location;
-	}
-
 	Location Locations::parse( std::string_view locationStr ) const
 	{
 		SPDLOG_INFO( "Parsing location string view: '{}'", locationStr );

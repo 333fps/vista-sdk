@@ -397,4 +397,18 @@ public class LocalIdQueryTests
         Assert.False(query.Match(l1));
         Assert.False(query.Match(l2));
     }
+
+    [Fact]
+    public void Test_Use_Case_4()
+    {
+        // Generic test
+
+        var query = LocalIdQueryBuilder
+            .From("/dnv-v2/vis-3-7a/511.11/C101/meta/qty-pressure/cnt-lubricating.oil")
+            .WithPrimaryItem(builder => builder.WithoutLocations().Build())
+            .Build();
+        var other = LocalId.Parse("/dnv-v2/vis-3-7a/511.11-1/C101/meta/qty-pressure/cnt-lubricating.oil");
+
+        Assert.True(query.Match(other));
+    }
 }

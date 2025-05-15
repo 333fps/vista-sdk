@@ -323,26 +323,6 @@ namespace dnv::vista::sdk
 	// ISO String Validation Methods
 	//----------------------------------------------
 
-	bool VIS::matchISOLocalIdString( const std::string& value )
-	{
-		SPDLOG_DEBUG( "Checking if string matches ISO local ID format: '{}'", value );
-
-		for ( char ch : value )
-		{
-			if ( ch == '/' )
-				continue;
-
-			if ( !isISOString( ch ) )
-			{
-				SPDLOG_ERROR( "Character '{}' is not ISO compliant", ch );
-				return false;
-			}
-		}
-
-		SPDLOG_DEBUG( "String is ISO local ID compliant" );
-		return true;
-	}
-
 	bool VIS::matchISOLocalIdString( const std::stringstream& builder )
 	{
 		return matchISOLocalIdString( std::string_view( builder.str() ) );

@@ -404,7 +404,7 @@ namespace dnv::vista::sdk
 		CodebookName m_name;
 
 		/** @brief Mapping from values to their group names */
-		std::unordered_map<std::string, std::string> m_groupMap;
+		std::unordered_map<std::string, std::string_view> m_groupMap;
 
 		/** @brief Container for standard values */
 		CodebookStandardValues m_standardValues;

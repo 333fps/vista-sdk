@@ -135,7 +135,7 @@ public sealed record LocalIdQueryBuilder
     internal bool Match(LocalId other)
     {
         LocalId localId = other;
-        if (other.VisVersion <= VIS.LatestVisVersion)
+        if (other.VisVersion < VIS.LatestVisVersion)
         {
             var converted = VIS.Instance.ConvertLocalId(other, VIS.LatestVisVersion);
             if (converted is null)

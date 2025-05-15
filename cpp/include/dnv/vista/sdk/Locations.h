@@ -419,14 +419,6 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Parses a location string into a `Location` object.
-		 * @param locationStr The location string to parse.
-		 * @return The parsed `Location` object.
-		 * @throws std::invalid_argument If parsing fails (e.g., invalid format, unknown codes).
-		 */
-		[[nodiscard]] Location parse( const std::string& locationStr ) const;
-
-		/**
 		 * @brief Parses a location string (represented by a string_view) into a `Location` object.
 		 * @param locationStr The location string_view to parse.
 		 * @return The parsed `Location` object.

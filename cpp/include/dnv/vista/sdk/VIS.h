@@ -377,13 +377,6 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Checks if a string matches the expected format for an ISO Local ID string.
-		 * @param value The std::string to validate.
-		 * @return True if the string matches the ISO Local ID format, false otherwise.
-		 */
-		[[nodiscard]] static bool matchISOLocalIdString( const std::string& value );
-
-		/**
 		 * @brief Checks if the content of a std::stringstream matches the ISO Local ID format.
 		 * @param builder The std::stringstream whose content is to be validated.
 		 * @return True if the content matches the ISO Local ID format, false otherwise.
