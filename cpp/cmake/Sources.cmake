@@ -1,0 +1,73 @@
+# ==============================================================================
+# VISTA-SDK-CPP - C++ Library CMake Configuration
+# ==============================================================================
+
+set(PUBLIC_HEADERS
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ChdDictionary.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ChdDictionary.inl
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/Codebook.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/Codebooks.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/CodebookName.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/CodebooksDto.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/EmbeddedResource.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/Gmod.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodDto.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodNode.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodPath.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodTraversal.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioning.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioningDto.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.inl
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalIdBuilder.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalIdBuilder.inl
+	# ${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/IUniversalIdBuilder.h
+	# ${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/IUniversalId.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ImoNumber.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ISO19848Dtos.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalId.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalIdBuilder.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalIdItems.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalIdParsingErrorBuilder.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocationParsingErrorBuilder.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/Locations.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocationsDto.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/MetadataTag.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ParsingErrors.h
+	# ${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/UniversalIdBuilder.h
+	# ${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/UniversalId.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VIS.h
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VIS.inl
+	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VisVersion.h
+)
+
+set(PRIVATE_SOURCES
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/ChdDictionary.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/Codebook.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/Codebooks.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/CodebookName.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/CodebooksDto.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/EmbeddedResource.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/Gmod.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodDto.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodNode.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodPath.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodTraversal.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodVersioning.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/GmodVersioningDto.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/ImoNumber.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/ISO19848Dtos.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocalId.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocalIdBuilder.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocalIdItems.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocalIdParsingErrorBuilder.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocationParsingErrorBuilder.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/Locations.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/LocationsDto.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/MetadataTag.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/ParsingErrors.cpp
+	# ${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/UniversalIdBuilder.cpp
+	# ${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/UniversalId.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/VIS.cpp
+	${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/VisVersion.cpp
+)
