@@ -191,22 +191,57 @@ The C++ SDK uses CMake and its [FetchContent](https://cmake.org/cmake/help/lates
 
 #### Building with CMake
 
-```bash
-# Clone the repository
-git clone https://github.com/dnv-opensource/vista-sdk.git
-cd vista-sdk/cpp # Navigate to the C++ subdirectory
+To build the C++ SDK, ensure you have a C++20 compliant compiler (e.g., MSVC, GCC, Clang) and CMake (version 3.20 or newer) installed.
 
-# Configure CMake (FetchContent will download dependencies)
-# For Visual Studio Generator (adjust generator as needed):
-cmake -B build -S .
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/dnv-opensource/vista-sdk.git
+    cd vista-sdk
+    ```
 
-# Or specify generator explicitly:
-# cmake -B build -S . -G "Visual Studio 17 2022"
+2.  **Configure CMake:**
+    Run CMake from the root of the repository to configure the build. The C++ build artifacts will typically be placed in `vista-sdk/cpp/build`.
+    You can specify various options using `-D<OPTION>=<VALUE>`:
+    *   `VISTA_SDK_CPP_BUILD_TESTS=ON` (Build unit tests, default is `ON`)
+    *   `VISTA_SDK_CPP_BUILD_SAMPLES=ON` (Build sample applications, default is `ON`)
+    *   `VISTA_SDK_CPP_BUILD_DOCS=ON` (Build Doxygen documentation, default is `OFF`. Requires Doxygen and Graphviz.)
+    *   `CMAKE_BUILD_TYPE=Release` (Or `Debug`, `RelWithDebInfo`, etc.)
 
-# Build (using CMake's build tool mode)
-cmake --build build --config Release
+    Example configuration (e.g., for Ninja, adjust generator as needed):
+    ```bash
+    cmake -B cpp/build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DVISTA_SDK_CPP_BUILD_TESTS=ON
+    ```
+    For Visual Studio, you might omit `-G Ninja` if MSVC is your default generator:
+    ```bash
+    cmake -B cpp/build -S . -DCMAKE_BUILD_TYPE=Release -DVISTA_SDK_CPP_BUILD_TESTS=ON
+    ```
 
-# Run tests (from the build directory)
-cd build
-ctest -C Release
+3.  **Build the SDK:**
+    Use CMake's build tool mode to compile the C++ library and any enabled components (like tests or samples).
+    ```bash
+    cmake --build cpp/build --config Release
+    ```
+
+4.  **Run Tests (Optional):**
+    If tests were enabled (`VISTA_SDK_CPP_BUILD_TESTS=ON`), navigate to the C++ build directory and run CTest:
+    ```bash
+    cd cpp/build
+    ctest -C Release
+    ```
+
+#### Using the SDK
+
+Once built, the library (e.g., `vista_sdk_cpp.lib` or `libvista_sdk_cpp.a`) and headers will be available in the `cpp/build` directory (typically under a subdirectory like `bin/<Config>` or `lib/<Config>` depending on your CMake setup and platform). You can link against the library and include the necessary headers in your C++ projects.
+
+Example of including headers:
+```cpp
+// Include necessary headers from the SDK, for example:
+#include <dnv/vista/sdk/gmod/Gmod.h>
+#include <dnv/vista/sdk/codebooks/Codebooks.h>
+#include <dnv/vista/sdk/locations/Locations.h>
+#include <dnv/vista/sdk/ids/UniversalId.h>
+// ... and so on for other components.
 ```
+
+#### Documentation
+If `VISTA_SDK_CPP_BUILD_DOCS` is enabled during the CMake configuration (and Doxygen/Graphviz are installed), HTML documentation will be generated, typically in the build directory.

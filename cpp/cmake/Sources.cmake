@@ -1,5 +1,5 @@
 # ==============================================================================
-# VISTA-SDK-CPP - C++ Library CMake Configuration
+# VISTA-SDK-CPP - C++ Library CMake Sources
 # ==============================================================================
 
 set(PUBLIC_HEADERS

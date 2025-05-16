@@ -1,7 +1,7 @@
 /**
  * @file EmbeddedResource.h
  * @brief Resource loading and caching utilities for Vista SDK
- * @copyright Copyright @kzu, License MIT
+ * @copyright Copyright ©kzu, License MIT
  * @see https://github.com/devlooped/ThisAssembly
  */
 

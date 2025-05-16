@@ -370,7 +370,7 @@ namespace dnv::vista::sdk
 
 		/**
 		 * @brief Try to create a metadata tag
-		 * @param value The tag value
+		 * @param valueView The tag value
 		 * @return The metadata tag, or none if invalid
 		 */
 		[[nodiscard]] std::optional<MetadataTag> tryCreateTag( std::string_view valueView ) const;

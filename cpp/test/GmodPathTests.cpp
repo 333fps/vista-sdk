@@ -19,6 +19,7 @@ namespace dnv::vista::sdk
 {
 	namespace
 	{
+		/*
 		static const nlohmann::json& testData()
 		{
 			static nlohmann::json globalJsonData;
@@ -44,10 +45,12 @@ namespace dnv::vista::sdk
 
 			return globalJsonData;
 		}
+		*/
 	}
 
 	namespace GmodPathTestsFixture
 	{
+		/*
 		class GmodPathTest : public ::testing::Test
 		{
 		protected:
@@ -60,6 +63,7 @@ namespace dnv::vista::sdk
 			VIS& m_vis;
 			const nlohmann::json& m_jsonData;
 		};
+		*/
 
 		//=====================================================================
 		// Tests
