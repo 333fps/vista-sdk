@@ -53,7 +53,7 @@ jobs:
       run: sudo apt-get install -y ccache
       shell: bash
 
-    # --- Doxygen/Graphviz Installation (Moved Up & Unconditional for Release) ---
+    # --- Doxygen/Graphviz Installation ---
     - name: Install Doxygen and Graphviz
       if: runner.os == 'Linux' && matrix.build_type == 'Release'
       run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
@@ -98,53 +98,46 @@ jobs:
           fetchcontent-${{ runner.os }}-v1
 
     # --- Build Steps ---
-    - name: Install Doxygen/Graphviz and Configure CMake (Windows Release)
-      if: runner.os == 'Windows' && matrix.build_type == 'Release'
+    - name: Configure CMake
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        choco install doxygen.install graphviz --no-progress -y
-        $env:Path = "C:\Program Files\Doxygen\bin;" + $env:Path
-        $env:Path = "C:\Program Files\Graphviz\bin;" + $env:Path
-        $env:Path = "C:\ProgramData\chocolatey\lib\doxygen.install\tools\doxygen\bin;" + $env:Path
-        $env:Path = "C:\ProgramData\chocolatey\lib\graphviz\tools\bin;" + $env:Path
-        echo "C:\Program Files\Doxygen\bin" >> $env:GITHUB_PATH
-        echo "C:\Program Files\Graphviz\bin" >> $env:GITHUB_PATH
-        echo "C:\ProgramData\chocolatey\lib\doxygen.install\tools\doxygen\bin" >> $env:GITHUB_PATH
-        echo "C:\ProgramData\chocolatey\lib\graphviz\tools\bin" >> $env:GITHUB_PATH
-        $cmakeArgs = @(
-          "-B", "${{ github.workspace }}/cpp/build",
-          "-S", "${{ github.workspace }}",
-          "-G", "Ninja",
-          "-DCMAKE_BUILD_TYPE=Release",
-          "-DCMAKE_CXX_STANDARD=20",
-          "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
-          "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
-          "-DVISTA_SDK_CPP_BUILD_TESTS=ON",
-          "-DVISTA_SDK_CPP_COPY_RESOURCES=ON",
-          "-DVISTA_SDK_CPP_BUILD_SAMPLES=ON",
-          "-DVISTA_SDK_CPP_BUILD_DOCS=ON"
-        )
-        cmake $cmakeArgs
+        if ("${{ matrix.build_type }}" -eq "Release") {
+          Write-Host "Installing Doxygen and Graphviz for Windows Release..."
+          choco install doxygen.install graphviz --no-progress -y
+          $env:Path = "C:\Program Files\Doxygen\bin;" + $env:Path
+          $env:Path = "C:\Program Files\Graphviz\bin;" + $env:Path
+          $env:Path = "C:\ProgramData\chocolatey\lib\doxygen.install\tools\doxygen\bin;" + $env:Path
+          $env:Path = "C:\ProgramData\chocolatey\lib\graphviz\tools\bin;" + $env:Path
+          echo "C:\Program Files\Doxygen\bin" >> $env:GITHUB_PATH
+          echo "C:\Program Files\Graphviz\bin" >> $env:GITHUB_PATH
+          echo "C:\ProgramData\chocolatey\lib\doxygen.install\tools\doxygen\bin" >> $env:GITHUB_PATH
+          echo "C:\ProgramData\chocolatey\lib\graphviz\tools\bin" >> $env:GITHUB_PATH
+        }
 
-    - name: Configure CMake (Windows Debug)
-      if: runner.os == 'Windows' && matrix.build_type == 'Debug'
-      run: |
         $cmakeArgs = @(
           "-B", "${{ github.workspace }}/cpp/build",
           "-S", "${{ github.workspace }}",
           "-G", "Ninja",
-          "-DCMAKE_BUILD_TYPE=Debug",
+          "-DCMAKE_BUILD_TYPE=${{ matrix.build_type }}",
           "-DCMAKE_CXX_STANDARD=20",
           "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
           "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
           "-DVISTA_SDK_CPP_BUILD_TESTS=ON",
           "-DVISTA_SDK_CPP_COPY_RESOURCES=ON",
-          "-DVISTA_SDK_CPP_BUILD_SAMPLES=ON",
-          "-DCI_FORCE_DEBUG_SPDLOG_WARN=ON",
-          "-DVISTA_SDK_CPP_BUILD_DOCS=OFF"
+          "-DVISTA_SDK_CPP_BUILD_SAMPLES=ON"
         )
+
+        if ("${{ matrix.build_type }}" -eq "Debug") {
+          $cmakeArgs += "-DCI_FORCE_DEBUG_SPDLOG_WARN=ON"
+          $cmakeArgs += "-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=OFF"
+        }
+        elseif ("${{ matrix.build_type }}" -eq "Release") {
+          $cmakeArgs += "-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=ON"
+        }
+
+        Write-Host "CMake arguments: $($cmakeArgs -join ' ')"
         cmake $cmakeArgs
-      shell: pwsh
 
     - name: Configure CMake
       if: runner.os == 'Linux'
@@ -162,10 +155,10 @@ jobs:
           "-DVISTA_SDK_CPP_BUILD_SAMPLES=ON"
         )
         if [ "${{ matrix.build_type }}" = "Debug" ]; then
-          CMAKE_ARGS+=("-DCI_FORCE_DEBUG_SPDLOG_WARN=ON" "-DVISTA_SDK_CPP_BUILD_DOCS=OFF")
+          CMAKE_ARGS+=("-DCI_FORCE_DEBUG_SPDLOG_WARN=ON" "-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=OFF")
         fi
         if [ "${{ matrix.build_type }}" = "Release" ]; then
-          CMAKE_ARGS+=("-DVISTA_SDK_CPP_BUILD_DOCS=ON")
+          CMAKE_ARGS+=("-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=ON")
         fi
         echo "CMake arguments: ${CMAKE_ARGS[@]}"
         cmake "${CMAKE_ARGS[@]}"
@@ -186,35 +179,6 @@ jobs:
     - name: Show ccache statistics after build
       shell: bash
       run: ccache -s
-
-    # --- List build directory ---
-    - name: List Build Directory Contents
-      if: runner.os == 'Windows'
-      working-directory: ${{ github.workspace }}/cpp/build
-      shell: pwsh
-      run: |
-       if (Test-Path bin) {
-         Write-Host "--- Contents of bin directory ---"
-         Get-ChildItem -Recurse bin | Select-Object FullName, Length
-         Write-Host "--- Tree view of bin directory ---"
-         cmd /c tree bin /F /A || Write-Host "tree command not available or bin is empty/not found"
-       } else {
-         Write-Host "bin directory not found in ${{ github.workspace }}/cpp/build"
-       }
-
-    - name: List Build Directory Contents
-      if: runner.os == 'Linux'
-      working-directory: ${{ github.workspace }}/cpp/build
-      shell: bash
-      run: |
-        if [ -d "bin" ]; then
-          echo "--- Contents of bin directory ---"
-          find bin -type f -printf "%p (%s bytes)\n"
-          echo "--- Tree view of bin directory ---"
-          tree bin || echo "tree command not available or bin is empty/not found"
-        else
-          echo "bin directory not found in ${{ github.workspace }}/cpp/build"
-        fi
 
     # --- Test Step ---
     - name: Run Tests
@@ -261,16 +225,15 @@ jobs:
     - name: Generate Doxygen Documentation
       if: matrix.build_type == 'Release'
       working-directory: ${{ github.workspace }}/cpp/build
-      shell: bash # Using bash for consistency, ls -R works on Windows via Git Bash
+      shell: bash
       run: |
         echo "Generating Doxygen documentation..."
         cmake --build . --target documentation --config ${{ matrix.build_type }}
         echo "Doxygen documentation generation complete."
-        echo "--- Contents of documentation output directory (expected in bin/${{ matrix.build_type }}/doc) ---"
         if [ -d "bin/${{ matrix.build_type }}/doc" ]; then
-          ls -R "bin/${{ matrix.build_type }}/doc"
+          echo "Documentation output directory bin/${{ matrix.build_type }}/doc found."
         else
-          echo "Documentation output directory not found: bin/${{ matrix.build_type }}/doc"
+          echo "WARNING: Documentation output directory not found: bin/${{ matrix.build_type }}/doc"
         fi
 
     # --- Upload Artifacts ---

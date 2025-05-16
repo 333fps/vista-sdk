@@ -1,8 +1,3 @@
-using System.Diagnostics;
-using FluentAssertions;
-using Vista.SDK;
-using Vista.SDK.Internal;
-
 namespace Vista.SDK.Tests;
 
 public class GmodTests
@@ -46,10 +41,10 @@ public class GmodTests
         var gmod = vis.GetGmod(visVersion);
         Assert.NotNull(gmod);
 
-        GmodNode? minLengthNode = null;
+        GmodNode? minLengthLexiographicallyOrderedNode = null;
         int currentMinLength = int.MaxValue;
 
-        GmodNode? maxLengthNode = null;
+        GmodNode? maxLengthLexiographicallyOrderedNode = null;
         int currentMaxLength = 0;
         int nodeCount = 0;
 
@@ -59,36 +54,49 @@ public class GmodTests
             string code = node.Code;
             int len = code.Length;
 
-            if (minLengthNode is null || len < currentMinLength)
+            if (minLengthLexiographicallyOrderedNode is null || len < currentMinLength)
             {
                 currentMinLength = len;
-                minLengthNode = node;
+                minLengthLexiographicallyOrderedNode = node;
+            }
+            else if (len == currentMinLength)
+            {
+                if (
+                    minLengthLexiographicallyOrderedNode is not null
+                    && string.CompareOrdinal(code, minLengthLexiographicallyOrderedNode.Code) < 0
+                )
+                {
+                    minLengthLexiographicallyOrderedNode = node;
+                }
             }
 
-            if (maxLengthNode is null || len > currentMaxLength)
+            if (maxLengthLexiographicallyOrderedNode is null || len > currentMaxLength)
             {
                 currentMaxLength = len;
-                maxLengthNode = node;
+                maxLengthLexiographicallyOrderedNode = node;
             }
             else if (len == currentMaxLength)
             {
-                if (maxLengthNode is not null && string.CompareOrdinal(code, maxLengthNode.Code) > 0)
+                if (
+                    maxLengthLexiographicallyOrderedNode is not null
+                    && string.CompareOrdinal(code, maxLengthLexiographicallyOrderedNode.Code) > 0
+                )
                 {
-                    maxLengthNode = node;
+                    maxLengthLexiographicallyOrderedNode = node;
                 }
             }
         }
 
-        Assert.NotNull(minLengthNode);
-        Assert.NotNull(maxLengthNode);
+        Assert.NotNull(minLengthLexiographicallyOrderedNode);
+        Assert.NotNull(maxLengthLexiographicallyOrderedNode);
 
-        Assert.Equal(2, minLengthNode.Code.Length);
-        Assert.Equal("VE", minLengthNode.Code);
+        Assert.Equal(2, minLengthLexiographicallyOrderedNode.Code.Length);
+        Assert.Equal("VE", minLengthLexiographicallyOrderedNode.Code);
 
-        Assert.Equal(10, maxLengthNode.Code.Length);
+        Assert.Equal(10, maxLengthLexiographicallyOrderedNode.Code.Length);
         Assert.True(ExpectedMaxes.TryGetValue(visVersion, out var expectedValues));
 
-        Assert.Equal(expectedValues.Max, maxLengthNode.Code);
+        Assert.Equal(expectedValues.Max, maxLengthLexiographicallyOrderedNode.Code);
 
         Assert.Equal(expectedValues.Count, nodeCount);
     }

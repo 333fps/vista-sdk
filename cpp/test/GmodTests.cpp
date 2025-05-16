@@ -344,11 +344,15 @@ namespace dnv::vista::sdk::tests
 
 		TEST_P( GmodTests, Test_Gmod_Properties )
 		{
+			// This test ensures certain properties of the Gmod data
+			// that we make some design desicisions based on,
+			// i.e for hashing of the node code
+
 			auto visVersion = GetParam();
 			auto [vis, gmod] = visAndGmod( visVersion );
 
-			const GmodNode* minLengthNode = nullptr;
-			const GmodNode* maxLengthNode = nullptr;
+			const GmodNode* minLengthLexiographicallyOrderedNode = nullptr;
+			const GmodNode* maxLengthLexiographicallyOrderedNode = nullptr;
 			size_t currentMinLength = std::string::npos;
 			size_t currentMaxLength = 0;
 			int nodeCount = 0;
@@ -361,31 +365,46 @@ namespace dnv::vista::sdk::tests
 				const std::string& code = node.code();
 				size_t len = code.length();
 
-				if ( !minLengthNode || len < currentMinLength )
+				if ( !minLengthLexiographicallyOrderedNode || len < currentMinLength )
 				{
 					currentMinLength = len;
-					minLengthNode = &node;
+					minLengthLexiographicallyOrderedNode = &node;
 				}
-				if ( !maxLengthNode || len > currentMaxLength || ( len == currentMaxLength && node.code() > maxLengthNode->code() ) )
+				else if ( len == currentMinLength )
+				{
+					if ( minLengthLexiographicallyOrderedNode && code < minLengthLexiographicallyOrderedNode->code() )
+					{
+						minLengthLexiographicallyOrderedNode = &node;
+					}
+				}
+
+				if ( !maxLengthLexiographicallyOrderedNode || len > currentMaxLength )
 				{
 					currentMaxLength = len;
-					maxLengthNode = &node;
+					maxLengthLexiographicallyOrderedNode = &node;
+				}
+				else if ( len == currentMaxLength )
+				{
+					if ( maxLengthLexiographicallyOrderedNode && code > maxLengthLexiographicallyOrderedNode->code() )
+					{
+						maxLengthLexiographicallyOrderedNode = &node;
+					}
 				}
 			}
 
-			ASSERT_NE( minLengthNode, nullptr ) << "minLengthNode should not be null for " << VisVersionExtensions::toVersionString( visVersion );
-			ASSERT_NE( maxLengthNode, nullptr ) << "maxLengthNode should not be null for " << VisVersionExtensions::toVersionString( visVersion );
+			ASSERT_NE( minLengthLexiographicallyOrderedNode, nullptr ) << "minLengthNode should not be null for " << VisVersionExtensions::toVersionString( visVersion );
+			ASSERT_NE( maxLengthLexiographicallyOrderedNode, nullptr ) << "maxLengthNode should not be null for " << VisVersionExtensions::toVersionString( visVersion );
 
-			ASSERT_EQ( minLengthNode->code().length(), 2 ) << "Min code length mismatch for " << VisVersionExtensions::toVersionString( visVersion );
-			ASSERT_EQ( minLengthNode->code(), "VE" ) << "Min code value mismatch for " << VisVersionExtensions::toVersionString( visVersion );
+			ASSERT_EQ( minLengthLexiographicallyOrderedNode->code().length(), 2 ) << "Min code length mismatch for " << VisVersionExtensions::toVersionString( visVersion );
+			ASSERT_EQ( minLengthLexiographicallyOrderedNode->code(), "VE" ) << "Min code value mismatch for " << VisVersionExtensions::toVersionString( visVersion );
 
-			ASSERT_EQ( maxLengthNode->code().length(), 10 ) << "Max code length mismatch for " << VisVersionExtensions::toVersionString( visVersion );
+			ASSERT_EQ( maxLengthLexiographicallyOrderedNode->code().length(), 10 ) << "Max code length mismatch for " << VisVersionExtensions::toVersionString( visVersion );
 
 			auto expectedIt = expectedMaxes.find( visVersion );
 			ASSERT_NE( expectedIt, expectedMaxes.end() ) << "Expected values not found for GMOD version " << VisVersionExtensions::toVersionString( visVersion );
 			const auto& expectedValues = expectedIt->second;
 
-			ASSERT_EQ( maxLengthNode->code(), expectedValues.maxCode ) << "Max code value mismatch for " << VisVersionExtensions::toVersionString( visVersion );
+			ASSERT_EQ( maxLengthLexiographicallyOrderedNode->code(), expectedValues.maxCode ) << "Max code value mismatch for " << VisVersionExtensions::toVersionString( visVersion );
 			ASSERT_EQ( nodeCount, expectedValues.nodeCount ) << "Node count mismatch for " << VisVersionExtensions::toVersionString( visVersion );
 		}
 

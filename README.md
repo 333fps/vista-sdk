@@ -204,7 +204,7 @@ To build the C++ SDK, ensure you have a C++20 compliant compiler (e.g., MSVC, GC
     You can specify various options using `-D<OPTION>=<VALUE>`:
     *   `VISTA_SDK_CPP_BUILD_TESTS=ON` (Build unit tests, default is `ON`)
     *   `VISTA_SDK_CPP_BUILD_SAMPLES=ON` (Build sample applications, default is `ON`)
-    *   `VISTA_SDK_CPP_BUILD_DOCS=ON` (Build Doxygen documentation, default is `OFF`. Requires Doxygen and Graphviz.)
+    *   `VISTA_SDK_CPP_BUILD_DOCUMENTATION=ON` (Build Doxygen documentation, default is `OFF`. Requires Doxygen and Graphviz.)
     *   `CMAKE_BUILD_TYPE=Release` (Or `Debug`, `RelWithDebInfo`, etc.)
 
     Example configuration (e.g., for Ninja, adjust generator as needed):
@@ -244,4 +244,4 @@ Example of including headers:
 ```
 
 #### Documentation
-If `VISTA_SDK_CPP_BUILD_DOCS` is enabled during the CMake configuration (and Doxygen/Graphviz are installed), HTML documentation will be generated, typically in the build directory.
+If `VISTA_SDK_CPP_BUILD_DOCUMENTATION` is enabled during the CMake configuration (and Doxygen/Graphviz are installed), HTML documentation will be generated, typically in the build directory.

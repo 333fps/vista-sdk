@@ -52,7 +52,8 @@ if(Doxygen_FOUND)
     set (	DOXYGEN_SHOW_NAMESPACES			"YES"						)
 
     # --- Warnings ---
-    set (	DOXYGEN_QUIET					"NO"						)
+    set (	DOXYGEN_QUIET					"YES"						)
+    set (	DOXYGEN_WARNINGS				"YES"						)
     set (	DOXYGEN_WARN_IF_UNDOCUMENTED	"YES"						)
 
     # --- Input ---
