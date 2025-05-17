@@ -1,18 +1,17 @@
 /**
- * @file GmodNode.h
- * @brief Generic Model (GMOD) node and metadata classes.
- * @details This file defines the GmodNode and GmodNodeMetadata classes which represent
- *          the fundamental building blocks of the Generic Product Model as defined in
- *          ISO 19848. These classes provide the node structure, relationships, and
- *          type classification used throughout the VISTA SDK.
- * @see ISO 19848 - Ships and marine technology - Standard data for shipboard machinery and equipment
+ * @file GmodVersioning.h
+ * @brief Defines the GmodVersioning class for converting GMOD entities between VIS versions.
+ * @details This file contains the declaration of the GmodVersioning class, which is responsible
+ *          for applying versioning rules to Generic Product Model (GMOD) nodes, paths, and
+ *          LocalIds to transform them from one Vessel Information Structure (VIS) version
+ *          to another. It uses GMOD versioning data (typically from JSON files) to perform
+ *          these conversions.
  */
 
 #pragma once
 
 #include "GmodVersioningDto.h"
-#include "dnv/vista/sdk/GmodPath.h"
-
+#include "GmodPath.h"
 #include "LocalId.h"
 
 namespace dnv::vista::sdk
@@ -149,7 +148,7 @@ namespace dnv::vista::sdk
 				const std::unordered_map<std::string, GmodNodeConversionDto>& dto );
 
 			/** @brief Default constructor. */
-			GmodVersioningNode() = delete;
+			GmodVersioningNode() = default;
 
 			/** @brief Copy constructor */
 			GmodVersioningNode( const GmodVersioningNode& ) = default;
@@ -165,7 +164,7 @@ namespace dnv::vista::sdk
 			//----------------------------------------------
 
 			/** @brief Copy assignment operator */
-			GmodVersioningNode& operator=( const GmodVersioningNode& ) = delete;
+			GmodVersioningNode& operator=( const GmodVersioningNode& ) = default;
 
 			/** @brief Move assignment operator */
 			GmodVersioningNode& operator=( GmodVersioningNode&& ) noexcept = delete;
@@ -211,8 +210,8 @@ namespace dnv::vista::sdk
 		/**
 		 * @brief Try to get a versioning node for a specific VIS version
 		 */
-		[[nodiscard]] const GmodVersioningNode* tryGetVersioningNode( VisVersion visVersion ) const noexcept;
-
+		[[nodiscard]] bool tryGetVersioningNode( VisVersion visVersion, GmodVersioningNode& versioningNode ) const;
+		[[nodiscard]] const GmodVersioning::GmodVersioningNode* tryGetVersioningNode( VisVersion visVersion ) const noexcept;
 		//----------------------------------------------
 		// Private Validation Methods
 		//----------------------------------------------

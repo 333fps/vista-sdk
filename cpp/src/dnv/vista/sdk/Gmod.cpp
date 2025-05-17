@@ -269,6 +269,7 @@ namespace dnv::vista::sdk
 			}
 
 			SPDLOG_INFO( "TryGetNode: Node '{}' found in GMOD", code );
+
 			return true;
 		}
 		catch ( [[maybe_unused]] const std::exception& ex )

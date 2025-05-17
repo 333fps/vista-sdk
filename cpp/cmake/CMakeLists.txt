@@ -1,17 +1,16 @@
 # ==============================================================================
-# VISTA-SDK-CPP - C++ Library CMake Configuration
+# VISTA-SDK-CPP - C++ library CMake configuration
 # ==============================================================================
 
 cmake_minimum_required(VERSION 3.20)
 
-# --- Project Setup ---
+# --- Project cetup ---
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# --- Dependencies ---
-# --- nlohmann/json (Header-only, manual download) ---
+# --- Header-only dependencies ---
 set(NLOHMANN_JSON_VERSION "v3.12.0")
 set(NLOHMANN_JSON_URL "https://github.com/nlohmann/json/releases/download/${NLOHMANN_JSON_VERSION}/json.hpp")
 set(NLOHMANN_JSON_INCLUDE_DIR "${CMAKE_BINARY_DIR}/_deps/nlohmann_json-include")
@@ -37,7 +36,7 @@ add_library(nlohmann_json INTERFACE)
 target_include_directories(nlohmann_json INTERFACE ${NLOHMANN_JSON_INCLUDE_DIR})
 add_library(nlohmann_json::nlohmann_json ALIAS nlohmann_json)
 
-# --- FetchContent Dependencies ---
+# --- FetchContent dependencies ---
 include(FetchContent)
 
 FetchContent_Declare(
@@ -79,20 +78,20 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt spdlog zlib cpuid googletest)
 
-# --- Build Options ---
+# --- Build options ---
 option(VISTA_SDK_CPP_BUILD_TESTS           "Build tests"                                               ON     )
 option(VISTA_SDK_CPP_COPY_RESOURCES        "Copy resources to build directory"                         ON     )
 option(VISTA_SDK_CPP_BUILD_SAMPLES         "Build vista-sdk-cpp samples"                               OFF    )
-option(VISTA_SDK_CPP_BUILD_DOCUMENTATION   "Build vista-sdk-cpp doxygen documentation"                 ON     )
+option(VISTA_SDK_CPP_BUILD_DOCUMENTATION   "Build vista-sdk-cpp doxygen documentation"                 OFF    )
 option(CI_FORCE_DEBUG_SPDLOG_WARN          "For CI Debug builds, force SPDLOG_ACTIVE_LEVEL to WARN"    OFF    )
 
-# --- Platform Specific Settings ---
+# --- Platform specific settings ---
 if(MSVC)
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 	set(BUILD_SHARED_LIBS TRUE)
 endif()
 
-# --- Ccache Setup ---
+# --- Ccache setup ---
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
 	message(STATUS "Found ccache: ${CCACHE_PROGRAM}")
@@ -109,14 +108,14 @@ else()
 	message(STATUS "ccache not found - normal compilation will be used")
 endif()
 
-# --- Output Directories ---
+# --- Output directories ---
 set(VISTA_SDK_CPP_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
 set(VISTA_SDK_CPP_DOC_DIR ${CMAKE_BINARY_DIR}/doc)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${VISTA_SDK_CPP_BIN_DIR}/$<CONFIG>)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VISTA_SDK_CPP_BIN_DIR}/$<CONFIG>)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${VISTA_SDK_CPP_BIN_DIR}/$<CONFIG>)
 
-# --- Compiler Settings ---
+# --- Compiler settings ---
 include(CheckCXXSourceCompiles)
 
 if(MSVC)
@@ -174,7 +173,7 @@ else() # GCC / Clang
 	endif()
 endif()
 
-# --- Copy Resources (Build Time) ---
+# --- Copy resources at build time ---
 if(VISTA_SDK_CPP_COPY_RESOURCES)
 	if(EXISTS ${VISTA_SDK_RESOURCE_DIR})
 		set(VISTA_SDK_CPP_RESOURCE_OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/resources)
@@ -193,10 +192,10 @@ else()
 	message(STATUS "Skipping resource copy based on VISTA_SDK_CPP_COPY_RESOURCES option.")
 endif()
 
-# --- Source Files ---
+# --- source files ---
 include(Sources.cmake)
 
-# --- Library Definition ---
+# --- Library definition ---
 add_library(${PROJECT_NAME} SHARED)
 
 target_sources(${PROJECT_NAME}
@@ -226,22 +225,22 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 	$<$<AND:$<CONFIG:Debug>,$<BOOL:${CI_FORCE_DEBUG_SPDLOG_WARN}>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_WARN>
 )
 
-# --- Samples Subdirectory ---
+# --- Samples subdirectory ---
 if(VISTA_SDK_CPP_BUILD_SAMPLES)
 	#add_subdirectory(${VISTA_SDK_CPP_SAMPLES_DIR} samples)
 endif()
 
-# --- Tests Subdirectory ---
+# --- Tests subdirectory ---
 if(VISTA_SDK_CPP_BUILD_TESTS)
 	add_subdirectory(${VISTA_SDK_CPP_TEST_DIR} test)
 endif()
 
-# --- Doxygen Documentation Subdirectory ---
+# --- Doxygen documentation subdirectory ---
 if(VISTA_SDK_CPP_BUILD_DOCUMENTATION)
 	add_subdirectory(${VISTA_SDK_CPP_DOCUMENTATION_DIR} doc)
 endif()
 
-# --- C++ Library Configuration Summary ---
+# --- C++ library configuration summary ---
 get_directory_property(COMPILE_OPTIONS COMPILE_OPTIONS)
 get_directory_property(COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
 get_directory_property(LINK_OPTIONS LINK_OPTIONS)
@@ -249,7 +248,7 @@ string(REPLACE ";" " " FORMATTED_COMPILE_OPTIONS "${COMPILE_OPTIONS}")
 string(REPLACE ";" " " FORMATTED_COMPILE_DEFINITIONS "${COMPILE_DEFINITIONS}")
 string(REPLACE ";" " " FORMATTED_LINK_OPTIONS "${LINK_OPTIONS}")
 
-message(STATUS "========== VISTA SDK C++ Library Configuration ==========")
+message(STATUS "========== VISTA SDK C++ library configuration ==========")
 message(STATUS "Project:                 ${PROJECT_NAME} ${PROJECT_VERSION}")
 message(STATUS "Description:             ${PROJECT_DESCRIPTION}")
 message(STATUS "Top-Level Source Dir:    ${CMAKE_SOURCE_DIR}")

@@ -71,3 +71,4 @@ build/
 # Docs directories
 docs/
 
+.github/workflows/build-cpp.yml

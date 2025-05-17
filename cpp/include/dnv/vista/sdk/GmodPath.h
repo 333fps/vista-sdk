@@ -92,8 +92,8 @@ namespace dnv::vista::sdk
 		[[nodiscard]] static bool tryParseFullPath( std::string_view pathString, VisVersion visVersion, std::optional<GmodPath>& outPath );
 		[[nodiscard]] static bool tryParseFullPath( std::string_view pathString, const Gmod& gmod, const Locations& locations, std::optional<GmodPath>& outPath );
 
-		[[nodiscard]] Enumerator enumerator() const;
-		[[nodiscard]] Enumerator enumerator( size_t fromDepth ) const;
+		[[nodiscard]] Enumerator fullPath() const;
+		[[nodiscard]] Enumerator fullPathFrom( size_t fromDepth ) const;
 
 		class Enumerator final
 		{
@@ -105,11 +105,26 @@ namespace dnv::vista::sdk
 			Enumerator( const GmodPath* pathInst, size_t startIndex = std::numeric_limits<size_t>::max() );
 
 		public:
+			using iterator_category = std::input_iterator_tag;
+			using value_type = std::pair<size_t, GmodNode*>;
+			using difference_type = std::ptrdiff_t;
+			using pointer = const value_type*;
+			using reference = const value_type&;
+
+			bool operator!=( const Enumerator& other ) const;
+			bool operator==( const Enumerator& other ) const;
+
+			value_type operator*() const;
+			Enumerator& operator++();
+
 			Enumerator() = delete;
-			Enumerator( const Enumerator& ) = default;
+			Enumerator( const Enumerator& );
 			Enumerator( Enumerator&& ) noexcept = default;
 			Enumerator& operator=( const Enumerator& ) = default;
 			Enumerator& operator=( Enumerator&& ) noexcept = default;
+
+			Enumerator& begin();
+			Enumerator end() const;
 
 			[[nodiscard]] GmodNode* current() const;
 			bool next();

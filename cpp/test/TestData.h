@@ -11,33 +11,34 @@ namespace dnv::vista::sdk
 	{
 		static const nlohmann::json& testData( const char* testDataPath )
 		{
-			static nlohmann::json data;
-			static bool loaded = false;
-			if ( !loaded )
-			{
-				std::string jsonFilePath = testDataPath;
+			static std::map<std::string, nlohmann::json> cache;
+			std::string pathStr = testDataPath;
 
-				std::ifstream jsonFile( jsonFilePath );
+			auto it = cache.find( pathStr );
+			if ( it == cache.end() )
+			{
+				std::ifstream jsonFile( pathStr );
 				if ( !jsonFile.is_open() )
 				{
-					throw std::runtime_error( "Failed to open global test data file: " + jsonFilePath );
+					throw std::runtime_error( "Failed to open test data file: " + pathStr );
 				}
 				try
 				{
+					nlohmann::json data;
 					jsonFile >> data;
-					loaded = true;
+					auto [inserted_it, success] = cache.emplace( pathStr, std::move( data ) );
+					it = inserted_it;
 				}
-				catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
+				catch ( const nlohmann::json::parse_error& ex )
 				{
-					std::string errMsg = "JSON parse error in '" + jsonFilePath +
+					std::string errMsg = "JSON parse error in '" + pathStr +
 										 "'. Type: " + std::to_string( ex.id ) +
 										 ", Byte: " + std::to_string( ex.byte ) +
 										 ". Original what() likely too long.";
 					throw std::runtime_error( errMsg );
 				}
 			}
-
-			return data;
+			return it->second;
 		}
 	}
 }

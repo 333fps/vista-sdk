@@ -26,15 +26,15 @@ namespace dnv::vista::sdk
 		switch ( version )
 		{
 			case VisVersion::v3_4a:
-				return "3-4a";
+				return "vis-3-4a";
 			case VisVersion::v3_5a:
-				return "3-5a";
+				return "vis-3-5a";
 			case VisVersion::v3_6a:
-				return "3-6a";
+				return "vis-3-6a";
 			case VisVersion::v3_7a:
-				return "3-7a";
+				return "vis-3-7a";
 			case VisVersion::v3_8a:
-				return "3-8a";
+				return "vis-3-8a";
 			case VisVersion::Unknown:
 				return "Unknown";
 			default:
@@ -61,16 +61,21 @@ namespace dnv::vista::sdk
 			{ "3-7a", VisVersion::v3_7a },
 			{ "3-8a", VisVersion::v3_8a } };
 
-		auto it{ versionMap.find( versionString ) };
+		std::string normalizedVersion = versionString;
+
+		if ( normalizedVersion.rfind( "vis-", 0 ) == 0 )
+		{
+			normalizedVersion = normalizedVersion.substr( 4 );
+		}
+
+		auto it = versionMap.find( normalizedVersion );
 		if ( it != versionMap.end() )
 		{
 			version = it->second;
 			return true;
 		}
 
-		std::string normalizedVersion = versionString;
 		std::replace( normalizedVersion.begin(), normalizedVersion.end(), '-', '.' );
-
 		if ( normalizedVersion != versionString )
 		{
 			return tryParse( normalizedVersion, version );

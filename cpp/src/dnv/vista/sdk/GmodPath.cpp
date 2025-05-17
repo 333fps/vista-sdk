@@ -292,9 +292,17 @@ namespace dnv::vista::sdk
 												  ? finalPathParents[0]->parents()[0]
 												  : ( !finalEndNode->parents().empty() && finalEndNode->parents().size() == 1 ? finalEndNode->parents()[0] : nullptr );
 
+			if ( !currentAncestor || currentAncestor->parents().size() > 1 )
+			{
+				SPDLOG_WARN( "parseInternalTraversalHandler: Path does not have a clear single-parent lineage to root. Stopping." );
+
+				return TraversalHandlerResult::Stop;
+			}
+
 			if ( currentAncestor && currentAncestor->parents().size() > 1 && currentAncestor != &context.gmod.rootNode() )
 			{
 				SPDLOG_WARN( "parseInternalTraversalHandler: Path does not extend cleanly to a single-parent root before GMOD root. Stopping." );
+
 				return TraversalHandlerResult::Stop;
 			}
 
@@ -326,9 +334,11 @@ namespace dnv::vista::sdk
 				if ( currentAncestor && currentAncestor->parents().size() > 1 && currentAncestor != &context.gmod.rootNode() )
 				{
 					SPDLOG_WARN( "parseInternalTraversalHandler: Encountered multi-parent ancestor {} before GMOD root during prepend. Stopping.", currentAncestor->code().data() );
+
 					return TraversalHandlerResult::Stop;
 				}
 			}
+
 			std::reverse( prependedNodes.begin(), prependedNodes.end() );
 			finalPathParents.insert( finalPathParents.begin(), prependedNodes.begin(), prependedNodes.end() );
 
@@ -509,7 +519,7 @@ namespace dnv::vista::sdk
 			throw;
 		}
 
-		SPDLOG_INFO( "GmodPath constructed successfully for node: {}.", m_node->code() );
+		SPDLOG_DEBUG( "GmodPath constructed successfully for node: {}.", m_node->code() );
 	}
 
 	GmodPath::GmodPath()
@@ -639,13 +649,15 @@ namespace dnv::vista::sdk
 		if ( this == &other )
 		{
 			SPDLOG_DEBUG( "GmodPath::operator==: Same instance, returning true." );
+
 			return true;
 		}
 
-		if ( m_gmod != other.m_gmod )
+		if ( m_parents.size() != other.m_parents.size() )
 		{
-			SPDLOG_DEBUG( "GmodPath::operator==: Different Gmod instances, returning false. m_gmod: {}, other.m_gmod: {}",
-				fmt::ptr( m_gmod ), fmt::ptr( other.m_gmod ) );
+			SPDLOG_DEBUG( "GmodPath::operator==: Different parent counts ({} vs {}), returning false.",
+				m_parents.size(), other.m_parents.size() );
+
 			return false;
 		}
 
@@ -653,37 +665,112 @@ namespace dnv::vista::sdk
 		{
 			SPDLOG_DEBUG( "GmodPath::operator==: Different VisVersions ({} vs {}), returning false.",
 				static_cast<int>( m_visVersion ), static_cast<int>( other.m_visVersion ) );
+
 			return false;
 		}
 
-		if ( m_parents.size() != other.m_parents.size() )
-		{
-			SPDLOG_DEBUG( "GmodPath::operator==: Different parent counts ({} vs {}), returning false.",
-				m_parents.size(), other.m_parents.size() );
-			return false;
-		}
-
+		/* Compare parents */
 		for ( size_t i = 0; i < m_parents.size(); ++i )
 		{
-			if ( m_parents[i] != other.m_parents[i] )
+			{ /* Null pointers */
+				if ( ( !m_parents[i] && other.m_parents[i] ) || ( m_parents[i] && !other.m_parents[i] ) )
+				{
+					SPDLOG_DEBUG( "GmodPath::operator==: One parent node is null at index {}, returning false.", i );
+
+					return false;
+				}
+
+				if ( !m_parents[i] && !other.m_parents[i] )
+				{
+					continue;
+				}
+			}
+
+			{ /* Compare codes */
+				if ( m_parents[i]->code() != other.m_parents[i]->code() )
+				{
+					SPDLOG_DEBUG( "GmodPath::operator==: Different parent codes at index {} ({} vs {}), returning false.",
+						i, std::string( m_parents[i]->code() ), std::string( other.m_parents[i]->code() ) );
+
+					return false;
+				}
+			}
+
+			{ /* Compare locations */
+				bool thisHasLocation = m_parents[i]->location().has_value();
+				bool otherHasLocation = other.m_parents[i]->location().has_value();
+
+				if ( thisHasLocation != otherHasLocation )
+				{
+					SPDLOG_DEBUG( "GmodPath::operator==: Location presence mismatch for parent at index {} ({} vs {}), returning false.",
+						i, thisHasLocation, otherHasLocation );
+
+					return false;
+				}
+
+				if ( thisHasLocation && otherHasLocation &&
+					 m_parents[i]->location().value() != other.m_parents[i]->location().value() )
+				{
+					SPDLOG_DEBUG( "GmodPath::operator==: Different parent locations at index {} ({} vs {}), returning false.",
+						i, m_parents[i]->location().value().toString(), other.m_parents[i]->location().value().toString() );
+
+					return false;
+				}
+			}
+		}
+
+		{ /* Null target nodes */
+			if ( ( !m_node && other.m_node ) || ( m_node && !other.m_node ) )
 			{
-				SPDLOG_DEBUG( "GmodPath::operator==: Different parent node at index {} ({} vs {}), returning false.",
-					i,
-					( m_parents[i] ? std::string( m_parents[i]->code() ) : "null" ),
-					( other.m_parents[i] ? std::string( other.m_parents[i]->code() ) : "null" ) );
+				SPDLOG_DEBUG( "GmodPath::operator==: One target node is null while the other is not, returning false." );
+
+				return false;
+			}
+
+			if ( !m_node && !other.m_node )
+			{
+				SPDLOG_DEBUG( "GmodPath::operator==: Both target nodes are null, paths are considered equal." );
+
+				return true;
+			}
+		}
+
+		{ /* Target node code */
+
+			if ( m_node->code() != other.m_node->code() )
+			{
+				SPDLOG_DEBUG( "GmodPath::operator==: Different target node codes ({} vs {}), returning false.",
+					std::string( m_node->code() ), std::string( other.m_node->code() ) );
+
 				return false;
 			}
 		}
 
-		if ( m_node != other.m_node )
-		{
-			SPDLOG_DEBUG( "GmodPath::operator==: Different final nodes ({} vs {}), returning false.",
-				( m_node ? std::string( m_node->code() ) : "null" ),
-				( other.m_node ? std::string( other.m_node->code() ) : "null" ) );
-			return false;
+		{ /* Target node location */
+
+			bool thisHasLocation = m_node->location().has_value();
+			bool otherHasLocation = other.m_node->location().has_value();
+
+			if ( thisHasLocation != otherHasLocation )
+			{
+				SPDLOG_DEBUG( "GmodPath::operator==: Location presence mismatch for target node ({} vs {}), returning false.",
+					thisHasLocation, otherHasLocation );
+
+				return false;
+			}
+
+			if ( thisHasLocation && otherHasLocation &&
+				 m_node->location().value() != other.m_node->location().value() )
+			{
+				SPDLOG_DEBUG( "GmodPath::operator==: Different target node locations ({} vs {}), returning false.",
+					m_node->location().value().toString(), other.m_node->location().value().toString() );
+
+				return false;
+			}
 		}
 
-		SPDLOG_DEBUG( "GmodPath::operator==: Paths are equal, returning true." );
+		SPDLOG_DEBUG( "GmodPath::operator==: Paths are equal by value comparison, returning true." );
+
 		return true;
 	}
 
@@ -815,7 +902,7 @@ namespace dnv::vista::sdk
 
 		if ( parents.empty() )
 		{
-			SPDLOG_DEBUG( "GmodPath::isValid OL2: parents is empty, returning false." );
+			SPDLOG_WARN( "GmodPath::isValid OL2: parents is empty, returning false." );
 			return false;
 		}
 
@@ -829,7 +916,7 @@ namespace dnv::vista::sdk
 
 		if ( !firstParent->isRoot() )
 		{
-			SPDLOG_DEBUG( "GmodPath::isValid OL2: First parent (code: {}) is not root, returning false.", firstParent->code().data() );
+			SPDLOG_WARN( "GmodPath::isValid OL2: First parent (code: {}) is not root, returning false.", firstParent->code().data() );
 
 			missingLinkAt = std::numeric_limits<size_t>::max();
 			return false;
@@ -863,7 +950,7 @@ namespace dnv::vista::sdk
 
 			if ( !currentParentNode->isChild( *childNodeToCheck ) )
 			{
-				SPDLOG_DEBUG( "GmodPath::isValid OL2: Node '{}' is not a child of '{}' (parent at index {}). Returning false.",
+				SPDLOG_WARN( "GmodPath::isValid OL2: Node '{}' is not a child of '{}' (parent at index {}). Returning false.",
 					childNodeToCheck->code().data(), currentParentNode->code().data(), i );
 				missingLinkAt = i;
 				return false;
@@ -1245,13 +1332,18 @@ namespace dnv::vista::sdk
 			if ( !parentNode )
 			{
 				SPDLOG_WARN( "GmodPath::toString(builder): Encountered null parent node, skipping." );
-
 				continue;
 			}
+
+			if ( m_gmod && parentNode == &m_gmod->rootNode() )
+			{
+				SPDLOG_TRACE( "GmodPath::toString(builder): Parent node '{}' is the GMOD root, skipping.", parentNode->code() );
+				continue;
+			}
+
 			if ( !Gmod::isLeafNode( parentNode->metadata() ) )
 			{
 				SPDLOG_TRACE( "GmodPath::toString(builder): Parent node '{}' is not a leaf node, skipping.", parentNode->code() );
-
 				continue;
 			}
 
@@ -1300,7 +1392,7 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_TRACE( "GmodPath::toStringDump(builder) called. Initial stream pos: {}", builder.tellp() );
 
-		Enumerator iter = enumerator();
+		Enumerator iter = fullPath();
 		bool firstItemPrinted = false;
 
 		while ( iter.next() )
@@ -1376,36 +1468,34 @@ namespace dnv::vista::sdk
 	{
 		SPDLOG_TRACE( "GmodPath::toFullPathString(std::stringstream& builder) called. Initial stream pos: {}", builder.tellp() );
 
-		if ( length() == 0 && m_node == nullptr )
+		size_t totalLength = length();
+		if ( totalLength == 0 && m_node == nullptr )
 		{
 			SPDLOG_DEBUG( "GmodPath::toFullPathString(builder): Path is effectively empty, doing nothing." );
 			return;
 		}
 
-		Enumerator iter = enumerator();
-		size_t pathTotalLength = length();
-
-		while ( iter.next() )
+		for ( const auto& pair : fullPath() )
 		{
-			GmodNode* currentNode = iter.current();
-			size_t currentNodeDepth = iter.m_currentIndex;
+			size_t currentDepth = pair.first;
+			const GmodNode* pathNode = pair.second;
 
-			if ( !currentNode )
+			if ( !pathNode )
 			{
-				SPDLOG_WARN( "GmodPath::toFullPathString(builder): Enumerator returned null node at depth {}, skipping.", currentNodeDepth );
+				SPDLOG_WARN( "GmodPath::toFullPathString(builder): Encountered null node at depth {}.", currentDepth );
 				continue;
 			}
 
-			currentNode->toString( builder );
-			SPDLOG_TRACE( "GmodPath::toFullPathString(builder): Appended node '{}' (depth {}).", currentNode->code(), currentNodeDepth );
+			pathNode->toString( builder );
+			SPDLOG_TRACE( "GmodPath::toFullPathString(builder): Appended node '{}' (depth {}).", pathNode->code(), currentDepth );
 
-			if ( currentNodeDepth < pathTotalLength - 1 )
+			if ( currentDepth < totalLength - 1 )
 			{
 				builder.put( '/' );
-				SPDLOG_TRACE( "GmodPath::toFullPathString(builder): Appended separator after depth {}.", currentNodeDepth );
+				SPDLOG_TRACE( "GmodPath::toFullPathString(builder): Appended separator after depth {}.", currentDepth );
 			}
 		}
-		SPDLOG_DEBUG( "GmodPath::toFullPathString(builder) finished. Final stream pos: {}", builder.tellp() );
+		SPDLOG_DEBUG( "GmodPath::toFullPathString(builder) finished. Final stream pos: {}", builder.str() );
 	}
 
 	GmodPath GmodPath::withoutLocations() const
@@ -1548,7 +1638,7 @@ namespace dnv::vista::sdk
 
 		if ( !result )
 		{
-			SPDLOG_CRITICAL( "GmodPath::parse: parseInternal returned nullptr for pathString '{}'.", pathString );
+			SPDLOG_DEBUG( "GmodPath::parse: parseInternal returned nullptr for pathString '{}'.", pathString );
 			throw std::runtime_error( fmt::format( "GmodPath::parse: parseInternal returned nullptr for pathString '{}'.", std::string( pathString ) ) );
 		}
 
@@ -1564,7 +1654,7 @@ namespace dnv::vista::sdk
 		}
 		else
 		{
-			SPDLOG_CRITICAL( "GmodPath::parse: Unexpected result type from parseInternal for pathString '{}'.", pathString );
+			SPDLOG_DEBUG( "GmodPath::parse: Unexpected result type from parseInternal for pathString '{}'.", pathString );
 			throw std::runtime_error( fmt::format( "GmodPath::parse: Unexpected result type from parseInternal for pathString '{}'.", std::string( pathString ) ) );
 		}
 	}
@@ -1591,7 +1681,7 @@ namespace dnv::vista::sdk
 				outPath.emplace( std::move( okResult->m_path ) );
 				return true;
 			}
-			else if ( auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() ) )
+			else if ( [[maybe_unused]] auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() ) )
 			{
 				SPDLOG_WARN( "GmodPath::tryParse: Error parsing pathString '{}': {}", pathString, errResult->error );
 				return false;
@@ -1624,7 +1714,7 @@ namespace dnv::vista::sdk
 
 		if ( !result )
 		{
-			SPDLOG_CRITICAL( "GmodPath::parseFullPath: parseFullPathInternal returned nullptr for pathString '{}'.", pathString );
+			SPDLOG_DEBUG( "GmodPath::parseFullPath: parseFullPathInternal returned nullptr for pathString '{}'.", pathString );
 			throw std::runtime_error( fmt::format( "GmodPath::parseFullPath: parseFullPathInternal returned nullptr for pathString '{}'.", std::string( pathString ) ) );
 		}
 
@@ -1633,14 +1723,14 @@ namespace dnv::vista::sdk
 			SPDLOG_DEBUG( "GmodPath::parseFullPath: Successfully parsed pathString '{}'.", pathString );
 			return std::move( okResult->m_path );
 		}
-		else if ( auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() ) )
+		else if ( [[maybe_unused]] auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() ) )
 		{
 			SPDLOG_ERROR( "GmodPath::parseFullPath: Error parsing pathString '{}': {}", pathString, errResult->error );
 			throw std::invalid_argument( errResult->error );
 		}
 		else
 		{
-			SPDLOG_CRITICAL( "GmodPath::parseFullPath: Unexpected result type from parseFullPathInternal for pathString '{}'.", pathString );
+			SPDLOG_DEBUG( "GmodPath::parseFullPath: Unexpected result type from parseFullPathInternal for pathString '{}'.", pathString );
 			throw std::runtime_error( fmt::format( "GmodPath::parseFullPath: Unexpected result type from parseFullPathInternal for pathString '{}'.", std::string( pathString ) ) );
 		}
 	}
@@ -1671,7 +1761,7 @@ namespace dnv::vista::sdk
 				outPath.emplace( std::move( okResult->m_path ) );
 				return true;
 			}
-			else if ( auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() ) )
+			else if ( [[maybe_unused]] auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() ) )
 			{
 				SPDLOG_WARN( "GmodPath::tryParseFullPath: Error parsing pathString '{}': {}", pathString, errResult->error );
 				return false;
@@ -1726,7 +1816,7 @@ namespace dnv::vista::sdk
 				outPath.emplace( std::move( okResult->m_path ) );
 				return true;
 			}
-			else if ( auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() ) )
+			else if ( [[maybe_unused]] auto* errResult = dynamic_cast<GmodParsePathResult::Err*>( result.get() ) )
 			{
 				SPDLOG_WARN( "GmodPath::tryParseFullPath: Error parsing pathString '{}': {}", pathString, errResult->error );
 				return false;
@@ -1749,17 +1839,13 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	GmodPath::Enumerator GmodPath::enumerator() const
+	GmodPath::Enumerator GmodPath::fullPath() const
 	{
-		SPDLOG_TRACE( "GmodPath::enumerator() const (default) called." );
-
-		return Enumerator( this );
+		return Enumerator( this, 0 );
 	}
 
-	GmodPath::Enumerator GmodPath::enumerator( size_t fromDepth ) const
+	GmodPath::Enumerator GmodPath::fullPathFrom( size_t fromDepth ) const
 	{
-		SPDLOG_TRACE( "GmodPath::enumerator(fromDepth: {}) const called.", fromDepth );
-
 		return Enumerator( this, fromDepth );
 	}
 
@@ -1880,7 +1966,6 @@ namespace dnv::vista::sdk
 
 		if ( context.resultingPath.has_value() )
 		{
-
 			SPDLOG_INFO( "GmodPath::parseInternal: Path parsing successful for item '{}'.", item.data() );
 			return std::make_unique<GmodParsePathResult::Ok>( std::move( context.resultingPath.value() ) );
 		}
@@ -2144,7 +2229,7 @@ namespace dnv::vista::sdk
 			{
 				if ( !expectedLocationNode || nodeCheck.location() != expectedLocationNode->location() )
 				{
-					auto formatLocation = []( const std::optional<Location>& location ) -> std::string {
+					[[maybe_unused]] auto formatLocation = []( const std::optional<Location>& location ) -> std::string {
 						if ( location.has_value() )
 						{
 							return location.value().toString();
@@ -2201,29 +2286,82 @@ namespace dnv::vista::sdk
 		SPDLOG_TRACE( "GmodPath::Enumerator constructor for path: {}, startIndex: {}", fmt::ptr( pathInst ), startIndex );
 		if ( !m_pathInstance )
 		{
-			SPDLOG_WARN( "GmodPath::Enumerator constructor: m_pathInstance is null. Initializing m_currentIndex to invalid/before-start state." );
-
-			m_currentIndex = static_cast<size_t>( -1 );
-
+			SPDLOG_WARN( "GmodPath::Enumerator constructor: m_pathInstance is null. Initializing m_currentIndex to 0 (as an end-like state for an empty range)." );
+			m_currentIndex = 0;
 			return;
 		}
 
-		if ( startIndex == std::numeric_limits<size_t>::max() || startIndex == static_cast<size_t>( -1 ) )
+		m_currentIndex = startIndex;
+		SPDLOG_DEBUG( "GmodPath::Enumerator constructed. m_pathInstance: {}, m_currentIndex: {}", fmt::ptr( m_pathInstance ), m_currentIndex );
+	}
+
+	bool GmodPath::Enumerator::operator!=( const GmodPath::Enumerator& other ) const
+	{
+		return m_pathInstance != other.m_pathInstance || m_currentIndex != other.m_currentIndex;
+	}
+
+	bool GmodPath::Enumerator::operator==( const GmodPath::Enumerator& other ) const
+	{
+		return m_pathInstance == other.m_pathInstance && m_currentIndex == other.m_currentIndex;
+	}
+
+	GmodPath::Enumerator::value_type GmodPath::Enumerator::operator*() const
+	{
+		SPDLOG_TRACE( "GmodPath::Enumerator::operator*() called. Current index: {}", m_currentIndex );
+		if ( !m_pathInstance )
 		{
-			m_currentIndex = static_cast<size_t>( -1 );
+			SPDLOG_ERROR( "GmodPath::Enumerator::operator*(): m_pathInstance is null." );
+			throw std::logic_error( "Dereferencing an enumerator with a null path instance." );
+		}
+		if ( m_currentIndex >= m_pathInstance->length() )
+		{
+			SPDLOG_ERROR( "GmodPath::Enumerator::operator*(): Index {} is out of bounds (or at end) for path length {}.", m_currentIndex, m_pathInstance->length() );
+			throw std::out_of_range( "Dereferencing GmodPath::Enumerator out of bounds or at end" );
+		}
+		GmodNode* node = ( *m_pathInstance )[m_currentIndex];
+		SPDLOG_DEBUG( "GmodPath::Enumerator::operator*(): Returning pair {{ {}, {} (code: {}) }}",
+			m_currentIndex, fmt::ptr( node ), ( node ? std::string( node->code() ) : "null" ) );
+		return { m_currentIndex, node };
+	}
+
+	GmodPath::Enumerator& GmodPath::Enumerator::operator++()
+	{
+		SPDLOG_TRACE( "GmodPath::Enumerator::operator++() called. Current index before increment: {}", m_currentIndex );
+		if ( m_pathInstance && m_currentIndex < m_pathInstance->length() )
+		{
+			m_currentIndex++;
+			SPDLOG_DEBUG( "GmodPath::Enumerator::operator++(): Incremented index to {}.", m_currentIndex );
+		}
+		else if ( m_pathInstance )
+		{
+			SPDLOG_TRACE( "GmodPath::Enumerator::operator++(): At or past end (index {}, length {}). No change beyond length.", m_currentIndex, m_pathInstance->length() );
 		}
 		else
 		{
-			if ( startIndex == 0 )
-			{
-				m_currentIndex = static_cast<size_t>( -1 );
-			}
-			else
-			{
-				m_currentIndex = startIndex - 1;
-			}
+			SPDLOG_WARN( "GmodPath::Enumerator::operator++(): m_pathInstance is null. No change." );
 		}
-		SPDLOG_DEBUG( "GmodPath::Enumerator constructed. m_pathInstance: {}, m_currentIndex: {}", fmt::ptr( m_pathInstance ), m_currentIndex );
+
+		return *this;
+	}
+
+	GmodPath::Enumerator::Enumerator( const Enumerator& other )
+		: m_pathInstance( other.m_pathInstance ), m_currentIndex( other.m_currentIndex )
+	{
+		SPDLOG_TRACE( "GmodPath::Enumerator copy constructor. Copied m_pathInstance: {}, m_currentIndex: {}", fmt::ptr( m_pathInstance ), m_currentIndex );
+	}
+
+	GmodPath::Enumerator& GmodPath::Enumerator::begin()
+	{
+		return *this;
+	}
+
+	GmodPath::Enumerator GmodPath::Enumerator::end() const
+	{
+		if ( m_pathInstance )
+		{
+			return Enumerator( m_pathInstance, m_pathInstance->length() );
+		}
+		return Enumerator( nullptr, 0 );
 	}
 
 	void GmodPath::Enumerator::reset()

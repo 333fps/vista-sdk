@@ -1,25 +1,25 @@
 # ==============================================================================
-# VISTA-SDK-CPP - Top-Level CMake Configuration
+# VISTA-SDK-CPP - Top-level CMake configuration
 # ==============================================================================
 
-# --- Project Definition ---
+# --- Project definition ---
 cmake_minimum_required(VERSION 3.20)
 
 project(vista-sdk-cpp
 	VERSION 0.1.0
-	DESCRIPTION "DNV VISTA SDK C++ Implementation"
+	DESCRIPTION "DNV VISTA SDK C++ implementation"
 	LANGUAGES CXX
 )
 
-# --- Testing Setup ---
-enable_testing()
-
-# --- Build Configuration ---
+# --- Build configuration ---
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 	message(FATAL_ERROR "In-source builds are not allowed. Please use a separate build directory.")
 endif()
 
-# --- Define Project Directories ---
+# --- Testing setup ---
+enable_testing()
+
+# --- Define project directories ---
 set(VISTA_SDK_CPP_INCLUDE_DIR         "${CMAKE_CURRENT_SOURCE_DIR}/cpp/include"  CACHE PATH "Path to the C++ SDK include directory")
 set(VISTA_SDK_CPP_SOURCE_DIR          "${CMAKE_CURRENT_SOURCE_DIR}/cpp/src"      CACHE PATH "Path to the C++ SDK source directory")
 set(VISTA_SDK_CPP_TEST_DIR            "${CMAKE_CURRENT_SOURCE_DIR}/cpp/test"     CACHE PATH "Path to the C++ SDK test directory")
@@ -28,10 +28,13 @@ set(VISTA_SDK_CPP_DOCUMENTATION_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/cpp/doc"     
 set(VISTA_SDK_RESOURCE_DIR            "${CMAKE_CURRENT_SOURCE_DIR}/resources"    CACHE PATH "Path to the SDK resources directory")
 set(VISTA_SDK_TEST_DATA_DIR           "${CMAKE_CURRENT_SOURCE_DIR}/testdata"     CACHE PATH "Path to the SDK test data directory")
 
-# --- Add Core C++ Library Subdirectory ---
+# --- Testing setup ---
+#enable_testing()
+
+# --- Add core C++ library subdirectory ---
 add_subdirectory(cpp/cmake)
 
-# --- Top-Level Configuration Summary ---
+# --- Top-level configuration summary ---
 message(STATUS "--- VISTA SDK Top-Level Configuration Summary ---")
 message(STATUS "Build Type               : ${CMAKE_BUILD_TYPE}")
 message(STATUS "Build Directory          : ${CMAKE_BINARY_DIR}")

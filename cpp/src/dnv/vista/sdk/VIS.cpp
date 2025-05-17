@@ -63,7 +63,7 @@ namespace dnv::vista::sdk
 
 	GmodVersioning VIS::gmodVersioning()
 	{
-		SPDLOG_INFO( "Getting GMOD versioning" );
+		SPDLOG_TRACE( "Getting GMOD versioning" );
 
 		return m_gmodVersioningCache.getOrCreate( VERSIONING, [this]() {
 			auto dto = gmodVersioningDto();
@@ -86,7 +86,7 @@ namespace dnv::vista::sdk
 										 std::to_string( static_cast<int>( visVersion ) ) );
 		}
 
-		SPDLOG_INFO( "Attempting to load GMOD for version: {}",
+		SPDLOG_DEBUG( "Attempting to load GMOD for version: {}",
 			VisVersionExtensions::toVersionString( visVersion ) );
 
 		return m_gmodCache.getOrCreate( visVersion, [this, visVersion]() {

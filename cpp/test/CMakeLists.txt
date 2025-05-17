@@ -1,5 +1,5 @@
 # ==============================================================================
-# VISTA-SDK-CPP - Test Suite CMake Configuration
+# VISTA-SDK-CPP - Test suite CMake configuration
 # ==============================================================================
 
 cmake_minimum_required(VERSION 3.20)
@@ -9,10 +9,10 @@ project(vista-sdk-cpp-tests
 	DESCRIPTION "DNV VISTA SDK C++ Tests"
 	LANGUAGES CXX)
 
-# --- GoogleTest Integration ---
+# --- GoogleTest integration ---
 include(GoogleTest)
 
-# --- Test Source Files ---
+# --- Test source files ---
 set(TEST_SOURCES
 	CodebookTests.cpp
 	CodebooksTests.cpp
@@ -25,7 +25,7 @@ set(TEST_SOURCES
 	LocationsTests.cpp
 )
 
-# --- Copy Test Data (Build Time) ---
+# --- Copy test data at build time ---
 if(EXISTS ${VISTA_SDK_TEST_DATA_DIR})
 	set(VISTA_SDK_CPP_TEST_DATA_OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/testdata)
 
@@ -43,7 +43,7 @@ else()
 	message(WARNING "Test data directory not found: ${VISTA_SDK_TEST_DATA_DIR}. Skipping test data copy.")
 endif()
 
-# --- Configure Test Executables ---
+# --- Configure test executables ---
 foreach(test_source ${TEST_SOURCES})
 	get_filename_component(test_target_name ${test_source} NAME_WE)
 
@@ -76,6 +76,10 @@ foreach(test_source ${TEST_SOURCES})
 		gtest_discover_tests(${test_target_name}
 			WORKING_DIRECTORY "$<TARGET_FILE_DIR:${test_target_name}>"
 			DISCOVERY_VERBOSE_OUTPUT TRUE
+			PROPERTIES
+				TIMEOUT 120
+				WILL_FAIL FALSE
+				OUTPUT_ON_FAILURE TRUE
 		)
 
 		if(MSVC)

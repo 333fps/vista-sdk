@@ -152,7 +152,7 @@ namespace dnv::vista::sdk
 			ASSERT_THROW( dnv::vista::sdk::CodebookNames::fromPrefix( "funct.SVC" ), std::invalid_argument );
 
 			const auto invalidCbName = static_cast<dnv::vista::sdk::CodebookName>( 999 );
-			ASSERT_THROW( dnv::vista::sdk::CodebookNames::toPrefix( invalidCbName ), std::invalid_argument );
+			ASSERT_THROW( (void)dnv::vista::sdk::CodebookNames::toPrefix( invalidCbName ), std::invalid_argument );
 		}
 	}
 

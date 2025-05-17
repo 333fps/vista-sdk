@@ -386,7 +386,7 @@ namespace dnv::vista::sdk
 		else
 		{
 			dto.m_oldAssignment.clear();
-			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field", OLD_ASSIGNMENT_KEY );
+			SPDLOG_DEBUG( "GmodNodeConversionDto JSON missing optional '{}' field", OLD_ASSIGNMENT_KEY );
 		}
 
 		if ( j.contains( NEW_ASSIGNMENT_KEY ) )
@@ -400,7 +400,7 @@ namespace dnv::vista::sdk
 		else
 		{
 			dto.m_newAssignment.clear();
-			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field", NEW_ASSIGNMENT_KEY );
+			SPDLOG_DEBUG( "GmodNodeConversionDto JSON missing optional '{}' field", NEW_ASSIGNMENT_KEY );
 		}
 
 		if ( j.contains( DELETE_ASSIGNMENT_KEY ) )
@@ -414,7 +414,7 @@ namespace dnv::vista::sdk
 		else
 		{
 			dto.m_deleteAssignment = false;
-			SPDLOG_WARN( "GmodNodeConversionDto JSON missing optional '{}' field, defaulting to false", DELETE_ASSIGNMENT_KEY );
+			SPDLOG_DEBUG( "GmodNodeConversionDto JSON missing optional '{}' field, defaulting to false", DELETE_ASSIGNMENT_KEY );
 		}
 
 		if ( dto.m_operations.empty() )
