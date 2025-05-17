@@ -1,3 +1,8 @@
+/**
+ * @file LocationsTests.cpp
+ * @brief Unit tests for the Locations and Location classes.
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/VIS.h"

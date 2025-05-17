@@ -9,7 +9,6 @@
 #pragma once
 
 #include "CodebooksDto.h"
-#include "GmodVersioning.h"
 #include "Codebooks.h"
 #include "Gmod.h"
 #include "VisVersion.h"
@@ -20,13 +19,14 @@ namespace dnv::vista::sdk
 	// Forward declarations
 	//=====================================================================
 
+	class GmodDto;
 	class GmodNode;
 	class GmodPath;
+	class GmodVersioningDto;
+	class GmodVersioning;
 	class LocalId;
 	class LocalIdBuilder;
 	class Locations;
-	class GmodDto;
-	class GmodVersioningDto;
 	class LocationsDto;
 
 	//=====================================================================

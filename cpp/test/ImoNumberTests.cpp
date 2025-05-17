@@ -1,3 +1,8 @@
+/**
+ * @file ImoNumberTests.cpp
+ * @brief Unit tests for the ImoNumber class.
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/ImoNumber.h"
@@ -56,10 +61,10 @@ namespace dnv::vista::sdk
 			{
 				data = nlohmann::json::parse( file );
 			}
-			catch ( const nlohmann::json::parse_error& e )
+			catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
 			{
-				SPDLOG_ERROR( "JSON parse error: {}", e.what() );
-				ASSERT_TRUE( false ) << "Failed to parse ImoNumbers.json: " << e.what();
+				SPDLOG_ERROR( "JSON parse error: {}", ex.what() );
+				ASSERT_TRUE( false ) << "Failed to parse ImoNumbers.json: " << ex.what();
 				return;
 			}
 

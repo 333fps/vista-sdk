@@ -1,3 +1,8 @@
+/**
+ * @file GmodVersioningTests.cpp
+ * @brief Unit tests for the GmodVersioning class.
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/GmodVersioning.h"

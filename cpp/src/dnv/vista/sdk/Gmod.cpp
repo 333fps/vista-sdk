@@ -1,5 +1,12 @@
+/**
+ * @file Gmod.cpp
+ * @brief Implementation of the Generic Product Model (GMOD) class.
+ */
+
 #include "pch.h"
+
 #include "dnv/vista/sdk/Gmod.h"
+
 #include "dnv/vista/sdk/GmodPath.h"
 #include "dnv/vista/sdk/VisVersion.h"
 
@@ -283,38 +290,22 @@ namespace dnv::vista::sdk
 
 	GmodPath Gmod::parsePath( const std::string& item ) const
 	{
-		return GmodPath::parse( *this, item );
+		return GmodPath::parse( std::string_view( item ), m_visVersion );
 	}
 
 	bool Gmod::tryParsePath( const std::string& item, std::optional<GmodPath>& path ) const
 	{
-		GmodNode* rootNodePtr = const_cast<GmodNode*>( &this->rootNode() );
-		GmodPath tempPath( *this, rootNodePtr );
-		if ( GmodPath::tryParse( *this, item, tempPath ) )
-		{
-			path = std::move( tempPath );
-			return true;
-		}
-		path = std::nullopt;
-		return false;
+		return GmodPath::tryParse( std::string_view( item ), m_visVersion, path );
 	}
 
 	GmodPath Gmod::parseFromFullPath( const std::string& item ) const
 	{
-		return GmodPath::parseFromFullPath( *this, item );
+		return GmodPath::parseFullPath( item, m_visVersion );
 	}
 
 	bool Gmod::tryParseFromFullPath( const std::string& item, std::optional<GmodPath>& path ) const
 	{
-		GmodNode* rootNodePtr = const_cast<GmodNode*>( &this->rootNode() );
-		GmodPath tempPath( *this, rootNodePtr );
-		if ( GmodPath::tryParseFromFullPath( *this, item, tempPath ) )
-		{
-			path = std::move( tempPath );
-			return true;
-		}
-		path = std::nullopt;
-		return false;
+		return GmodPath::tryParseFullPath( item, m_visVersion, path );
 	}
 
 	//----------------------------------------------

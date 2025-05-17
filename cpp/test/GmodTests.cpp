@@ -5,8 +5,9 @@
 
 #include "pch.h"
 
-#include "dnv/vista/sdk/VIS.h"
 #include "dnv/vista/sdk/GmodTraversal.h"
+#include "dnv/vista/sdk/GmodPath.h"
+#include "dnv/vista/sdk/VIS.h"
 
 namespace dnv::vista::sdk::tests
 {
@@ -293,7 +294,7 @@ namespace dnv::vista::sdk::tests
 		}
 	}
 
-	namespace CodebookTestParametrized
+	namespace GmodTestsParametrized
 	{
 		class GmodTests : public ::testing::TestWithParam<VisVersion>
 		{
@@ -344,10 +345,11 @@ namespace dnv::vista::sdk::tests
 
 		TEST_P( GmodTests, Test_Gmod_Properties )
 		{
-			// This test ensures certain properties of the Gmod data
-			// that we make some design desicisions based on,
-			// i.e for hashing of the node code
-
+			/*
+			 * This test ensures certain properties of the Gmod data
+			 * that we make some design desicisions based on,
+			 * i.e for hashing of the node code
+			 */
 			auto visVersion = GetParam();
 			auto [vis, gmod] = visAndGmod( visVersion );
 

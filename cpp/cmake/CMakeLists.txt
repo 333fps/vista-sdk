@@ -83,7 +83,7 @@ FetchContent_MakeAvailable(fmt spdlog zlib cpuid googletest)
 option(VISTA_SDK_CPP_BUILD_TESTS           "Build tests"                                               ON     )
 option(VISTA_SDK_CPP_COPY_RESOURCES        "Copy resources to build directory"                         ON     )
 option(VISTA_SDK_CPP_BUILD_SAMPLES         "Build vista-sdk-cpp samples"                               OFF    )
-option(VISTA_SDK_CPP_BUILD_DOCUMENTATION   "Build vista-sdk-cpp doxygen documentation"                 OFF    )
+option(VISTA_SDK_CPP_BUILD_DOCUMENTATION   "Build vista-sdk-cpp doxygen documentation"                 ON     )
 option(CI_FORCE_DEBUG_SPDLOG_WARN          "For CI Debug builds, force SPDLOG_ACTIVE_LEVEL to WARN"    OFF    )
 
 # --- Platform Specific Settings ---

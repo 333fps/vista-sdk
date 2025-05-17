@@ -48,7 +48,7 @@ foreach(test_source ${TEST_SOURCES})
 	get_filename_component(test_target_name ${test_source} NAME_WE)
 
 	if(NOT TARGET ${test_target_name})
-		add_executable(${test_target_name} ${test_source})
+		add_executable(${test_target_name} TestData.h ${test_source})
 
 		target_precompile_headers(${test_target_name} PRIVATE pch.h)
 

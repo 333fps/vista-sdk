@@ -15,6 +15,7 @@
 #include "dnv/vista/sdk/Locations.h"
 #include "dnv/vista/sdk/LocationsDto.h"
 #include "dnv/vista/sdk/Gmod.h"
+#include "dnv/vista/sdk/GmodVersioning.h"
 
 namespace dnv::vista::sdk
 {

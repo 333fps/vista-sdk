@@ -1,3 +1,8 @@
+/**
+ * @file GmodVersioning.cpp
+ * @brief Implementation of the GmodVersioning class for converting GMOD objects between VIS versions.
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/GmodVersioning.h"
@@ -125,19 +130,25 @@ namespace dnv::vista::sdk
 		}
 		std::vector<std::pair<std::reference_wrapper<const GmodNode>, GmodNode>> qualifyingNodes;
 
-		for ( const auto& pathNodePairRef : sourcePath.fullPath() )
+		GmodPath::Enumerator iter = sourcePath.enumerator();
+		while ( iter.next() )
 		{
-			const GmodNode& originalNodeRef = pathNodePairRef.second.get();
+			GmodNode* originalNodePtr = iter.current();
+			if ( !originalNodePtr )
+			{
+				SPDLOG_ERROR( "Failed to get current node from sourcePath enumerator during conversion." );
+				return std::nullopt;
+			}
+			const GmodNode& originalNodeRef = *originalNodePtr;
 
 			auto convertedNodeOpt = convertNode( sourceVersion, originalNodeRef, targetVersion );
 			if ( !convertedNodeOpt.has_value() )
 			{
 				SPDLOG_ERROR( "Failed to convert path node: {}", originalNodeRef.code() );
-
 				return std::nullopt;
 			}
 
-			qualifyingNodes.emplace_back( pathNodePairRef.second, std::move( *convertedNodeOpt ) );
+			qualifyingNodes.emplace_back( std::cref( originalNodeRef ), std::move( *convertedNodeOpt ) );
 		}
 
 		if ( std::any_of( qualifyingNodes.begin(), qualifyingNodes.end(),
@@ -161,24 +172,38 @@ namespace dnv::vista::sdk
 			}
 		}
 
-		if ( GmodPath::isValid( potentialParentPtrs, targetEndNode ) )
+		SPDLOG_INFO( "Building path for converted node, found {} qualifying nodes",
+			qualifyingNodes.size() );
+
+		std::vector<const GmodNode*> potentialParentPtrs_const;
+		if ( qualifyingNodes.size() > 1 )
+		{
+			potentialParentPtrs_const.reserve( qualifyingNodes.size() - 1 );
+			for ( size_t i = 0; i < qualifyingNodes.size() - 1; ++i )
+			{
+				potentialParentPtrs_const.push_back( &qualifyingNodes[i].second );
+			}
+		}
+
+		std::vector<GmodNode*> potentialParentPtrs_non_const;
+		potentialParentPtrs_non_const.reserve( potentialParentPtrs_const.size() );
+		for ( const GmodNode* cnstPtr : potentialParentPtrs_const )
+		{
+			potentialParentPtrs_non_const.push_back( const_cast<GmodNode*>( cnstPtr ) );
+		}
+
+		if ( GmodPath::isValid( potentialParentPtrs_non_const, targetEndNode ) )
 		{
 			SPDLOG_INFO( "Found valid direct path" );
-			std::vector<GmodNode*> nonConstParentPtrs;
-			nonConstParentPtrs.reserve( potentialParentPtrs.size() );
-			for ( const GmodNode* cnstPtr : potentialParentPtrs )
-			{
-				nonConstParentPtrs.push_back( const_cast<GmodNode*>( cnstPtr ) );
-			}
 
 			const GmodNode* finalNodeInTargetGmod = nullptr;
 			if ( !targetGmod.tryGetNode( targetEndNode.code(), finalNodeInTargetGmod ) || finalNodeInTargetGmod == nullptr )
 			{
-				SPDLOG_ERROR( "Final target node {} not found in target GMOD {}.", targetEndNode.code(), static_cast<int>( targetVersion ) );
+				SPDLOG_ERROR( "Final target node {} not found in target GMOD {}.", targetEndNode.code().data(), static_cast<int>( targetVersion ) );
 				return std::nullopt;
 			}
 
-			return GmodPath( targetGmod, const_cast<GmodNode*>( finalNodeInTargetGmod ), std::move( nonConstParentPtrs ) );
+			return GmodPath( targetGmod, const_cast<GmodNode*>( finalNodeInTargetGmod ), std::move( potentialParentPtrs_non_const ) );
 		}
 
 		auto addToPath = [&]( const Gmod& gmod, std::vector<const GmodNode*>& pathPtrs, const GmodNode* nodePtr ) -> bool {
@@ -285,22 +310,29 @@ namespace dnv::vista::sdk
 
 		reconstructedPathPtrs.pop_back();
 
+		std::vector<GmodNode*> reconstructedPathPtrs_non_const;
+		reconstructedPathPtrs_non_const.reserve( reconstructedPathPtrs.size() );
+		for ( const GmodNode* cnstPtr : reconstructedPathPtrs )
+		{
+			reconstructedPathPtrs_non_const.push_back( const_cast<GmodNode*>( cnstPtr ) );
+		}
+
 		size_t missingLinkAt = std::numeric_limits<size_t>::max();
-		if ( !GmodPath::isValid( reconstructedPathPtrs, targetEndNode, missingLinkAt ) )
+		if ( !GmodPath::isValid( reconstructedPathPtrs_non_const, targetEndNode, missingLinkAt ) )
 		{
 			SPDLOG_ERROR( "Failed to create a valid path after reconstruction. Missing link at: {}", missingLinkAt );
 			std::stringstream ss;
 			for ( const auto* p : reconstructedPathPtrs )
 			{
-				ss << "/" << ( p ? p->code() : "[null]" );
+				ss << "/" << ( p ? p->code().data() : "[null]" );
 			}
-			ss << "/" << targetEndNode.code();
+			ss << "/" << targetEndNode.code().data();
 			SPDLOG_DEBUG( "Invalid reconstructed path: {}", ss.str() );
 
 			return std::nullopt;
 		}
 
-		SPDLOG_INFO( "Successfully created path with {} parents after reconstruction", reconstructedPathPtrs.size() );
+		SPDLOG_INFO( "Successfully created path with {} parents after reconstruction", reconstructedPathPtrs_non_const.size() );
 
 		std::vector<GmodNode*> finalParentPtrs;
 		finalParentPtrs.reserve( reconstructedPathPtrs.size() );

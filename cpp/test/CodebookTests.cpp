@@ -5,6 +5,8 @@
 
 #include "pch.h"
 
+#include "TestData.h"
+
 #include "dnv/vista/sdk/VIS.h"
 #include "dnv/vista/sdk/MetadataTag.h"
 
@@ -12,36 +14,7 @@ namespace dnv::vista::sdk
 {
 	namespace
 	{
-		static const nlohmann::json& testData()
-		{
-			static nlohmann::json globalJsonData;
-			static bool loaded = false;
-			if ( !loaded )
-			{
-				std::string jsonFilePath = "testdata/Codebook.json";
-
-				std::ifstream jsonFile( jsonFilePath );
-				if ( !jsonFile.is_open() )
-				{
-					throw std::runtime_error( "Failed to open global test data file: " + jsonFilePath );
-				}
-				try
-				{
-					jsonFile >> globalJsonData;
-					loaded = true;
-				}
-				catch ( const nlohmann::json::parse_error& e )
-				{
-					std::string errMsg = "JSON parse error in '" + jsonFilePath +
-										 "'. Type: " + std::to_string( e.id ) +
-										 ", Byte: " + std::to_string( e.byte ) +
-										 ". Original what() likely too long.";
-					throw std::runtime_error( errMsg );
-				}
-			}
-
-			return globalJsonData;
-		}
+		constexpr const char* TEST_DATA_PATH = "testdata/Codebook.json";
 	}
 
 	namespace CodebookTestFixture
@@ -52,7 +25,7 @@ namespace dnv::vista::sdk
 			CodebookTest()
 				: m_vis{ VIS::instance() },
 				  m_codebooks{ m_vis.codebooks( VisVersion::v3_4a ) },
-				  m_jsonData{ testData() }
+				  m_jsonData{ testData( TEST_DATA_PATH ) }
 			{
 			}
 
@@ -206,7 +179,7 @@ namespace dnv::vista::sdk
 		static std::vector<PositionValidationParam> positionValidationData()
 		{
 			std::vector<PositionValidationParam> data;
-			const nlohmann::json& jsonDataFromFile = testData();
+			const nlohmann::json& jsonDataFromFile = testData( TEST_DATA_PATH );
 
 			if ( jsonDataFromFile.contains( "ValidPosition" ) && jsonDataFromFile["ValidPosition"].is_array() )
 			{
@@ -236,6 +209,11 @@ namespace dnv::vista::sdk
 			EXPECT_EQ( parsedExpectedOutput, validPosition );
 		}
 
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookPositionValidationSuite,
+			PositionValidationTest,
+			::testing::ValuesIn( positionValidationData() ) );
+
 		//----------------------------------------------
 		// Test_Positions
 		//----------------------------------------------
@@ -253,7 +231,7 @@ namespace dnv::vista::sdk
 		static std::vector<PositionsParam> positionsData()
 		{
 			std::vector<PositionsParam> data;
-			const nlohmann::json& jsonDataFromFile = testData();
+			const nlohmann::json& jsonDataFromFile = testData( TEST_DATA_PATH );
 
 			if ( jsonDataFromFile.contains( "Positions" ) && jsonDataFromFile["Positions"].is_array() )
 			{
@@ -281,6 +259,11 @@ namespace dnv::vista::sdk
 			EXPECT_TRUE( positions.hasStandardValue( param.validStandardValue ) );
 		}
 
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookPositionsSuite,
+			PositionsTest,
+			::testing::ValuesIn( positionsData() ) );
+
 		//----------------------------------------------
 		// Test_States
 		//----------------------------------------------
@@ -300,7 +283,7 @@ namespace dnv::vista::sdk
 		static std::vector<StatesParam> statesData()
 		{
 			std::vector<StatesParam> data;
-			const nlohmann::json& jsonDataFromFile = testData();
+			const nlohmann::json& jsonDataFromFile = testData( TEST_DATA_PATH );
 
 			if ( jsonDataFromFile.contains( "States" ) && jsonDataFromFile["States"].is_array() )
 			{
@@ -334,6 +317,11 @@ namespace dnv::vista::sdk
 			EXPECT_TRUE( states.hasStandardValue( param.secondValidValue ) );
 		}
 
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookStatesSuite,
+			StatesTest,
+			::testing::ValuesIn( statesData() ) );
+
 		//----------------------------------------------
 		// Test_Create_Tag
 		//----------------------------------------------
@@ -357,7 +345,7 @@ namespace dnv::vista::sdk
 		static std::vector<TagParam> tagData()
 		{
 			std::vector<TagParam> data;
-			const nlohmann::json& jsonDataFromFile = testData();
+			const nlohmann::json& jsonDataFromFile = testData( TEST_DATA_PATH );
 
 			if ( jsonDataFromFile.contains( "Tag" ) && jsonDataFromFile["Tag"].is_array() )
 			{
@@ -417,6 +405,11 @@ namespace dnv::vista::sdk
 			EXPECT_EQ( codebookType.tryCreateTag( param.secondInvalidTag ), std::nullopt );
 		}
 
+		INSTANTIATE_TEST_SUITE_P(
+			CodebookTagSuite,
+			TagTest,
+			::testing::ValuesIn( tagData() ) );
+
 		//----------------------------------------------
 		// Test_Detail_Tag
 		//----------------------------------------------
@@ -435,7 +428,7 @@ namespace dnv::vista::sdk
 		static std::vector<DetailTagParam> detailTagData()
 		{
 			std::vector<DetailTagParam> data;
-			const nlohmann::json& jsonDataFromFile = testData();
+			const nlohmann::json& jsonDataFromFile = testData( TEST_DATA_PATH );
 
 			if ( jsonDataFromFile.contains( "DetailTag" ) && jsonDataFromFile["DetailTag"].is_array() )
 			{
@@ -468,30 +461,6 @@ namespace dnv::vista::sdk
 			EXPECT_THROW( codebook.createTag( param.firstInvalidCustomTag ), std::invalid_argument );
 			EXPECT_THROW( codebook.createTag( param.secondInvalidCustomTag ), std::invalid_argument );
 		}
-
-		//=====================================================================
-		// Instantiate
-		//=====================================================================
-
-		INSTANTIATE_TEST_SUITE_P(
-			CodebookPositionValidationSuite,
-			PositionValidationTest,
-			::testing::ValuesIn( positionValidationData() ) );
-
-		INSTANTIATE_TEST_SUITE_P(
-			CodebookPositionsSuite,
-			PositionsTest,
-			::testing::ValuesIn( positionsData() ) );
-
-		INSTANTIATE_TEST_SUITE_P(
-			CodebookStatesSuite,
-			StatesTest,
-			::testing::ValuesIn( statesData() ) );
-
-		INSTANTIATE_TEST_SUITE_P(
-			CodebookTagSuite,
-			TagTest,
-			::testing::ValuesIn( tagData() ) );
 
 		INSTANTIATE_TEST_SUITE_P(
 			CodebookDetailTagSuite,

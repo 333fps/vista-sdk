@@ -9,6 +9,7 @@
 
 #include "dnv/vista/sdk/VIS.h"
 #include "dnv/vista/sdk/VisVersion.h"
+#include "dnv/vista/sdk/ParsingErrors.h"
 
 namespace dnv::vista::sdk
 {
@@ -177,7 +178,7 @@ namespace dnv::vista::sdk
 
 	GmodNode& GmodNode::operator=( const GmodNode& other )
 	{
-		if ( this == &other ) // Check for self-assignment
+		if ( this == &other )
 		{
 			return *this;
 		}

@@ -129,15 +129,15 @@ namespace dnv::vista::sdk
 		{
 			return json.get<GmodVersioningAssignmentChangeDto>();
 		}
-		catch ( const nlohmann::json::exception& e )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningAssignmentChangeDto from JSON: {}", e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningAssignmentChangeDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
-		catch ( const std::exception& e )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningAssignmentChangeDto from JSON: {}", e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningAssignmentChangeDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
@@ -282,15 +282,15 @@ namespace dnv::vista::sdk
 		{
 			return json.get<GmodNodeConversionDto>();
 		}
-		catch ( const nlohmann::json::exception& e )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			std::string errorMsg = fmt::format( "Failed to deserialize GmodNodeConversionDto from JSON: {}", e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodNodeConversionDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
-		catch ( const std::exception& e )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			std::string errorMsg = fmt::format( "Failed to deserialize GmodNodeConversionDto from JSON: {}", e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodNodeConversionDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
@@ -520,7 +520,7 @@ namespace dnv::vista::sdk
 		{
 			return json.get<GmodVersioningDto>();
 		}
-		catch ( const nlohmann::json::exception& e )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
 			std::string visHint = "[unknown version]";
 			try
@@ -533,11 +533,11 @@ namespace dnv::vista::sdk
 			catch ( ... )
 			{
 			}
-			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningDto from JSON (hint: visRelease='{}'): {}", visHint, e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningDto from JSON (hint: visRelease='{}'): {}", visHint, ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
-		catch ( const std::exception& e )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
 			std::string visHint = "[unknown version]";
 			try
@@ -550,7 +550,7 @@ namespace dnv::vista::sdk
 			catch ( ... )
 			{
 			}
-			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningDto from JSON (hint: visRelease='{}'): {}", visHint, e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize GmodVersioningDto from JSON (hint: visRelease='{}'): {}", visHint, ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}

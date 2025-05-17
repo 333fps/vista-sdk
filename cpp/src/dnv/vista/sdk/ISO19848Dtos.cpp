@@ -18,6 +18,7 @@ namespace dnv::vista::sdk
 		static constexpr const char* VALUES_KEY = "values";
 		static constexpr const char* TYPE_KEY = "type";
 		static constexpr const char* DESCRIPTION_KEY = "description";
+
 		//=====================================================================
 		// Helper Functions
 		//=====================================================================
@@ -126,15 +127,15 @@ namespace dnv::vista::sdk
 		{
 			return json.get<DataChannelTypeNameDto>();
 		}
-		catch ( const nlohmann::json::exception& e )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			std::string errorMsg = fmt::format( "Failed to deserialize DataChannelTypeNameDto from JSON: {}", e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize DataChannelTypeNameDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
-		catch ( const std::exception& e )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			std::string errorMsg = fmt::format( "Failed to deserialize DataChannelTypeNameDto from JSON: {}", e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize DataChannelTypeNameDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
@@ -252,15 +253,15 @@ namespace dnv::vista::sdk
 		{
 			return json.get<DataChannelTypeNamesDto>();
 		}
-		catch ( const nlohmann::json::exception& e )
+		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
 		{
-			std::string errorMsg = fmt::format( "Failed to deserialize DataChannelTypeNamesDto from JSON: {}", e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize DataChannelTypeNamesDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}
-		catch ( const std::exception& e )
+		catch ( [[maybe_unused]] const std::exception& ex )
 		{
-			std::string errorMsg = fmt::format( "Failed to deserialize DataChannelTypeNamesDto from JSON: {}", e.what() );
+			std::string errorMsg = fmt::format( "Failed to deserialize DataChannelTypeNamesDto from JSON: {}", ex.what() );
 			SPDLOG_ERROR( errorMsg );
 			throw std::invalid_argument( errorMsg );
 		}

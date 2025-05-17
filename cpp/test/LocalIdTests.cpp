@@ -1,3 +1,8 @@
+/**
+ * @file LocalIdTests.cpp
+ * @brief Unit tests for LocalId and LocalIdBuilder classes.
+ */
+
 #include "pch.h"
 
 #include "dnv/vista/sdk/VIS.h"
