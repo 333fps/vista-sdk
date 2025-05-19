@@ -280,11 +280,6 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	bool Gmod::tryGetNode( const std::string& code, const GmodNode*& node ) const
-	{
-		return m_nodeMap.tryGetValue( std::string_view( code ), node );
-	}
-
 	//----------------------------------------------
 	// Path Parsing & Navigation
 	//----------------------------------------------

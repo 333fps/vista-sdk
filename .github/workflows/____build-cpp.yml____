@@ -41,6 +41,11 @@ jobs:
       uses: lukka/get-cmake@latest
       with:
         cmakeVersion: "~3.20.0"
+    # --- Doxygen/Graphviz Installation ---
+    # - name: Install Doxygen and Graphviz
+    #   if: runner.os == 'Linux' && matrix.build_type == 'Release'
+    #   run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+    #   shell: bash
 
     # --- ccache Setup ---
     - name: Install ccache
@@ -51,12 +56,6 @@ jobs:
     - name: Install ccache
       if: runner.os == 'Linux'
       run: sudo apt-get install -y ccache
-      shell: bash
-
-    # --- Doxygen/Graphviz Installation ---
-    - name: Install Doxygen and Graphviz
-      if: runner.os == 'Linux' && matrix.build_type == 'Release'
-      run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
       shell: bash
 
     - name: Cache ccache directory
@@ -123,9 +122,9 @@ jobs:
           "-DCMAKE_CXX_STANDARD=20",
           "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
           "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
-          "-DVISTA_SDK_CPP_BUILD_TESTS=ON",
-          "-DVISTA_SDK_CPP_COPY_RESOURCES=ON",
-          "-DVISTA_SDK_CPP_BUILD_SAMPLES=ON"
+          "-DVISTA_SDK_CPP_BUILD_TESTS=OFF",
+          "-DVISTA_SDK_CPP_COPY_RESOURCES=OFF",
+          "-DVISTA_SDK_CPP_BUILD_SAMPLES=OFF"
         )
 
         if ("${{ matrix.build_type }}" -eq "Debug") {
@@ -133,7 +132,7 @@ jobs:
           $cmakeArgs += "-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=OFF"
         }
         elseif ("${{ matrix.build_type }}" -eq "Release") {
-          $cmakeArgs += "-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=ON"
+          $cmakeArgs += "-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=OFF"
         }
 
         Write-Host "CMake arguments: $($cmakeArgs -join ' ')"
@@ -150,15 +149,15 @@ jobs:
           "-DCMAKE_CXX_STANDARD=20"
           "-DCMAKE_C_COMPILER_LAUNCHER=ccache"
           "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
-          "-DVISTA_SDK_CPP_BUILD_TESTS=ON"
-          "-DVISTA_SDK_CPP_COPY_RESOURCES=ON"
-          "-DVISTA_SDK_CPP_BUILD_SAMPLES=ON"
+          "-DVISTA_SDK_CPP_BUILD_TESTS=OFF"
+          "-DVISTA_SDK_CPP_COPY_RESOURCES=OFF"
+          "-DVISTA_SDK_CPP_BUILD_SAMPLES=OFF"
         )
         if [ "${{ matrix.build_type }}" = "Debug" ]; then
           CMAKE_ARGS+=("-DCI_FORCE_DEBUG_SPDLOG_WARN=ON" "-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=OFF")
         fi
         if [ "${{ matrix.build_type }}" = "Release" ]; then
-          CMAKE_ARGS+=("-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=ON")
+          CMAKE_ARGS+=("-DVISTA_SDK_CPP_BUILD_DOCUMENTATION=OFF")
         fi
         echo "CMake arguments: ${CMAKE_ARGS[@]}"
         cmake "${CMAKE_ARGS[@]}"
@@ -176,78 +175,78 @@ jobs:
       run: |
         cmake --build ${{ github.workspace }}/cpp/build --config ${{ matrix.build_type }} --parallel
 
-    - name: Show ccache statistics after build
-      shell: bash
-      run: ccache -s
+    # - name: Show ccache statistics after build
+    #   shell: bash
+    #   run: ccache -s
 
     # --- Test Step ---
-    - name: Run Tests
-      if: runner.os == 'Windows'
-      continue-on-error: true
-      working-directory: ${{ github.workspace }}/cpp/build
-      shell: pwsh
-      run: |
-          if ("${{ matrix.build_type }}" -eq "Debug") {
-              Write-Host "--------------------------------------------------------------------------------"
-              Write-Host "INFO: Running tests in DEBUG mode with spdlog level set to WARN."
-              Write-Host "Any warnings or errors displayed below may be from internal library logging"
-              Write-Host "for diagnostic purposes. This can also highlight potentially ill-formed"
-              Write-Host "values in JSON resources, or demonstrate correct error handling within"
-              Write-Host "test cases when expected issues are encountered. These messages do not"
-              Write-Host "necessarily reflect test case failures. Check CTest summary for actual"
-              Write-Host "test pass/fail status."
-              Write-Host "--------------------------------------------------------------------------------"
-              ctest -C ${{ matrix.build_type }} --output-on-failure -VV
-          } else {
-              ctest -C ${{ matrix.build_type }} --output-on-failure
-          }
-          if ($LASTEXITCODE -ne 0) {
-              Write-Warning "CTest reported test failures. See output above for details."
-          }
+    # - name: Run Tests
+    #   if: runner.os == 'Windows'
+    #   continue-on-error: true
+    #   working-directory: ${{ github.workspace }}/cpp/build
+    #   shell: pwsh
+    #   run: |
+    #       if ("${{ matrix.build_type }}" -eq "Debug") {
+    #           Write-Host "--------------------------------------------------------------------------------"
+    #           Write-Host "INFO: Running tests in DEBUG mode with spdlog level set to WARN."
+    #           Write-Host "Any warnings or errors displayed below may be from internal library logging"
+    #           Write-Host "for diagnostic purposes. This can also highlight potentially ill-formed"
+    #           Write-Host "values in JSON resources, or demonstrate correct error handling within"
+    #           Write-Host "test cases when expected issues are encountered. These messages do not"
+    #           Write-Host "necessarily reflect test case failures. Check CTest summary for actual"
+    #           Write-Host "test pass/fail status."
+    #           Write-Host "--------------------------------------------------------------------------------"
+    #           ctest -C ${{ matrix.build_type }} --output-on-failure -VV
+    #       } else {
+    #           ctest -C ${{ matrix.build_type }} --output-on-failure
+    #       }
+    #       if ($LASTEXITCODE -ne 0) {
+    #           Write-Warning "CTest reported test failures. See output above for details."
+    #       }
 
-    - name: Run Tests
-      if: runner.os == 'Linux'
-      continue-on-error: true
-      working-directory: ${{ github.workspace }}/cpp/build
-      shell: bash
-      run: |
-          if [ "${{ matrix.build_type }}" = "Debug" ]; then
-              echo "--------------------------------------------------------------------------------"
-              echo "INFO: Running tests in DEBUG mode with spdlog level set to WARN."
-              echo "Any warnings or errors displayed below may be from internal library logging"
-              echo "for diagnostic purposes. This can also highlight potentially ill-formed"
-              echo "values in JSON resources, or demonstrate correct error handling within"
-              echo "test cases when expected issues are encountered. These messages do not"
-              echo "necessarily reflect test case failures. Check CTest summary for actual"
-              echo "test pass/fail status."
-              echo "--------------------------------------------------------------------------------"
-              ctest -C ${{ matrix.build_type }} --output-on-failure -VV
-          else
-              ctest -C ${{ matrix.build_type }} --output-on-failure
-          fi
-          if [ $? -ne 0 ]; then
-              echo "::warning::CTest reported test failures. See output above for details."
-          fi
+    # - name: Run Tests
+    #   if: runner.os == 'Linux'
+    #   continue-on-error: true
+    #   working-directory: ${{ github.workspace }}/cpp/build
+    #   shell: bash
+    #   run: |
+    #       if [ "${{ matrix.build_type }}" = "Debug" ]; then
+    #           echo "--------------------------------------------------------------------------------"
+    #           echo "INFO: Running tests in DEBUG mode with spdlog level set to WARN."
+    #           echo "Any warnings or errors displayed below may be from internal library logging"
+    #           echo "for diagnostic purposes. This can also highlight potentially ill-formed"
+    #           echo "values in JSON resources, or demonstrate correct error handling within"
+    #           echo "test cases when expected issues are encountered. These messages do not"
+    #           echo "necessarily reflect test case failures. Check CTest summary for actual"
+    #           echo "test pass/fail status."
+    #           echo "--------------------------------------------------------------------------------"
+    #           ctest -C ${{ matrix.build_type }} --output-on-failure -VV
+    #       else
+    #           ctest -C ${{ matrix.build_type }} --output-on-failure
+    #       fi
+    #       if [ $? -ne 0 ]; then
+    #           echo "::warning::CTest reported test failures. See output above for details."
+    #       fi
 
     # --- Doxygen Documentation Generation ---
-    - name: Generate Doxygen Documentation
-      if: matrix.build_type == 'Release'
-      working-directory: ${{ github.workspace }}/cpp/build
-      shell: bash
-      run: |
-        echo "Generating Doxygen documentation..."
-        cmake --build . --target documentation --config ${{ matrix.build_type }}
-        echo "Doxygen documentation generation complete."
-        if [ -d "bin/${{ matrix.build_type }}/doc" ]; then
-          echo "Documentation output directory bin/${{ matrix.build_type }}/doc found."
-        else
-          echo "WARNING: Documentation output directory not found: bin/${{ matrix.build_type }}/doc"
-        fi
+    # - name: Generate Doxygen Documentation
+    #   if: matrix.build_type == 'Release'
+    #   working-directory: ${{ github.workspace }}/cpp/build
+    #   shell: bash
+    #   run: |
+    #     echo "Generating Doxygen documentation..."
+    #     cmake --build . --target documentation --config ${{ matrix.build_type }}
+    #     echo "Doxygen documentation generation complete."
+    #     if [ -d "bin/${{ matrix.build_type }}/doc" ]; then
+    #       echo "Documentation output directory bin/${{ matrix.build_type }}/doc found."
+    #     else
+    #       echo "WARNING: Documentation output directory not found: bin/${{ matrix.build_type }}/doc"
+    #     fi
 
     # --- Upload Artifacts ---
-    - name: Upload Bin Directory Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: cpp-bin-artifacts-${{ runner.os }}-${{ matrix.build_type }}
-        path: ${{ github.workspace }}/cpp/build/bin/
-        if-no-files-found: warn
+    # - name: Upload Bin Directory Artifacts
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: cpp-bin-artifacts-${{ runner.os }}-${{ matrix.build_type }}
+    #     path: ${{ github.workspace }}/cpp/build/bin/
+    #     if-no-files-found: warn

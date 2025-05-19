@@ -141,14 +141,6 @@ namespace dnv::vista::sdk
 		 */
 		bool tryGetNode( std::string_view code, const GmodNode*& node ) const;
 
-		/**
-		 * @brief Tries to get a GmodNode by its code.
-		 * @param code The code of the GmodNode to find (as a std::string).
-		 * @param[out] node Output parameter; set to a pointer to the GmodNode if found, otherwise nullptr.
-		 * @return True if the node was found, false otherwise.
-		 */
-		bool tryGetNode( const std::string& code, const GmodNode*& node ) const;
-
 		//----------------------------------------------
 		// Path Parsing & Navigation
 		//----------------------------------------------

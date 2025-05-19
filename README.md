@@ -228,20 +228,3 @@ To build the C++ SDK, ensure you have a C++20 compliant compiler (e.g., MSVC, GC
     cd cpp/build
     ctest -C Release
     ```
-
-#### Using the SDK
-
-Once built, the library (e.g., `vista_sdk_cpp.lib` or `libvista_sdk_cpp.a`) and headers will be available in the `cpp/build` directory (typically under a subdirectory like `bin/<Config>` or `lib/<Config>` depending on your CMake setup and platform). You can link against the library and include the necessary headers in your C++ projects.
-
-Example of including headers:
-```cpp
-// Include necessary headers from the SDK, for example:
-#include <dnv/vista/sdk/gmod/Gmod.h>
-#include <dnv/vista/sdk/codebooks/Codebooks.h>
-#include <dnv/vista/sdk/locations/Locations.h>
-#include <dnv/vista/sdk/ids/UniversalId.h>
-// ... and so on for other components.
-```
-
-#### Documentation
-If `VISTA_SDK_CPP_BUILD_DOCUMENTATION` is enabled during the CMake configuration (and Doxygen/Graphviz are installed), HTML documentation will be generated, typically in the build directory.
