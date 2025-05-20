@@ -17,6 +17,37 @@
 
 namespace dnv::vista::sdk
 {
+	namespace
+	{
+		class QualifyingNodePair
+		{
+		public:
+			QualifyingNodePair( const GmodNode* sourceNode, GmodNode targetNode )
+				: m_sourceNode( sourceNode ), m_targetNode( std::move( targetNode ) )
+			{
+			}
+
+			QualifyingNodePair() = delete;
+			QualifyingNodePair( const QualifyingNodePair& ) = delete;
+			QualifyingNodePair( QualifyingNodePair&& other ) noexcept
+				: m_sourceNode( other.m_sourceNode ), m_targetNode( std::move( other.m_targetNode ) )
+			{
+				other.m_sourceNode = nullptr;
+			}
+
+			QualifyingNodePair& operator=( const QualifyingNodePair& ) = delete;
+			QualifyingNodePair& operator=( QualifyingNodePair&& ) noexcept = delete;
+
+			~QualifyingNodePair() = default;
+
+			const GmodNode* sourceNode() const { return m_sourceNode; }
+			const GmodNode& targetNode() const { return m_targetNode; }
+
+		private:
+			const GmodNode* m_sourceNode;
+			GmodNode m_targetNode;
+		};
+	}
 	//=====================================================================
 	// GmodVersioning Class
 	//=====================================================================
@@ -100,255 +131,192 @@ namespace dnv::vista::sdk
 	std::optional<GmodPath> GmodVersioning::convertPath(
 		VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const
 	{
-		SPDLOG_DEBUG( "Converting path from version {} to {}",
-			VisVersionExtensions::toVersionString( sourceVersion ).data(),
-			VisVersionExtensions::toVersionString( targetVersion ).data() );
-
 		validateSourceAndTargetVersions( sourceVersion, targetVersion );
 
 		auto& vis = VIS::instance();
 		const auto& targetGmod = vis.gmod( targetVersion );
 
-		auto targetEndNodeOpt = convertNode( sourceVersion, *sourcePath.node(), targetVersion );
-		if ( !targetEndNodeOpt.has_value() )
+		std::optional<GmodNode> overallConvertedTargetEndNodeOpt = convertNode( sourceVersion, *sourcePath.node(), targetVersion );
+		if ( !overallConvertedTargetEndNodeOpt.has_value() )
 		{
-			SPDLOG_ERROR( "Failed to convert end node from {} to {}",
-				VisVersionExtensions::toVersionString( sourceVersion ).data(),
-				VisVersionExtensions::toVersionString( targetVersion ).data() );
 			return std::nullopt;
 		}
-		const GmodNode& targetEndNode = *targetEndNodeOpt;
+		const GmodNode& overallConvertedTargetEndNode = *overallConvertedTargetEndNodeOpt;
 
-		if ( targetEndNode.isRoot() )
+		if ( overallConvertedTargetEndNode.isRoot() )
 		{
-			SPDLOG_DEBUG( "Target node is root, returning simple root path" );
 			const GmodNode* rootNodePtr = nullptr;
 			if ( !targetGmod.tryGetNode( std::string( "VE" ), rootNodePtr ) || !rootNodePtr )
 			{
-				SPDLOG_ERROR( "Failed to find root node in target GMOD" );
 				return std::nullopt;
 			}
 			return GmodPath( targetGmod, const_cast<GmodNode*>( rootNodePtr ), {} );
 		}
 
-		struct QualifyingNodePair
-		{
-			const GmodNode* sourceNode;
-			GmodNode targetNode;
-		};
-
 		std::vector<QualifyingNodePair> qualifyingNodes;
-		std::vector<const GmodNode*> sourceFullPathNodes;
-
 		for ( const auto& pair : sourcePath.fullPath() )
 		{
-			sourceFullPathNodes.push_back( pair.second );
-		}
-
-		for ( const auto* sourceNodePtr : sourceFullPathNodes )
-		{
-			auto convertedNodeOpt = convertNode( sourceVersion, *sourceNodePtr, targetVersion );
+			const GmodNode* originalNodeInPath = pair.second;
+			std::optional<GmodNode> convertedNodeOpt = convertNode( sourceVersion, *originalNodeInPath, targetVersion );
 			if ( !convertedNodeOpt.has_value() )
 			{
-				SPDLOG_ERROR( "Failed to convert node {} in path", sourceNodePtr->code() );
 				return std::nullopt;
 			}
-			qualifyingNodes.push_back( { sourceNodePtr, *convertedNodeOpt } );
+			qualifyingNodes.emplace_back( originalNodeInPath, std::move( *convertedNodeOpt ) );
 		}
 
-		static std::vector<GmodNode> s_nodesWithLocation;
-		s_nodesWithLocation.clear();
-		s_nodesWithLocation.reserve( qualifyingNodes.size() );
-
-		std::vector<GmodNode*> potentialParents;
-		potentialParents.reserve( qualifyingNodes.size() - 1 );
-
-		for ( size_t i = 0; i < qualifyingNodes.size() - 1; ++i )
+		if ( qualifyingNodes.empty() )
 		{
-			if ( qualifyingNodes[i].targetNode.location().has_value() )
-			{
-				const GmodNode* nodePtr = nullptr;
-				if ( !targetGmod.tryGetNode( qualifyingNodes[i].targetNode.code(), nodePtr ) || !nodePtr )
-				{
-					SPDLOG_ERROR( "Failed to find node with code {} in target GMOD",
-						qualifyingNodes[i].targetNode.code() );
-					return std::nullopt;
-				}
-
-				s_nodesWithLocation.push_back( nodePtr->tryWithLocation( qualifyingNodes[i].targetNode.location() ) );
-				potentialParents.push_back( const_cast<GmodNode*>( &s_nodesWithLocation.back() ) );
-
-				SPDLOG_DEBUG( "Using node {} with location {} in potential parents",
-					s_nodesWithLocation.back().code(),
-					s_nodesWithLocation.back().location()->value() );
-			}
-			else
-			{
-				const GmodNode* nodePtr = nullptr;
-				if ( !targetGmod.tryGetNode( qualifyingNodes[i].targetNode.code(), nodePtr ) || !nodePtr )
-				{
-					SPDLOG_ERROR( "Failed to find node with code {} in target GMOD",
-						qualifyingNodes[i].targetNode.code() );
-					return std::nullopt;
-				}
-				potentialParents.push_back( const_cast<GmodNode*>( nodePtr ) );
-				SPDLOG_DEBUG( "Using node {} without location in potential parents", nodePtr->code() );
-			}
-		}
-
-		const GmodNode* targetEndNodePtr = nullptr;
-		if ( !targetGmod.tryGetNode( targetEndNode.code(), targetEndNodePtr ) || !targetEndNodePtr )
-		{
-			SPDLOG_ERROR( "Failed to find target end node with code {} in GMOD", targetEndNode.code() );
 			return std::nullopt;
 		}
 
-		GmodNode* targetEndNodeWithLocation = const_cast<GmodNode*>( targetEndNodePtr );
-		if ( targetEndNode.location().has_value() )
+		std::list<GmodNode> nodesWithLocationList;
+		std::vector<GmodNode*> initialPotentialParents;
+		if ( qualifyingNodes.size() > 1 )
 		{
-			s_nodesWithLocation.push_back( targetEndNodePtr->tryWithLocation( targetEndNode.location() ) );
-			targetEndNodeWithLocation = const_cast<GmodNode*>( &s_nodesWithLocation.back() );
-			SPDLOG_DEBUG( "Using end node {} with location {}",
-				targetEndNodeWithLocation->code(), targetEndNode.location()->value() );
+			initialPotentialParents.reserve( qualifyingNodes.size() - 1 );
+			for ( size_t i = 0; i < qualifyingNodes.size() - 1; ++i )
+			{
+				const GmodNode& qnTargetNode = qualifyingNodes[i].targetNode();
+				const GmodNode* nodePtr = nullptr;
+				if ( !targetGmod.tryGetNode( qnTargetNode.code(), nodePtr ) || !nodePtr )
+					return std::nullopt;
+
+				if ( qnTargetNode.location().has_value() )
+				{
+					nodesWithLocationList.emplace_back( nodePtr->tryWithLocation( qnTargetNode.location() ) );
+					initialPotentialParents.push_back( &nodesWithLocationList.back() );
+				}
+				else
+				{
+					initialPotentialParents.push_back( const_cast<GmodNode*>( nodePtr ) );
+				}
+			}
+		}
+
+		const GmodNode& initialEndNodeCandidateFromQualifying = qualifyingNodes.back().targetNode();
+		GmodNode* initialTargetEndNodeWithLocationPtr;
+		const GmodNode* initialEndNodeBasePtr = nullptr;
+		if ( !targetGmod.tryGetNode( initialEndNodeCandidateFromQualifying.code(), initialEndNodeBasePtr ) || !initialEndNodeBasePtr )
+			return std::nullopt;
+
+		if ( initialEndNodeCandidateFromQualifying.location().has_value() )
+		{
+			nodesWithLocationList.emplace_back( initialEndNodeBasePtr->tryWithLocation( initialEndNodeCandidateFromQualifying.location() ) );
+			initialTargetEndNodeWithLocationPtr = &nodesWithLocationList.back();
+		}
+		else
+		{
+			initialTargetEndNodeWithLocationPtr = const_cast<GmodNode*>( initialEndNodeBasePtr );
 		}
 
 		size_t missingLinkAt;
-		if ( GmodPath::isValid( potentialParents, *targetEndNodeWithLocation, missingLinkAt ) )
+		if ( GmodPath::isValid( initialPotentialParents, *initialTargetEndNodeWithLocationPtr, missingLinkAt ) )
 		{
-			SPDLOG_DEBUG( "Path is valid with {} parent nodes", potentialParents.size() );
-			return GmodPath( targetGmod, targetEndNodeWithLocation, potentialParents );
+			return GmodPath( targetGmod, initialTargetEndNodeWithLocationPtr, initialPotentialParents );
 		}
 
-		SPDLOG_DEBUG( "Simple path is not valid, using reconstructed path approach" );
-		std::vector<GmodNode> reconstructedPath;
-
-		auto addToPathHelperLambda = [&targetGmod]( std::vector<GmodNode>& path, const GmodNode& node ) {
-			SPDLOG_TRACE( "Adding node {} to path", node.code() );
-
-			if ( path.empty() )
-			{
-				SPDLOG_TRACE( "Path is empty, adding node directly" );
-				path.push_back( node );
-				return;
-			}
-
-			GmodNode& prevNode = path.back();
-
-			if ( prevNode.code() == node.code() && prevNode.location() == node.location() )
-			{
-				SPDLOG_DEBUG( "Skipping duplicate node: {}", node.code() );
-				return;
-			}
-
-			if ( !prevNode.isChild( node ) )
-			{
-				SPDLOG_DEBUG( "Node {} is not a child of {}, repairing path", node.code(), prevNode.code() );
-
-				for ( int j = static_cast<int>( path.size() ) - 1; j >= 0; --j )
+		std::vector<GmodNode> reconstructedPathNodes;
+		auto addToPathHelperLambda =
+			[&targetGmod]( std::vector<GmodNode>& currentPath, const GmodNode& nodeToAdd ) {
+				if ( currentPath.empty() )
 				{
-					GmodNode& parent = path[j];
-					std::vector<const GmodNode*> currentParents;
+					currentPath.push_back( nodeToAdd );
+					return;
+				}
 
-					for ( int k = 0; k <= j; ++k )
+				GmodNode& previousNode = currentPath.back();
+				if ( previousNode.code() == nodeToAdd.code() && previousNode.location() == nodeToAdd.location() )
+				{
+					return;
+				}
+
+				if ( !previousNode.isChild( nodeToAdd ) )
+				{
+					for ( size_t i = currentPath.size() - 1;; --i )
 					{
-						currentParents.push_back( &path[k] );
-					}
-
-					std::vector<const GmodNode*> remaining;
-					if ( !GmodTraversal::pathExistsBetween( targetGmod, currentParents, node, remaining ) )
-					{
-						SPDLOG_DEBUG( "No path exists between current parents and node {}", node.code() );
-
-						if ( parent.isAssetFunctionNode() )
+						if ( i >= currentPath.size() )
 						{
-							SPDLOG_DEBUG( "Checking if asset function node can be removed" );
-							bool hasOtherAssetFunction = false;
-
-							for ( const auto* n : currentParents )
-							{
-								if ( n->isAssetFunctionNode() && n->code() != parent.code() )
-								{
-									hasOtherAssetFunction = true;
-									break;
-								}
-							}
-
-							if ( !hasOtherAssetFunction )
-							{
-								SPDLOG_ERROR( "Cannot remove last asset function node" );
-								throw std::runtime_error( "Tried to remove last asset function node" );
-							}
-
-							SPDLOG_DEBUG( "Removing asset function node {}", parent.code() );
-							path.erase( path.begin() + j );
+							break;
 						}
-					}
-					else
-					{
-						SPDLOG_DEBUG( "Found path between parents and node {}, adding {} intermediate nodes",
-							node.code(), remaining.size() );
-
-						if ( node.location().has_value() )
+						GmodNode& parentCandidate = currentPath[i];
+						std::vector<const GmodNode*> currentParentChain;
+						for ( size_t j = 0; j <= i; ++j )
 						{
-							SPDLOG_DEBUG( "Node has location {}, preserving in intermediate nodes",
-								node.location()->value() );
+							currentParentChain.push_back( &currentPath[j] );
+						}
 
-							for ( const auto* n : remaining )
+						std::vector<const GmodNode*> intermediateNodes;
+						if ( !GmodTraversal::pathExistsBetween( targetGmod, currentParentChain, nodeToAdd, intermediateNodes ) )
+						{
+							if ( parentCandidate.isAssetFunctionNode() )
 							{
-								if ( !n->isIndividualizable( false, true ) )
+								bool hasOtherAssetFunction = false;
+								for ( const auto* nPtr : currentParentChain )
 								{
-									SPDLOG_TRACE( "Adding non-individualizable node {}", n->code() );
-									path.push_back( *n );
+									if ( nPtr != &parentCandidate && nPtr->isAssetFunctionNode() )
+									{
+										hasOtherAssetFunction = true;
+										break;
+									}
 								}
-								else
+								if ( !hasOtherAssetFunction )
 								{
-									SPDLOG_TRACE( "Adding individualizable node {} with location {}",
-										n->code(), node.location()->value() );
-									path.push_back( n->tryWithLocation( *node.location() ) );
+									throw std::runtime_error( "Tried to remove last asset function node" );
 								}
+							}
+							currentPath.erase( currentPath.begin() + i );
+							if ( i == 0 && currentPath.empty() )
+								break;
+							if ( i == 0 )
+							{
+								break;
 							}
 						}
 						else
 						{
-							SPDLOG_DEBUG( "Node has no location, adding intermediate nodes as-is" );
-							for ( const auto* n : remaining )
+							for ( const auto* interNodePtr : intermediateNodes )
 							{
-								SPDLOG_TRACE( "Adding intermediate node {}", n->code() );
-								path.push_back( *n );
+								if ( nodeToAdd.location().has_value() && interNodePtr->isIndividualizable( false, true ) )
+								{
+									currentPath.push_back( interNodePtr->tryWithLocation( *nodeToAdd.location() ) );
+								}
+								else
+								{
+									currentPath.push_back( *interNodePtr );
+								}
 							}
+							break;
 						}
-
-						SPDLOG_DEBUG( "Finished adding intermediate nodes" );
-						break;
 					}
 				}
-			}
 
-			if ( path.empty() || path.back().code() != node.code() || path.back().location() != node.location() )
-			{
-				SPDLOG_TRACE( "Adding node {} to path", node.code() );
-				path.push_back( node );
-			}
-			else
-			{
-				SPDLOG_DEBUG( "Node {} already exists in path, skipping", node.code() );
-			}
-		};
+				if ( currentPath.empty() || currentPath.back().code() != nodeToAdd.code() || currentPath.back().location() != nodeToAdd.location() )
+				{
+					currentPath.push_back( nodeToAdd );
+				}
+			};
 
-		for ( size_t i = 0; i < qualifyingNodes.size(); ++i )
+		if ( !qualifyingNodes.empty() )
 		{
-			const auto& qualifyingNode = qualifyingNodes[i];
+			addToPathHelperLambda( reconstructedPathNodes, qualifyingNodes[0].targetNode() );
+		}
 
-			if ( i > 0 && qualifyingNode.targetNode.code() == qualifyingNodes[i - 1].targetNode.code() )
+		for ( size_t i = 1; i < qualifyingNodes.size(); ++i )
+		{
+			const auto& qn = qualifyingNodes[i];
+			const GmodNode* sourceNode = qn.sourceNode();
+			const GmodNode& convertedTargetNode = qn.targetNode();
+
+			if ( convertedTargetNode.code() == qualifyingNodes[i - 1].targetNode().code() &&
+				 convertedTargetNode.location() == qualifyingNodes[i - 1].targetNode().location() )
 			{
-				SPDLOG_DEBUG( "Skipping duplicate node code {}", qualifyingNode.targetNode.code() );
 				continue;
 			}
 
-			bool codeChanged = qualifyingNode.sourceNode->code() != qualifyingNode.targetNode.code();
-
-			const GmodNode* sourceNormalAssignment = qualifyingNode.sourceNode->productType();
-			const GmodNode* targetNormalAssignment = qualifyingNode.targetNode.productType();
+			bool codeChanged = sourceNode->code() != convertedTargetNode.code();
+			const GmodNode* sourceNormalAssignment = sourceNode->productType();
+			const GmodNode* targetNormalAssignment = convertedTargetNode.productType();
 
 			bool normalAssignmentChanged =
 				( sourceNormalAssignment == nullptr && targetNormalAssignment != nullptr ) ||
@@ -358,121 +326,94 @@ namespace dnv::vista::sdk
 
 			if ( codeChanged )
 			{
-				SPDLOG_DEBUG( "Code changed from {} to {}",
-					qualifyingNode.sourceNode->code(), qualifyingNode.targetNode.code() );
-				addToPathHelperLambda( reconstructedPath, qualifyingNode.targetNode );
+				addToPathHelperLambda( reconstructedPathNodes, convertedTargetNode );
 			}
 			else if ( normalAssignmentChanged )
 			{
-				SPDLOG_DEBUG( "Normal assignment changed for node {}", qualifyingNode.targetNode.code() );
-				bool wasDeleted = sourceNormalAssignment != nullptr && targetNormalAssignment == nullptr;
-
-				if ( !codeChanged )
+				addToPathHelperLambda( reconstructedPathNodes, convertedTargetNode );
+				bool assignmentWasDeleted = sourceNormalAssignment != nullptr && targetNormalAssignment == nullptr;
+				if ( !assignmentWasDeleted && targetNormalAssignment != nullptr )
 				{
-					addToPathHelperLambda( reconstructedPath, qualifyingNode.targetNode );
-				}
-
-				if ( wasDeleted )
-				{
-					if ( qualifyingNode.targetNode.code() == targetEndNode.code() )
-					{
-						if ( i + 1 < qualifyingNodes.size() )
-						{
-							const auto& next = qualifyingNodes[i + 1];
-							if ( next.targetNode.code() != qualifyingNode.targetNode.code() )
-							{
-								SPDLOG_ERROR( "Normal assignment end node was deleted" );
-								throw std::runtime_error( "Normal assignment end node was deleted" );
-							}
-						}
-					}
-					SPDLOG_DEBUG( "Skipping deleted normal assignment" );
-					continue;
-				}
-				else if ( qualifyingNode.targetNode.code() != targetEndNode.code() )
-				{
-					SPDLOG_DEBUG( "Adding new target normal assignment node {}", targetNormalAssignment->code() );
-					addToPathHelperLambda( reconstructedPath, *targetNormalAssignment );
-					++i;
+					addToPathHelperLambda( reconstructedPathNodes, *targetNormalAssignment );
 				}
 			}
-
-			if ( !codeChanged && !normalAssignmentChanged )
+			else
 			{
-				SPDLOG_DEBUG( "No changes for node {}, adding to path", qualifyingNode.targetNode.code() );
-				addToPathHelperLambda( reconstructedPath, qualifyingNode.targetNode );
+				addToPathHelperLambda( reconstructedPathNodes, convertedTargetNode );
 			}
 
-			if ( !reconstructedPath.empty() && reconstructedPath.back().code() == targetEndNode.code() )
+			if ( !reconstructedPathNodes.empty() &&
+				 reconstructedPathNodes.back().code() == overallConvertedTargetEndNode.code() &&
+				 reconstructedPathNodes.back().location() == overallConvertedTargetEndNode.location() )
 			{
-				SPDLOG_DEBUG( "Reached target end node, stopping path reconstruction" );
 				break;
 			}
 		}
 
-		s_nodesWithLocation.clear();
-		s_nodesWithLocation.reserve( reconstructedPath.size() );
+		if ( reconstructedPathNodes.empty() )
+		{
+			return std::nullopt;
+		}
+
+		if ( reconstructedPathNodes.back().code() != overallConvertedTargetEndNode.code() ||
+			 reconstructedPathNodes.back().location() != overallConvertedTargetEndNode.location() )
+		{
+			addToPathHelperLambda( reconstructedPathNodes, overallConvertedTargetEndNode );
+		}
+
+		if ( reconstructedPathNodes.empty() ||
+			 reconstructedPathNodes.back().code() != overallConvertedTargetEndNode.code() ||
+			 reconstructedPathNodes.back().location() != overallConvertedTargetEndNode.location() )
+		{
+			return std::nullopt;
+		}
 
 		std::vector<GmodNode*> finalParentPointers;
-		if ( reconstructedPath.size() > 1 )
+		if ( reconstructedPathNodes.size() > 1 )
 		{
-			SPDLOG_DEBUG( "Building final parent pointers from {} reconstructed nodes", reconstructedPath.size() - 1 );
-			finalParentPointers.reserve( reconstructedPath.size() - 1 );
-
-			for ( size_t idx = 0; idx < reconstructedPath.size() - 1; ++idx )
+			finalParentPointers.reserve( reconstructedPathNodes.size() - 1 );
+			for ( size_t idx = 0; idx < reconstructedPathNodes.size() - 1; ++idx )
 			{
-				const GmodNode* nodePtr = nullptr;
-				if ( !targetGmod.tryGetNode( reconstructedPath[idx].code(), nodePtr ) || !nodePtr )
-				{
-					SPDLOG_ERROR( "Failed to find node with code {} in target GMOD",
-						reconstructedPath[idx].code() );
+				const GmodNode& reconstructedNode = reconstructedPathNodes[idx];
+				const GmodNode* nodePtrFromGmod = nullptr;
+				if ( !targetGmod.tryGetNode( reconstructedNode.code(), nodePtrFromGmod ) || !nodePtrFromGmod )
 					return std::nullopt;
-				}
 
-				if ( reconstructedPath[idx].location().has_value() )
+				if ( reconstructedNode.location().has_value() )
 				{
-					s_nodesWithLocation.push_back( nodePtr->tryWithLocation( reconstructedPath[idx].location() ) );
-					finalParentPointers.push_back( const_cast<GmodNode*>( &s_nodesWithLocation.back() ) );
-
-					SPDLOG_DEBUG( "Created and using node {} with location {}",
-						s_nodesWithLocation.back().code(),
-						s_nodesWithLocation.back().location()->value() );
+					nodesWithLocationList.emplace_back( nodePtrFromGmod->tryWithLocation( reconstructedNode.location() ) );
+					finalParentPointers.push_back( &nodesWithLocationList.back() );
 				}
 				else
 				{
-					finalParentPointers.push_back( const_cast<GmodNode*>( nodePtr ) );
-					SPDLOG_DEBUG( "Using node {} without location", nodePtr->code() );
+					finalParentPointers.push_back( const_cast<GmodNode*>( nodePtrFromGmod ) );
 				}
 			}
 		}
 
-		const GmodNode* finalEndNodePtr = nullptr;
-		if ( !targetGmod.tryGetNode( reconstructedPath.back().code(), finalEndNodePtr ) || !finalEndNodePtr )
+		const GmodNode& finalEndNodeFromReconstruction = reconstructedPathNodes.back();
+		GmodNode* finalEndNodeForPathConstruction;
+		const GmodNode* finalEndNodeBasePtrFromGmod = nullptr;
+		if ( !targetGmod.tryGetNode( finalEndNodeFromReconstruction.code(), finalEndNodeBasePtrFromGmod ) || !finalEndNodeBasePtrFromGmod )
+			return std::nullopt;
+
+		if ( finalEndNodeFromReconstruction.location().has_value() )
 		{
-			SPDLOG_ERROR( "Failed to find final end node with code {} in target GMOD",
-				reconstructedPath.back().code() );
+			nodesWithLocationList.emplace_back( finalEndNodeBasePtrFromGmod->tryWithLocation( finalEndNodeFromReconstruction.location() ) );
+			finalEndNodeForPathConstruction = &nodesWithLocationList.back();
+		}
+		else
+		{
+			finalEndNodeForPathConstruction = const_cast<GmodNode*>( finalEndNodeBasePtrFromGmod );
+		}
+
+		size_t finalMissingLinkAt;
+		if ( !GmodPath::isValid( finalParentPointers, *finalEndNodeForPathConstruction, finalMissingLinkAt ) )
+		{
 			return std::nullopt;
 		}
 
-		GmodNode* finalNodeWithLocation = const_cast<GmodNode*>( finalEndNodePtr );
-		if ( reconstructedPath.back().location().has_value() )
-		{
-			s_nodesWithLocation.push_back( finalEndNodePtr->tryWithLocation( reconstructedPath.back().location() ) );
-			finalNodeWithLocation = const_cast<GmodNode*>( &s_nodesWithLocation.back() );
-			SPDLOG_DEBUG( "Created final node {} with location {}",
-				finalNodeWithLocation->code(),
-				reconstructedPath.back().location()->value() );
-		}
-
-		size_t missingLinkAt2;
-		if ( !GmodPath::isValid( finalParentPointers, *finalNodeWithLocation, missingLinkAt2 ) )
-		{
-			SPDLOG_ERROR( "Final reconstructed path is not valid, missing link at index {}", missingLinkAt2 );
-			return std::nullopt;
-		}
-
-		SPDLOG_DEBUG( "Successfully created valid path with {} parent nodes", finalParentPointers.size() );
-		return GmodPath( targetGmod, finalNodeWithLocation, finalParentPointers );
+		return GmodPath( targetGmod, finalEndNodeForPathConstruction, finalParentPointers );
 	}
 
 	std::optional<LocalIdBuilder> GmodVersioning::convertLocalId(

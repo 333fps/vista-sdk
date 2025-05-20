@@ -321,7 +321,7 @@ namespace dnv::vista::sdk
 				path = gmod.parsePath( param.path );
 			}
 
-			std::vector<GmodIndividualizableSet> sets = path.individualizableNodes();
+			std::vector<GmodIndividualizableSet> sets = path.individualizableSets();
 			const auto& expectedOuterVector = param.expected.value();
 
 			ASSERT_EQ( expectedOuterVector.size(), sets.size() );
@@ -380,7 +380,7 @@ namespace dnv::vista::sdk
 			std::string fullPathString = shortPath.toFullPathString();
 			GmodPath path = GmodPath::parseFullPath( fullPathString, version );
 
-			std::vector<GmodIndividualizableSet> sets = path.individualizableNodes();
+			std::vector<GmodIndividualizableSet> sets = path.individualizableSets();
 			const auto& expectedOuterVector = param.expected.value();
 
 			ASSERT_EQ( expectedOuterVector.size(), sets.size() );
@@ -424,7 +424,7 @@ namespace dnv::vista::sdk
 			const Gmod& gmod = VIS::instance().gmod( version );
 
 			GmodPath path = gmod.parsePath( inputPath );
-			std::vector<GmodIndividualizableSet> sets = path.individualizableNodes();
+			std::vector<GmodIndividualizableSet> sets = path.individualizableSets();
 
 			std::set<std::string> uniqueCodes;
 			for ( const auto& set : sets )
@@ -463,7 +463,7 @@ namespace dnv::vista::sdk
 			std::string fullPathString = shortPath.toFullPathString();
 			GmodPath path = GmodPath::parseFullPath( fullPathString, version );
 
-			std::vector<GmodIndividualizableSet> sets = path.individualizableNodes();
+			std::vector<GmodIndividualizableSet> sets = path.individualizableSets();
 
 			std::set<std::string> uniqueCodes;
 			for ( const auto& set : sets )

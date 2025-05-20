@@ -78,13 +78,13 @@ namespace dnv::vista::sdk
 		{
 			struct PathExistsContext
 			{
-				const GmodNode& to_node_ref;
+				const GmodNode& toNode;
 				std::vector<const GmodNode*> remainingParents_list;
-				const std::vector<const GmodNode*>& fromPath_list_ref;
+				const std::vector<const GmodNode*>& fromPathList;
 
 				PathExistsContext( const GmodNode& to, const std::vector<const GmodNode*>& fromPath )
-					: to_node_ref{ to },
-					  fromPath_list_ref{ fromPath }
+					: toNode{ to },
+					  fromPathList{ fromPath }
 				{
 				}
 
@@ -117,7 +117,7 @@ namespace dnv::vista::sdk
 
 			TraverseHandlerWithState<PathExistsContext> handler_func =
 				[]( PathExistsContext& ctx, const std::vector<const GmodNode*>& currentTraversalParents, const GmodNode& currentNode ) -> TraversalHandlerResult {
-				if ( currentNode.code() != ctx.to_node_ref.code() )
+				if ( currentNode.code() != ctx.toNode.code() || currentNode.location() != ctx.toNode.location() )
 				{
 					return TraversalHandlerResult::Continue;
 				}
@@ -145,15 +145,16 @@ namespace dnv::vista::sdk
 				std::vector<const GmodNode*> pathForValidation = absolutePathToCurrentNodeParent;
 				pathForValidation.push_back( &currentNode );
 
-				if ( pathForValidation.size() < ctx.fromPath_list_ref.size() )
+				if ( pathForValidation.size() < ctx.fromPathList.size() )
 				{
 					return TraversalHandlerResult::Continue;
 				}
 
 				bool match = true;
-				for ( size_t i = 0; i < ctx.fromPath_list_ref.size(); ++i )
+				for ( size_t i = 0; i < ctx.fromPathList.size(); ++i )
 				{
-					if ( pathForValidation[i]->code() != ctx.fromPath_list_ref[i]->code() )
+					if ( pathForValidation[i]->code() != ctx.fromPathList[i]->code() ||
+						 pathForValidation[i]->location() != ctx.fromPathList[i]->location() )
 					{
 						match = false;
 						break;
@@ -165,7 +166,7 @@ namespace dnv::vista::sdk
 					for ( const auto* p_eval : pathForValidation )
 					{
 						bool foundInFromPath = false;
-						for ( const auto* p_from : ctx.fromPath_list_ref )
+						for ( const auto* p_from : ctx.fromPathList )
 						{
 							if ( p_eval->code() == p_from->code() )
 							{

@@ -32,9 +32,6 @@ namespace dnv::vista::sdk
 		{
 			class Parents
 			{
-				std::vector<const GmodNode*> m_parents;
-				std::unordered_map<std::string, int> m_occurrences;
-
 			public:
 				Parents();
 
@@ -43,6 +40,10 @@ namespace dnv::vista::sdk
 				int occurrences( const GmodNode& node ) const;
 				const GmodNode* lastOrDefault() const;
 				const std::vector<const GmodNode*>& asList() const;
+
+			private:
+				std::vector<const GmodNode*> m_parents;
+				std::unordered_map<std::string, int> m_occurrences;
 			};
 
 			template <typename TState>

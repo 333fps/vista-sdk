@@ -2,9 +2,10 @@
 
 #include "dnv/vista/sdk/GmodPath.h"
 
-#include "dnv/vista/sdk/Gmod.h"
 #include "dnv/vista/sdk/GmodNode.h"
+#include "dnv/vista/sdk/GmodTraversal.h"
 #include "dnv/vista/sdk/Locations.h"
+#include "dnv/vista/sdk/VIS.h"
 
 namespace dnv::vista::sdk
 {
@@ -829,69 +830,12 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	GmodPath GmodPath::build()
-	{
-		SPDLOG_TRACE( "GmodPath::build() called for path with m_node: {}.", ( m_node ? m_node->code().data() : "null" ) );
-
-		return *this;
-	}
-
 	bool GmodPath::isValid( const std::vector<GmodNode*>& parents, const GmodNode& node )
 	{
 		SPDLOG_TRACE( "GmodPath::isValid(parentsCount={}, nodeCode={}) called", parents.size(), node.code().data() );
+		size_t missingLinkAt_discard;
 
-		if ( parents.empty() )
-		{
-			SPDLOG_DEBUG( "GmodPath::isValid: parents is empty, returning false." );
-			return false;
-		}
-
-		GmodNode* firstParent = parents[0];
-		if ( firstParent == nullptr )
-		{
-			SPDLOG_DEBUG( "GmodPath::isValid: First parent in parents is null, returning false." );
-			return false;
-		}
-		if ( !firstParent->isRoot() )
-		{
-			SPDLOG_DEBUG( "GmodPath::isValid: First parent (code: {}) is not root, returning false.", firstParent->code().data() );
-			return false;
-		}
-
-		for ( size_t i = 0; i < parents.size(); ++i )
-		{
-			GmodNode* currentParentNode = parents[i];
-			if ( currentParentNode == nullptr )
-			{
-				SPDLOG_WARN( "GmodPath::isValid: Null parent encountered in parents at index {}.", i );
-				return false;
-			}
-
-			const GmodNode* childNodeToCheck;
-			if ( i + 1 < parents.size() )
-			{
-				childNodeToCheck = parents[i + 1];
-				if ( childNodeToCheck == nullptr )
-				{
-					SPDLOG_WARN( "GmodPath::isValid: Null child (next parent) encountered in parents at index {}.", i + 1 );
-					return false;
-				}
-			}
-			else
-			{
-				childNodeToCheck = &node;
-			}
-
-			if ( !currentParentNode->isChild( *childNodeToCheck ) )
-			{
-				SPDLOG_DEBUG( "GmodPath::isValid: Node '{}' is not a child of '{}' (parent at index {}). Returning false.",
-					childNodeToCheck->code().data(), currentParentNode->code().data(), i );
-				return false;
-			}
-		}
-
-		SPDLOG_DEBUG( "GmodPath::isValid: Path segment is valid. Returning true." );
-		return true;
+		return isValid( parents, node, missingLinkAt_discard );
 	}
 
 	bool GmodPath::isValid( const std::vector<GmodNode*>& parents, const GmodNode& node, size_t& missingLinkAt )
@@ -903,6 +847,7 @@ namespace dnv::vista::sdk
 		if ( parents.empty() )
 		{
 			SPDLOG_WARN( "GmodPath::isValid OL2: parents is empty, returning false." );
+
 			return false;
 		}
 
@@ -910,7 +855,7 @@ namespace dnv::vista::sdk
 		if ( firstParent == nullptr )
 		{
 			SPDLOG_WARN( "GmodPath::isValid OL2: First parent in parents is null, returning false." );
-			missingLinkAt = 0;
+
 			return false;
 		}
 
@@ -918,7 +863,6 @@ namespace dnv::vista::sdk
 		{
 			SPDLOG_WARN( "GmodPath::isValid OL2: First parent (code: {}) is not root, returning false.", firstParent->code().data() );
 
-			missingLinkAt = std::numeric_limits<size_t>::max();
 			return false;
 		}
 
@@ -928,7 +872,7 @@ namespace dnv::vista::sdk
 			if ( currentParentNode == nullptr )
 			{
 				SPDLOG_WARN( "GmodPath::isValid OL2: Null parent encountered in parents at index {}.", i );
-				missingLinkAt = i;
+
 				return false;
 			}
 
@@ -938,8 +882,8 @@ namespace dnv::vista::sdk
 				childNodeToCheck = parents[i + 1];
 				if ( childNodeToCheck == nullptr )
 				{
-					SPDLOG_WARN( "GmodPath::isValid OL2: Null child (next parent) encountered in parents at index {}.", i + 1 );
-					missingLinkAt = i;
+					SPDLOG_WARN( "GmodPath::isValid OL2: Null child (next parent) encountered for parent at index {}.", i );
+
 					return false;
 				}
 			}
@@ -953,15 +897,17 @@ namespace dnv::vista::sdk
 				SPDLOG_WARN( "GmodPath::isValid OL2: Node '{}' is not a child of '{}' (parent at index {}). Returning false.",
 					childNodeToCheck->code().data(), currentParentNode->code().data(), i );
 				missingLinkAt = i;
+
 				return false;
 			}
 		}
 
 		SPDLOG_DEBUG( "GmodPath::isValid OL2: Path segment is valid. Returning true." );
+
 		return true;
 	}
 
-	bool GmodPath::isMappable()
+	bool GmodPath::isMappable() const
 	{
 		SPDLOG_TRACE( "GmodPath::isMappable() called." );
 		if ( !m_node )
@@ -977,7 +923,7 @@ namespace dnv::vista::sdk
 		return result;
 	}
 
-	bool GmodPath::isIndividualizable()
+	bool GmodPath::isIndividualizable() const
 	{
 		SPDLOG_TRACE( "GmodPath::isIndividualizable() called." );
 
@@ -1025,21 +971,25 @@ namespace dnv::vista::sdk
 
 	size_t GmodPath::hashCode() const noexcept
 	{
-		SPDLOG_TRACE( "GmodPath::hashCode() called." );
 		size_t seed = 0;
 
-		std::hash<GmodNode*> nodeHasher;
-
-		for ( const GmodNode* parentNode : m_parents )
+		for ( const GmodNode* parentNodePtr : m_parents )
 		{
-			size_t parentHash = parentNode ? nodeHasher( const_cast<GmodNode*>( parentNode ) ) : 0;
-			seed ^= parentHash + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 );
+			size_t nodeHash = 0;
+			if ( parentNodePtr )
+			{
+				nodeHash = parentNodePtr->hashCode();
+			}
+			seed = seed ^ ( nodeHash + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 ) );
 		}
 
-		size_t nodeHash = m_node ? nodeHasher( m_node ) : 0;
-		seed ^= nodeHash + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 );
+		size_t finalNodeHash = 0;
+		if ( m_node )
+		{
+			finalNodeHash = m_node->hashCode();
+		}
+		seed = seed ^ ( finalNodeHash + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 ) );
 
-		SPDLOG_DEBUG( "GmodPath::hashCode() calculated hash: {}.", seed );
 		return seed;
 	}
 
@@ -1095,7 +1045,7 @@ namespace dnv::vista::sdk
 		return nullptr;
 	}
 
-	std::vector<GmodIndividualizableSet> GmodPath::individualizableNodes() const
+	std::vector<GmodIndividualizableSet> GmodPath::individualizableSets() const
 	{
 		SPDLOG_TRACE( "GmodPath::individualizableNodes() called." );
 		std::vector<GmodIndividualizableSet> result;
@@ -2044,11 +1994,10 @@ namespace dnv::vista::sdk
 				searchOffset = nextSlashPos + 1;
 			}
 
-			if ( nodeCode.empty() && searchOffset >= currentProcessing.length() && currentProcessing.back() == '/' )
+			if ( nodeCode.empty() )
 			{
-				/*
-				 * TODO: Use the same logic as in GmodPath::parseInternal
-				 */
+				SPDLOG_ERROR( "GmodPath::parseFullPathInternal: Path string '{}' contains an empty segment.", item );
+				return std::make_unique<GmodParsePathResult::Err>( std::string( "Path contains an empty segment" ) );
 			}
 
 			size_t dashIndex = nodeCode.find( '-' );
@@ -2500,6 +2449,20 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "GmodIndividualizableSet has no nodes that are part of short path" );
 		}
 		SPDLOG_TRACE( "GmodIndividualizableSet constructor: Successfully initialized and validated." );
+	}
+
+	GmodPath GmodIndividualizableSet::build()
+	{
+		SPDLOG_TRACE( "GmodIndividualizableSet::build() called. Current m_isBuilt state: {}", m_isBuilt );
+		if ( m_isBuilt )
+		{
+			SPDLOG_ERROR( "GmodIndividualizableSet::build(): Attempted to build a set that has already been built." );
+			throw std::logic_error( "GmodIndividualizableSet has already been built." );
+		}
+
+		m_isBuilt = true;
+		SPDLOG_DEBUG( "GmodIndividualizableSet::build(): Set m_isBuilt to true. Moving m_path." );
+		return std::move( m_path );
 	}
 
 	std::vector<GmodNode*> GmodIndividualizableSet::nodes() const

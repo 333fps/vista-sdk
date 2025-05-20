@@ -1,15 +1,16 @@
 #pragma once
 
-#include "GmodNode.h"
-#include "Locations.h"
-#include "VIS.h"
-#include "GmodTraversal.h"
-
 namespace dnv::vista::sdk
 {
 	class Gmod;
+	class GmodNode;
 	class GmodParsePathResult;
 	class GmodIndividualizableSet;
+	class Location;
+	class Locations;
+
+	enum class TraversalHandlerResult;
+	enum class VisVersion;
 
 	namespace internal
 	{
@@ -43,8 +44,6 @@ namespace dnv::vista::sdk
 		GmodPath& operator=( GmodPath&& other ) noexcept;
 		~GmodPath();
 
-		GmodPath build();
-
 		[[nodiscard]] bool operator==( const GmodPath& other ) const noexcept;
 		[[nodiscard]] bool operator!=( const GmodPath& other ) const noexcept;
 
@@ -53,8 +52,8 @@ namespace dnv::vista::sdk
 
 		[[nodiscard]] static bool isValid( const std::vector<GmodNode*>& parents, const GmodNode& node );
 		[[nodiscard]] static bool isValid( const std::vector<GmodNode*>& parents, const GmodNode& node, size_t& missingLinkAt );
-		[[nodiscard]] bool isMappable();
-		[[nodiscard]] bool isIndividualizable();
+		[[nodiscard]] bool isMappable() const;
+		[[nodiscard]] bool isIndividualizable() const;
 
 		VisVersion visVersion() const noexcept;
 		size_t hashCode() const noexcept;
@@ -66,7 +65,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] size_t length() const noexcept;
 		[[nodiscard]] GmodNode* rootNode() const noexcept;
 		[[nodiscard]] GmodNode* parentNode() const noexcept;
-		[[nodiscard]] std::vector<GmodIndividualizableSet> individualizableNodes() const;
+		[[nodiscard]] std::vector<GmodIndividualizableSet> individualizableSets() const;
 
 		[[nodiscard]] std::optional<std::string> normalAssignmentName( size_t nodeDepth ) const;
 		[[nodiscard]] std::vector<std::pair<size_t, std::string>> commonNames() const;
@@ -97,11 +96,9 @@ namespace dnv::vista::sdk
 
 		class Enumerator final
 		{
-		private:
 			friend class GmodPath;
-			const GmodPath* m_pathInstance;
-			size_t m_currentIndex;
 
+		private:
 			Enumerator( const GmodPath* pathInst, size_t startIndex = std::numeric_limits<size_t>::max() );
 
 		public:
@@ -129,6 +126,11 @@ namespace dnv::vista::sdk
 			[[nodiscard]] GmodNode* current() const;
 			bool next();
 			void reset();
+
+		private:
+			friend class GmodPath;
+			const GmodPath* m_pathInstance;
+			size_t m_currentIndex;
 		};
 
 	private:
@@ -148,18 +150,28 @@ namespace dnv::vista::sdk
 
 	class GmodIndividualizableSet final
 	{
-	private:
-		std::vector<int> m_nodeIndices;
-		GmodPath m_path;
-
 	public:
 		GmodIndividualizableSet( const std::vector<int>& nodeIndices, const GmodPath& sourcePath );
+
+		GmodIndividualizableSet() = delete;
+		GmodIndividualizableSet( const GmodIndividualizableSet& ) = delete;
+		GmodIndividualizableSet( GmodIndividualizableSet&& ) noexcept = default;
+		GmodIndividualizableSet& operator=( const GmodIndividualizableSet& ) = delete;
+		GmodIndividualizableSet& operator=( GmodIndividualizableSet&& ) noexcept = delete;
+		~GmodIndividualizableSet() = default;
+
+		GmodPath build();
 
 		[[nodiscard]] std::vector<GmodNode*> nodes() const;
 		[[nodiscard]] const std::vector<int>& nodeIndices() const noexcept;
 		[[nodiscard]] std::optional<Location> location() const;
 		void setLocation( const std::optional<Location>& location );
 		[[nodiscard]] std::string toString() const;
+
+	private:
+		std::vector<int> m_nodeIndices;
+		GmodPath m_path;
+		bool m_isBuilt;
 	};
 
 	class GmodParsePathResult
@@ -182,26 +194,28 @@ namespace dnv::vista::sdk
 	class GmodParsePathResult::Ok : public GmodParsePathResult
 	{
 	public:
-		GmodPath m_path;
-
 		explicit Ok( GmodPath path );
 
 		Ok( const Ok& ) = delete;
 		Ok( Ok&& ) noexcept = delete;
 		Ok& operator=( const Ok& ) = delete;
 		Ok& operator=( Ok&& ) noexcept = delete;
+
+	public:
+		GmodPath m_path;
 	};
 
 	class GmodParsePathResult::Err : public GmodParsePathResult
 	{
 	public:
-		std::string error;
-
 		explicit Err( std::string errorString );
 
 		Err( const Err& ) = delete;
 		Err( Err&& ) noexcept = delete;
 		Err& operator=( const Err& ) = delete;
 		Err& operator=( Err&& ) noexcept = delete;
+
+	public:
+		std::string error;
 	};
 }

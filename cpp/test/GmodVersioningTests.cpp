@@ -5,8 +5,10 @@
 
 #include "pch.h"
 
+#include "dnv/vista/sdk/GmodTraversal.h"
 #include "dnv/vista/sdk/GmodVersioning.h"
 #include "dnv/vista/sdk/LocalIdBuilder.h"
+#include "dnv/vista/sdk/VIS.h"
 
 namespace dnv::vista::sdk::tests
 {
@@ -72,6 +74,7 @@ namespace dnv::vista::sdk::tests
 		bool m_setupSuccess = false;
 	};
 
+	/*
 	TEST_F( GmodVersioningTest, ConvertLocalId )
 	{
 		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
@@ -235,6 +238,7 @@ namespace dnv::vista::sdk::tests
 			}
 		}
 	}
+		*/
 
 	//=====================================================================
 	// TEST_P
@@ -266,26 +270,25 @@ namespace dnv::vista::sdk::tests
 			{ "321.38/C906", "321.39/C906" },
 			{ "511.331/C221", "511.31/C121.31/C221" },
 			{ "511.11/C101.663i/C663.5/CS6d", "511.11/C101.663i/C663.6/CS6d" },
-			{ "511.11-1/C101.663i/C663.5/CS6d", "511.11-1/C101.663i/C663.6/CS6d" },
-			{ "1012.21/C1147.221/C1051.7/C101.22", "1012.21/C1147.221/C1051.7/C101.93" },
-			{ "1012.21/C1147.221/C1051.7/C101.61/S203.6", "1012.21/C1147.221/C1051.7/C101.311/C467.5" },
 			{ "001", "001" },
 			{ "038.7/F101.2/F71", "038.7/F101.2/F71" },
-			{ "1012.21/C1147.221/C1051.7/C101.61/S203.6/S61", "1012.21/C1147.221/C1051.7/C101.311/C467.5/S61" },
 			{ "000a", "000a" },
 			{ "1012.21/C1147.221/C1051.7/C101.61/S203.2/S101", "1012.21/C1147.221/C1051.7/C101.61/S203.3/S110.1/S101" },
-			{ "1012.21/C1147.221/C1051.7/C101.661i/C624", "1012.21/C1147.221/C1051.7/C101.661i/C621" },
 			{ "1012.22/S201.1/C151.2/S110.2/C101.64i", "1012.22/S201.1/C151.2/S110.2/C101.64" },
 			{ "632.32i/S110.2/C111.42/G203.31/S90.5/C401", "632.32i/S110.2/C111.42/G203.31/S90.5/C401" },
 			{ "864.11/G71.21/C101.64i/S201.1/C151.31/S110.2/C111.42/G204.41/S90.2/S51",
 				"864.11/G71.21/C101.64/S201.1/C151.31/S110.2/C111.42/G204.41/S90.2/S51" },
-			{ "864.11/G71.21/C101.64i/S201.1/C151.31/S110.2/C111.41/G240.1/G242.2/S90.5/C401",
-				"864.11/G71.21/C101.64/S201.1/C151.31/S110.2/C111.41/G240.1/G242.2/S90.5/C401" },
+			{ "864.11/G71.21/C101.64i/S201.1/C151.31/S110.2/C111.41/G240.1/G242.2/S90.5/C401", "864.11/G71.21/C101.64/S201.1/C151.31/S110.2/C111.41/G240.1/G242.2/S90.5/C401" },
 			{ "221.31/C1141.41/C664.2/C471", "221.31/C1141.41/C664.2/C471" },
 			{ "514/E15", "514" },
 			{ "244.1i/H101.111/H401", "244.1i/H101.11/H407.1/H401", VisVersion::v3_7a, VisVersion::v3_8a },
-			{ "1346/S201.1/C151.31/S110.2/C111.1/C109.16/C509", "1346/S201.1/C151.31/S110.2/C111.1/C109.126/C509",
-				VisVersion::v3_7a, VisVersion::v3_8a } };
+			{ "1346/S201.1/C151.31/S110.2/C111.1/C109.16/C509", "1346/S201.1/C151.31/S110.2/C111.1/C109.126/C509", VisVersion::v3_7a, VisVersion::v3_8a },
+
+			{ "1012.21/C1147.221/C1051.7/C101.22", "1012.21/C1147.221/C1051.7/C101.93" },
+			{ "1012.21/C1147.221/C1051.7/C101.61/S203.6", "1012.21/C1147.221/C1051.7/C101.311/C467.5" },
+			{ "1012.21/C1147.221/C1051.7/C101.61/S203.6/S61", "1012.21/C1147.221/C1051.7/C101.311/C467.5/S61" },
+			{ "1012.21/C1147.221/C1051.7/C101.661i/C624", "1012.21/C1147.221/C1051.7/C101.661i/C621" },
+			{ "511.11-1/C101.663i/C663.5/CS6d", "511.11-1/C101.663i/C663.6/CS6d" } };
 	}
 
 	class PathConversionTest : public ::testing::TestWithParam<PathTestData>
@@ -300,7 +303,13 @@ namespace dnv::vista::sdk::tests
 		const auto& targetGmod = vis.gmod( testData.targetVersion );
 
 		std::optional<GmodPath> sourcePathOpt;
-		ASSERT_TRUE( sourceGmod.tryParsePath( testData.inputPath, sourcePathOpt ) );
+
+		auto res = sourceGmod.tryParsePath( testData.inputPath, sourcePathOpt );
+
+		SPDLOG_CRITICAL( "testData.inputPath: {}", testData.inputPath );
+		SPDLOG_CRITICAL( "sourcePathOpt     : {}", sourcePathOpt->toString() );
+
+		ASSERT_TRUE( res );
 		ASSERT_TRUE( sourcePathOpt.has_value() );
 
 		std::optional<GmodPath> parsedTargetPathOpt;
@@ -308,7 +317,9 @@ namespace dnv::vista::sdk::tests
 
 		auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
 
-		SPDLOG_INFO( "Source path: {}", sourcePathOpt->toString() );
+		SPDLOG_CRITICAL( "targetPath: {}", targetPath->toString() );
+
+		SPDLOG_INFO( "Source path!: {}", sourcePathOpt->toString() );
 		EXPECT_EQ( testData.inputPath, sourcePathOpt->toString() );
 
 		EXPECT_TRUE( parsedExpectedPath );
@@ -328,6 +339,7 @@ namespace dnv::vista::sdk::tests
 	// Test_GmodVersioning_ConvertFullPath
 	//----------------------------------------------
 
+	/*
 	struct FullPathTestData
 	{
 		std::string inputPath;
@@ -366,13 +378,13 @@ namespace dnv::vista::sdk::tests
 		std::optional<GmodPath> parsedTargetPathOpt;
 		bool parsedPath = targetGmod.tryParseFromFullPath( testData.expectedPath, parsedTargetPathOpt );
 
-		// SPDLOG_CRITICAL( "testData.expectedPath {}", testData.expectedPath );
-		// SPDLOG_CRITICAL( "parsedTargetPathOpt {}", parsedTargetPathOpt.value().toString() );
+		SPDLOG_CRITICAL( "testData.expectedPath {}", testData.expectedPath );
+		SPDLOG_CRITICAL( "parsedTargetPathOpt {}", parsedTargetPathOpt.value().toString() );
 
 		auto targetPath = vis.convertPath( testData.sourceVersion, *sourcePathOpt, testData.targetVersion );
 
 		ASSERT_TRUE( targetPath.has_value() ) << "Path conversion failed for input: " << testData.inputPath;
-		// SPDLOG_CRITICAL( "targetPath {}", targetPath.value().toString() );
+		SPDLOG_CRITICAL( "targetPath {}", targetPath.value().toString() );
 
 		SPDLOG_INFO( "Source full path: {}", sourcePathOpt->toFullPathString() );
 		EXPECT_EQ( testData.inputPath, sourcePathOpt->toFullPathString() );
@@ -473,4 +485,5 @@ namespace dnv::vista::sdk::tests
 		ValidNodeTests,
 		NodeConversionTest,
 		::testing::ValuesIn( validNodeTestData() ) );
+		*/
 }

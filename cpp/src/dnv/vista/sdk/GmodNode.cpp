@@ -24,11 +24,11 @@ namespace dnv::vista::sdk
 		static constexpr const char* NODE_CATEGORY_PRODUCT_FUNCTION = "PRODUCT FUNCTION";
 		static constexpr const char* NODE_CATEGORY_ASSET_FUNCTION = "ASSET FUNCTION";
 
-		static constexpr const char* NODE_TYPE_SELECTION = "SELECTION";
 		static constexpr const char* NODE_TYPE_GROUP = "GROUP";
 		static constexpr const char* NODE_TYPE_COMPOSITION = "COMPOSITION";
 
 		static constexpr const char* NODE_TYPE_VALUE_TYPE = "TYPE";
+		static constexpr const char* NODE_TYPE_VALUE_SELECTION = "SELECTION";
 		static constexpr const char* NODE_CATEGORY_VALUE_FUNCTION = "FUNCTION";
 	}
 
@@ -296,14 +296,12 @@ namespace dnv::vista::sdk
 	{
 		if ( m_children.size() != 1 )
 		{
-			SPDLOG_WARN( "Product type check failed: expected 1 child, found {}", m_children.size() );
 			return nullptr;
 		}
 
 		if ( m_metadata.category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
 		{
-			SPDLOG_WARN( "Product type check failed: expected FUNCTION category, found {}",
-				m_metadata.category() );
+			SPDLOG_WARN( "Product type check failed: expected FUNCTION category, found {}", m_metadata.category() );
 			return nullptr;
 		}
 
@@ -316,15 +314,13 @@ namespace dnv::vista::sdk
 
 		if ( child->m_metadata.category() != NODE_CATEGORY_PRODUCT )
 		{
-			SPDLOG_WARN( "Product type check failed: expected PRODUCT category, found {}",
-				child->m_metadata.category() );
+			SPDLOG_WARN( "Product type check failed: expected PRODUCT category, found {}", child->m_metadata.category() );
 			return nullptr;
 		}
 
 		if ( child->m_metadata.type() != NODE_TYPE_VALUE_TYPE )
 		{
-			SPDLOG_WARN( "Product type check failed: expected TYPE type, found {}",
-				child->m_metadata.type() );
+			SPDLOG_WARN( "Product type check failed: expected TYPE type, found {}", child->m_metadata.type() );
 			return nullptr;
 		}
 
@@ -336,58 +332,36 @@ namespace dnv::vista::sdk
 	{
 		if ( m_children.size() != 1 )
 		{
-			SPDLOG_WARN( "Product selection check failed: expected 1 child, found {}",
-				m_children.size() );
-
+			SPDLOG_DEBUG( "Product selection check failed: expected 1 child, found {}", m_children.size() );
 			return nullptr;
 		}
 
 		if ( m_metadata.category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
 		{
-			SPDLOG_WARN( "Product selection check failed: expected FUNCTION category, found {}",
-				m_metadata.category() );
-
+			SPDLOG_DEBUG( "Product selection check failed: current node category '{}' does not contain FUNCTION", m_metadata.category() );
 			return nullptr;
 		}
 
 		const GmodNode* child = m_children[0];
 		if ( !child )
 		{
-			SPDLOG_WARN( "Product selection check failed: child is null" );
-
+			SPDLOG_WARN( "Product selection check failed: child pointer is null" );
 			return nullptr;
-		}
-
-		if ( child )
-		{
-			SPDLOG_INFO( "Child node code: {}", child->code() );
-
-			const auto& childCategory = child->metadata().category();
-			SPDLOG_INFO( "Child category: '{}'", childCategory );
-			if ( childCategory.empty() )
-			{
-				SPDLOG_ERROR( "Child node '{}' has an empty category!", child->code() );
-				return nullptr;
-			}
 		}
 
 		if ( child->m_metadata.category().find( NODE_CATEGORY_PRODUCT ) == std::string::npos )
 		{
-			SPDLOG_WARN( "Product selection check failed: expected PRODUCT category, found {}",
-				child->m_metadata.category() );
-
+			SPDLOG_DEBUG( "Product selection check failed: child category '{}' does not contain PRODUCT", child->m_metadata.category() );
 			return nullptr;
 		}
-		if ( child->m_metadata.type() != NODE_TYPE_SELECTION )
+
+		if ( child->m_metadata.type() != NODE_TYPE_VALUE_SELECTION )
 		{
-			SPDLOG_WARN( "Product selection check failed: expected SELECTION type, found {}",
-				child->m_metadata.type() );
-
+			SPDLOG_DEBUG( "Product selection check failed: child type '{}' is not SELECTION", child->m_metadata.type() );
 			return nullptr;
 		}
 
-		SPDLOG_DEBUG( "Product selection check succeeded: {}", child->m_code );
-
+		SPDLOG_DEBUG( "Product selection check succeeded for child: {}", child->code().data() );
 		return child;
 	}
 
@@ -489,7 +463,7 @@ namespace dnv::vista::sdk
 
 			return false;
 		}
-		if ( m_metadata.type() == NODE_TYPE_SELECTION )
+		if ( m_metadata.type() == NODE_TYPE_VALUE_SELECTION )
 		{
 			SPDLOG_DEBUG( "Node is a selection, not individualizable: {}", m_code );
 
