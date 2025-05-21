@@ -115,7 +115,7 @@ We are developing some benchmarks to keep track of the performance characteristi
 #### Transport packages - DataChannelList and TimeSeriesData
 
 The ISO-19848/10947 standards define the schema for the XML encoding of the transport packages.
-The JSON encoding is only provded in example form, but we have developed [JSON schemas](https://json-schema.org/) for these packages [here](schemas/json/).
+The JSON encoding is only provided in example form, but we have developed [JSON schemas](https://json-schema.org/) for these packages [here](schemas/json/).
 
 In the benchmark below we try to isolate the difference between Json and Avro encoding, and measure the effect of compression using Bzip2 and Brotli.
 See the `Payload size` column below for an insight into size of ISO-19848 packages over the wire.

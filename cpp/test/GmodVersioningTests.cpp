@@ -51,8 +51,6 @@ namespace dnv::vista::sdk::tests
 
 				ASSERT_NE( m_gmod_v3_4a, nullptr );
 				ASSERT_NE( m_gmod_v3_6a, nullptr );
-				ASSERT_FALSE( m_gmod_v3_4a->isEmpty() ) << "Dictionary is empty for GMOD 3-4a";
-				ASSERT_FALSE( m_gmod_v3_6a->isEmpty() ) << "Dictionary is empty for GMOD 3-6a";
 
 				m_setupSuccess = true;
 			}
@@ -74,7 +72,6 @@ namespace dnv::vista::sdk::tests
 		bool m_setupSuccess = false;
 	};
 
-	/*
 	TEST_F( GmodVersioningTest, ConvertLocalId )
 	{
 		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
@@ -160,11 +157,6 @@ namespace dnv::vista::sdk::tests
 				continue;
 
 			const auto& gmod = m_vis->gmod( version );
-			if ( gmod.isEmpty() )
-			{
-				SPDLOG_WARN( "GMOD for version {} is empty, skipping.", dnv::vista::sdk::VisVersionExtensions::toVersionString( version ) );
-				continue;
-			}
 
 			auto enumerator = gmod.enumerator();
 			while ( enumerator.next() )
@@ -199,12 +191,6 @@ namespace dnv::vista::sdk::tests
 		for ( const auto& sourceVersion : visVersionsToTest )
 		{
 			const auto& gmod = m_vis->gmod( sourceVersion );
-			if ( gmod.isEmpty() )
-			{
-				SPDLOG_WARN( "GMOD for version {} is empty, skipping.", dnv::vista::sdk::VisVersionExtensions::toVersionString( sourceVersion ) );
-				errored[sourceVersion] = {};
-				continue;
-			}
 
 			SPDLOG_INFO( "Converting {} to {}", dnv::vista::sdk::VisVersionExtensions::toVersionString( sourceVersion ), dnv::vista::sdk::VisVersionExtensions::toVersionString( latestVisVersion ) );
 
@@ -238,7 +224,6 @@ namespace dnv::vista::sdk::tests
 			}
 		}
 	}
-		*/
 
 	//=====================================================================
 	// TEST_P
@@ -283,11 +268,11 @@ namespace dnv::vista::sdk::tests
 			{ "514/E15", "514" },
 			{ "244.1i/H101.111/H401", "244.1i/H101.11/H407.1/H401", VisVersion::v3_7a, VisVersion::v3_8a },
 			{ "1346/S201.1/C151.31/S110.2/C111.1/C109.16/C509", "1346/S201.1/C151.31/S110.2/C111.1/C109.126/C509", VisVersion::v3_7a, VisVersion::v3_8a },
-
-			{ "1012.21/C1147.221/C1051.7/C101.22", "1012.21/C1147.221/C1051.7/C101.93" },
 			{ "1012.21/C1147.221/C1051.7/C101.61/S203.6", "1012.21/C1147.221/C1051.7/C101.311/C467.5" },
 			{ "1012.21/C1147.221/C1051.7/C101.61/S203.6/S61", "1012.21/C1147.221/C1051.7/C101.311/C467.5/S61" },
+			{ "1012.21/C1147.221/C1051.7/C101.22", "1012.21/C1147.221/C1051.7/C101.93" },
 			{ "1012.21/C1147.221/C1051.7/C101.661i/C624", "1012.21/C1147.221/C1051.7/C101.661i/C621" },
+			{ "511.11/C101.663i/C663.5/CS6d", "511.11/C101.663i/C663.6/CS6d" },
 			{ "511.11-1/C101.663i/C663.5/CS6d", "511.11-1/C101.663i/C663.6/CS6d" } };
 	}
 
@@ -305,9 +290,6 @@ namespace dnv::vista::sdk::tests
 		std::optional<GmodPath> sourcePathOpt;
 
 		auto res = sourceGmod.tryParsePath( testData.inputPath, sourcePathOpt );
-
-		SPDLOG_CRITICAL( "testData.inputPath: {}", testData.inputPath );
-		SPDLOG_CRITICAL( "sourcePathOpt     : {}", sourcePathOpt->toString() );
 
 		ASSERT_TRUE( res );
 		ASSERT_TRUE( sourcePathOpt.has_value() );
@@ -339,7 +321,6 @@ namespace dnv::vista::sdk::tests
 	// Test_GmodVersioning_ConvertFullPath
 	//----------------------------------------------
 
-	/*
 	struct FullPathTestData
 	{
 		std::string inputPath;
@@ -450,7 +431,7 @@ namespace dnv::vista::sdk::tests
 		ASSERT_TRUE( foundSource );
 		ASSERT_NE( sourceNodePtr, nullptr );
 
-		GmodNode sourceNode( *sourceNodePtr, true );
+		GmodNode sourceNode( *sourceNodePtr );
 
 		if ( testData.location.has_value() )
 		{
@@ -463,7 +444,7 @@ namespace dnv::vista::sdk::tests
 		ASSERT_TRUE( foundExpected );
 		ASSERT_NE( expectedNodePtr, nullptr );
 
-		GmodNode expectedNode( *expectedNodePtr, true );
+		GmodNode expectedNode( *expectedNodePtr );
 
 		if ( testData.location.has_value() )
 		{
@@ -485,5 +466,5 @@ namespace dnv::vista::sdk::tests
 		ValidNodeTests,
 		NodeConversionTest,
 		::testing::ValuesIn( validNodeTestData() ) );
-		*/
+
 }

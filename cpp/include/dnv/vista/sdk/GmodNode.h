@@ -232,15 +232,6 @@ namespace dnv::vista::sdk
 		/** @brief Destructor */
 		~GmodNode() = default;
 
-		/**
-		 * @brief Internal constructor for creating modified copies (e.g., for "wither" methods like `withLocation`).
-		 * @details This constructor is typically used internally to create a new node instance
-		 *          based on an existing one, often with a specific modification.
-		 * @param other The source node to copy data from.
-		 * @param b A tag parameter, marked [[maybe_unused]] if its value isn't directly used beyond dispatching to this constructor.
-		 */
-		GmodNode( const GmodNode& other, [[maybe_unused]] bool b );
-
 		//----------------------------------------------
 		// Assignment Operators
 		//----------------------------------------------

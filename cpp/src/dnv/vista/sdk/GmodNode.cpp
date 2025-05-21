@@ -20,6 +20,7 @@ namespace dnv::vista::sdk
 		//=====================================================================
 
 		static constexpr const char* NODE_CATEGORY_PRODUCT = "PRODUCT";
+		static constexpr const char* NODE_CATEGORY_VALUE_FUNCTION = "FUNCTION";
 		static constexpr const char* NODE_CATEGORY_ASSET = "ASSET";
 		static constexpr const char* NODE_CATEGORY_PRODUCT_FUNCTION = "PRODUCT FUNCTION";
 		static constexpr const char* NODE_CATEGORY_ASSET_FUNCTION = "ASSET FUNCTION";
@@ -29,7 +30,6 @@ namespace dnv::vista::sdk
 
 		static constexpr const char* NODE_TYPE_VALUE_TYPE = "TYPE";
 		static constexpr const char* NODE_TYPE_VALUE_SELECTION = "SELECTION";
-		static constexpr const char* NODE_CATEGORY_VALUE_FUNCTION = "FUNCTION";
 	}
 
 	//=====================================================================
@@ -139,18 +139,6 @@ namespace dnv::vista::sdk
 	//----------------------------------------------
 	// Construction / Destruction
 	//----------------------------------------------
-
-	GmodNode::GmodNode( const GmodNode& other, [[maybe_unused]] bool b )
-		: m_code{ other.m_code },
-		  m_location{ other.m_location },
-		  m_visVersion{ other.m_visVersion },
-		  m_metadata{ other.m_metadata },
-		  m_children{ other.m_children },
-		  m_parents{ other.m_parents },
-		  m_childrenSet{ other.m_childrenSet }
-	{
-		SPDLOG_TRACE( "Copied GmodNode {} for location modification", m_code );
-	}
 
 	GmodNode::GmodNode( VisVersion version, const GmodNodeDto& dto )
 		: m_code{ dto.code() },
@@ -338,7 +326,7 @@ namespace dnv::vista::sdk
 
 		if ( m_metadata.category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
 		{
-			SPDLOG_DEBUG( "Product selection check failed: current node category '{}' does not contain FUNCTION", m_metadata.category() );
+			SPDLOG_DEBUG( "Product selection check failed: current node category '{}' does not contain '{}'", m_metadata.category(), NODE_CATEGORY_VALUE_FUNCTION );
 			return nullptr;
 		}
 
@@ -351,13 +339,13 @@ namespace dnv::vista::sdk
 
 		if ( child->m_metadata.category().find( NODE_CATEGORY_PRODUCT ) == std::string::npos )
 		{
-			SPDLOG_DEBUG( "Product selection check failed: child category '{}' does not contain PRODUCT", child->m_metadata.category() );
+			SPDLOG_DEBUG( "Product selection check failed: child category '{}' does not contain '{}'", child->m_metadata.category(), NODE_CATEGORY_PRODUCT );
 			return nullptr;
 		}
 
 		if ( child->m_metadata.type() != NODE_TYPE_VALUE_SELECTION )
 		{
-			SPDLOG_DEBUG( "Product selection check failed: child type '{}' is not SELECTION", child->m_metadata.type() );
+			SPDLOG_DEBUG( "Product selection check failed: child type '{}' is not '{}'", child->m_metadata.type(), NODE_TYPE_VALUE_SELECTION );
 			return nullptr;
 		}
 
@@ -371,14 +359,15 @@ namespace dnv::vista::sdk
 
 	GmodNode GmodNode::withoutLocation() const
 	{
-		GmodNode result( *this, true );
+		GmodNode result( *this );
 		if ( !result.m_location.has_value() )
 		{
 			SPDLOG_DEBUG( "No location to remove from node: {}", m_code );
+			return *this;
 		}
 		else
 		{
-			SPDLOG_INFO( "Removing location from node: {}", m_code );
+			SPDLOG_CRITICAL( "Removing location from node: {}", m_code );
 			result.m_location = std::nullopt;
 		}
 		return result;
@@ -386,11 +375,11 @@ namespace dnv::vista::sdk
 
 	GmodNode GmodNode::withLocation( std::string_view locationStr ) const
 	{
-		SPDLOG_DEBUG( "Adding location '{}' to node: {}", locationStr, m_code );
+		SPDLOG_WARN( "Adding location '{}' to node: {}", locationStr, m_code );
 		Locations locations = VIS::instance().locations( m_visVersion );
 		Location location = locations.parse( locationStr );
 
-		GmodNode result( *this, true );
+		GmodNode result( *this );
 		result.m_location = location;
 
 		return result;
@@ -398,7 +387,7 @@ namespace dnv::vista::sdk
 
 	GmodNode GmodNode::tryWithLocation( std::string_view locationStr ) const
 	{
-		SPDLOG_DEBUG( "Attempting to add location '{}' to node: {}", locationStr, m_code );
+		SPDLOG_WARN( "Attempting to add location '{}' to node: {}", locationStr, m_code );
 		Locations locations = VIS::instance().locations( m_visVersion );
 
 		Location parsedLocation;
@@ -407,10 +396,10 @@ namespace dnv::vista::sdk
 		{
 			SPDLOG_ERROR( "Location parsing failed for: {}", locationStr );
 
-			return GmodNode( *this, true );
+			return GmodNode( *this );
 		}
 
-		GmodNode result( *this, true );
+		GmodNode result( *this );
 		result.m_location = parsedLocation;
 
 		return result;
@@ -424,7 +413,7 @@ namespace dnv::vista::sdk
 		Locations locations = VIS::instance().locations( m_visVersion );
 		Location location;
 
-		GmodNode result( *this, true );
+		GmodNode result( *this );
 		if ( !locations.tryParse( std::string_view( locationStr ), location, errors ) )
 		{
 			SPDLOG_ERROR( "Location parsing failed with {} errors",
@@ -439,15 +428,18 @@ namespace dnv::vista::sdk
 
 	GmodNode GmodNode::tryWithLocation( const std::optional<Location>& location ) const
 	{
-		GmodNode result( *this, true );
 		if ( !location.has_value() )
 		{
-			SPDLOG_DEBUG( "No location provided, returning original node copy: {}", m_code );
+			SPDLOG_DEBUG( "No location provided, returning original node: {}", m_code );
+			return *this;
 		}
-		else
-		{
-			result.m_location = *location;
-		}
+
+		GmodNode result( *this );
+		result.m_location = *location;
+
+		SPDLOG_DEBUG( "Created node with location: base='{}', location='{}', result='{}'",
+			m_code, location->toString(), result.toString() );
+
 		return result;
 	}
 
@@ -460,25 +452,21 @@ namespace dnv::vista::sdk
 		if ( m_metadata.type() == NODE_TYPE_GROUP )
 		{
 			SPDLOG_DEBUG( "Node is a group, not individualizable: {}", m_code );
-
 			return false;
 		}
 		if ( m_metadata.type() == NODE_TYPE_VALUE_SELECTION )
 		{
 			SPDLOG_DEBUG( "Node is a selection, not individualizable: {}", m_code );
-
 			return false;
 		}
 		if ( isProductType() )
 		{
 			SPDLOG_DEBUG( "Node is a product type, not individualizable: {}", m_code );
-
 			return false;
 		}
 		if ( m_metadata.category() == NODE_CATEGORY_ASSET && m_metadata.type() == NODE_TYPE_VALUE_TYPE )
 		{
 			SPDLOG_DEBUG( "Node is an asset type, not individualizable: {}", m_code );
-
 			return false;
 		}
 		if ( isFunctionComposition() )
@@ -487,7 +475,6 @@ namespace dnv::vista::sdk
 			if ( m_code.empty() )
 			{
 				SPDLOG_WARN( "isIndividualizable: Code is empty, cannot check last character for 'i'. Node: {}", m_code );
-
 				return false;
 			}
 
@@ -495,7 +482,6 @@ namespace dnv::vista::sdk
 		}
 
 		SPDLOG_DEBUG( "Node is individualizable: {}", m_code );
-
 		return true;
 	}
 
@@ -602,10 +588,7 @@ namespace dnv::vista::sdk
 
 	bool GmodNode::isChild( const std::string& code ) const
 	{
-		bool found = m_childrenSet.find( code ) != m_childrenSet.end();
-		SPDLOG_DEBUG( "Node {} isChild check for {}: {}", m_code, code, found );
-
-		return found;
+		return m_childrenSet.find( code ) != m_childrenSet.end();
 	}
 
 	//----------------------------------------------
@@ -614,16 +597,10 @@ namespace dnv::vista::sdk
 
 	std::string GmodNode::toString() const
 	{
-		if ( m_code.empty() )
-		{
-			SPDLOG_DEBUG( "GmodNode code is empty, returning empty string" );
-
-			return "";
-		}
 
 		if ( m_location.has_value() )
 		{
-			SPDLOG_DEBUG( "Converting GmodNode to string with location" );
+			SPDLOG_CRITICAL( "Converting GmodNode to string with location" );
 			std::string result = m_code;
 			result.reserve( m_code.length() + 1 + m_location->toString().length() );
 			result += '-';
@@ -637,14 +614,13 @@ namespace dnv::vista::sdk
 
 	void GmodNode::toString( std::stringstream& builder ) const
 	{
+
 		builder << m_code;
 
 		if ( m_location.has_value() )
 		{
 			builder << "-" << m_location->toString();
 		}
-
-		SPDLOG_DEBUG( "GmodNode string representation: {}", builder.str() );
 	}
 
 	//----------------------------------------------

@@ -28,9 +28,6 @@ set(VISTA_SDK_CPP_DOCUMENTATION_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/cpp/doc"     
 set(VISTA_SDK_RESOURCE_DIR            "${CMAKE_CURRENT_SOURCE_DIR}/resources"    CACHE PATH "Path to the SDK resources directory")
 set(VISTA_SDK_TEST_DATA_DIR           "${CMAKE_CURRENT_SOURCE_DIR}/testdata"     CACHE PATH "Path to the SDK test data directory")
 
-# --- Testing setup ---
-#enable_testing()
-
 # --- Add core C++ library subdirectory ---
 add_subdirectory(cpp/cmake)
 

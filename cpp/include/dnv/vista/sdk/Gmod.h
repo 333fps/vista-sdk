@@ -121,14 +121,6 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] const GmodNode& rootNode() const;
 
-		/**
-		 * @brief Checks if the GMOD instance is considered empty.
-		 * @details An empty GMOD typically means its internal node map is empty.
-		 *          This does not necessarily mean it's invalid, but it might lack a root node.
-		 * @return True if the GMOD's internal node map is empty, false otherwise.
-		 */
-		[[nodiscard]] bool isEmpty() const;
-
 		//----------------------------------------------
 		// Node Query Methods
 		//----------------------------------------------

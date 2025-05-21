@@ -49,13 +49,13 @@ namespace dnv::vista::sdk
 			template <typename TState>
 			struct TraversalContext
 			{
-				Parents& parents_ref;
-				TraverseHandlerWithState<TState> handler_func;
-				TState& state_ref;
-				int maxTraversalOccurrence_val;
+				Parents& parents;
+				TraverseHandlerWithState<TState> handler;
+				TState& state;
+				int maxTraversalOccurrence;
 
 				TraversalContext( Parents& parents, TraverseHandlerWithState<TState> handler, TState& s, int maxOcc )
-					: parents_ref( parents ), handler_func( handler ), state_ref( s ), maxTraversalOccurrence_val( maxOcc ) {}
+					: parents( parents ), handler( handler ), state( s ), maxTraversalOccurrence( maxOcc ) {}
 
 				TraversalContext( const TraversalContext& ) = delete;
 				TraversalContext( TraversalContext&& ) = delete;
@@ -64,48 +64,54 @@ namespace dnv::vista::sdk
 			};
 
 			template <typename TState>
-			TraversalHandlerResult TraverseNodeRecursive( TraversalContext<TState>& context, const GmodNode& node )
+			TraversalHandlerResult traverseNodeRecursive( TraversalContext<TState>& context, const GmodNode& node )
 			{
-				TraversalHandlerResult result = context.handler_func( context.state_ref, context.parents_ref.asList(), node );
-
-				if ( result == TraversalHandlerResult::Stop || result == TraversalHandlerResult::SkipSubtree )
-				{
-					return result;
-				}
 				if ( node.metadata().installSubstructure().has_value() && !node.metadata().installSubstructure().value() )
 				{
 					return TraversalHandlerResult::Continue;
 				}
 
-				bool skipOccurrenceCheck = Gmod::isProductSelectionAssignment( context.parents_ref.lastOrDefault(), &node );
+				TraversalHandlerResult result = context.handler( context.state, context.parents.asList(), node );
+
+				if ( result == TraversalHandlerResult::Stop || result == TraversalHandlerResult::SkipSubtree )
+				{
+					return result;
+				}
+
+				bool skipOccurrenceCheck = Gmod::isProductSelectionAssignment( context.parents.lastOrDefault(), &node );
 				if ( !skipOccurrenceCheck )
 				{
-					int occ = context.parents_ref.occurrences( node );
-					if ( occ >= context.maxTraversalOccurrence_val )
+					int occ = context.parents.occurrences( node );
+
+					if ( occ >= context.maxTraversalOccurrence )
 					{
+						SPDLOG_TRACE( "Node {} occurrence {} reached/exceeded max {}, skipping subtree", node.code(), occ, context.maxTraversalOccurrence );
 						return TraversalHandlerResult::SkipSubtree;
 					}
 				}
 
-				context.parents_ref.push( &node );
+				context.parents.push( &node );
 
 				for ( const auto* child : node.children() )
 				{
 					if ( !child )
-						continue;
-
-					TraversalHandlerResult child_result = TraverseNodeRecursive<TState>( context, *child );
-
-					if ( child_result == TraversalHandlerResult::Stop )
 					{
-						context.parents_ref.pop();
+						continue;
+					}
+
+					SPDLOG_TRACE( "Traversing child: {} of parent: {}", child->code(), node.code() );
+					result = traverseNodeRecursive<TState>( context, *child );
+					if ( result == TraversalHandlerResult::Stop )
+					{
+						context.parents.pop();
 						return TraversalHandlerResult::Stop;
 					}
 				}
 
-				context.parents_ref.pop();
+				context.parents.pop();
 				return TraversalHandlerResult::Continue;
 			}
+
 		}
 
 		template <typename TState>
@@ -113,7 +119,8 @@ namespace dnv::vista::sdk
 		{
 			detail::Parents parentsStack;
 			detail::TraversalContext<TState> context( parentsStack, handler, state, options.maxTraversalOccurrence );
-			return detail::TraverseNodeRecursive<TState>( context, rootNode ) == TraversalHandlerResult::Continue;
+
+			return detail::traverseNodeRecursive<TState>( context, rootNode ) == TraversalHandlerResult::Continue;
 		}
 
 		template <typename TState>

@@ -16,7 +16,7 @@ namespace dnv::vista::sdk
 	MetadataTag::MetadataTag( CodebookName name, const std::string& value, bool isCustom )
 		: m_name{ name }, m_value{ value }, m_custom{ isCustom }
 	{
-		SPDLOG_INFO( "Created MetadataTag: name={}, value='{}', custom={}",
+		SPDLOG_TRACE( "Created MetadataTag: name={}, value='{}', custom={}",
 			static_cast<int>( name ), value, isCustom );
 	}
 

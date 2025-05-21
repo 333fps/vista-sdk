@@ -9,6 +9,14 @@
 			"intelliSenseMode": "windows-msvc-x64"
 		},
 		{
+			"name": "x64-MSVC-RelWithDebInfo",
+			"generator": "Ninja",
+			"configurationType": "RelWithDebInfo",
+			"buildRoot": "${projectDir}/build/x64-MSVC-RelWithDebInfo",
+			"inheritEnvironments": [ "msvc_x64_x64" ],
+			"intelliSenseMode": "windows-msvc-x64"
+		},
+		{
 			"name": "x64-MSVC-Release",
 			"generator": "Ninja",
 			"configurationType": "Release",

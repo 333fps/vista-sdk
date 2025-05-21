@@ -37,6 +37,7 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 		// Construction / Destruction
 		//----------------------------------------------
+
 		/**
 		 * @brief Constructor
 		 *

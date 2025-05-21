@@ -58,8 +58,8 @@ namespace dnv::vista::sdk
 		{
 			bool dummyState = false;
 			TraverseHandlerWithState<bool> wrappedHandler =
-				[handler]( [[maybe_unused]] bool& s, const std::vector<const GmodNode*>& parents_list, const GmodNode& node_ref ) {
-					return handler( parents_list, node_ref );
+				[handler]( [[maybe_unused]] bool& s, const std::vector<const GmodNode*>& parents_list, const GmodNode& nodeRef ) {
+					return handler( parents_list, nodeRef );
 				};
 			return GmodTraversal::traverse<bool>( dummyState, gmodInstance.rootNode(), wrappedHandler, options );
 		}
@@ -68,8 +68,8 @@ namespace dnv::vista::sdk
 		{
 			bool dummyState = false;
 			TraverseHandlerWithState<bool> wrappedHandler =
-				[handler]( [[maybe_unused]] bool& s, const std::vector<const GmodNode*>& parents_list, const GmodNode& node_ref ) {
-					return handler( parents_list, node_ref );
+				[handler]( [[maybe_unused]] bool& s, const std::vector<const GmodNode*>& parents_list, const GmodNode& nodeRef ) {
+					return handler( parents_list, nodeRef );
 				};
 			return GmodTraversal::traverse<bool>( dummyState, rootNode, wrappedHandler, options );
 		}
@@ -115,9 +115,9 @@ namespace dnv::vista::sdk
 
 			PathExistsContext context( to, fromPath );
 
-			TraverseHandlerWithState<PathExistsContext> handler_func =
+			TraverseHandlerWithState<PathExistsContext> handler =
 				[]( PathExistsContext& ctx, const std::vector<const GmodNode*>& currentTraversalParents, const GmodNode& currentNode ) -> TraversalHandlerResult {
-				if ( currentNode.code() != ctx.toNode.code() || currentNode.location() != ctx.toNode.location() )
+				if ( currentNode.code() != ctx.toNode.code() )
 				{
 					return TraversalHandlerResult::Continue;
 				}
@@ -142,10 +142,7 @@ namespace dnv::vista::sdk
 					absolutePathToCurrentNodeParent.insert( absolutePathToCurrentNodeParent.begin(), prefixPath.begin(), prefixPath.end() );
 				}
 
-				std::vector<const GmodNode*> pathForValidation = absolutePathToCurrentNodeParent;
-				pathForValidation.push_back( &currentNode );
-
-				if ( pathForValidation.size() < ctx.fromPathList.size() )
+				if ( absolutePathToCurrentNodeParent.size() < ctx.fromPathList.size() )
 				{
 					return TraversalHandlerResult::Continue;
 				}
@@ -153,8 +150,7 @@ namespace dnv::vista::sdk
 				bool match = true;
 				for ( size_t i = 0; i < ctx.fromPathList.size(); ++i )
 				{
-					if ( pathForValidation[i]->code() != ctx.fromPathList[i]->code() ||
-						 pathForValidation[i]->location() != ctx.fromPathList[i]->location() )
+					if ( absolutePathToCurrentNodeParent[i]->code() != ctx.fromPathList[i]->code() )
 					{
 						match = false;
 						break;
@@ -163,22 +159,12 @@ namespace dnv::vista::sdk
 
 				if ( match )
 				{
-					for ( const auto* p_eval : pathForValidation )
+					ctx.remainingParents_list.clear();
+					for ( size_t i = ctx.fromPathList.size(); i < absolutePathToCurrentNodeParent.size(); ++i )
 					{
-						bool foundInFromPath = false;
-						for ( const auto* p_from : ctx.fromPathList )
-						{
-							if ( p_eval->code() == p_from->code() )
-							{
-								foundInFromPath = true;
-								break;
-							}
-						}
-						if ( !foundInFromPath )
-						{
-							ctx.remainingParents_list.push_back( p_eval );
-						}
+						ctx.remainingParents_list.push_back( absolutePathToCurrentNodeParent[i] );
 					}
+
 					return TraversalHandlerResult::Stop;
 				}
 				return TraversalHandlerResult::Continue;
@@ -187,7 +173,7 @@ namespace dnv::vista::sdk
 			bool traversalCompletedNaturally = GmodTraversal::traverse<PathExistsContext>(
 				context,
 				( lastAssetFunction ? *lastAssetFunction : gmodInstance.rootNode() ),
-				handler_func );
+				handler );
 
 			remainingParents = context.remainingParents_list;
 			return !traversalCompletedNaturally;

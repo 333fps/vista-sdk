@@ -1,7 +1,18 @@
+/**
+ * @file GmodPath.h
+ * @brief Declarations for GmodPath and related classes for representing paths in the Generic Product Model (GMOD).
+ * @details Defines the `GmodPath` class for representing hierarchical paths according to ISO 19848,
+ *          along with helper classes for parsing, validation, iteration, and modification of path segments.
+ */
+
 #pragma once
 
 namespace dnv::vista::sdk
 {
+	//=====================================================================
+	// Forward declarations
+	//=====================================================================
+
 	class Gmod;
 	class GmodNode;
 	class GmodParsePathResult;
@@ -22,8 +33,16 @@ namespace dnv::vista::sdk
 			const GmodNode& currentNode );
 	}
 
+	//=====================================================================
+	// GmodPath Class
+	//=====================================================================
+
 	class GmodPath final
 	{
+		//----------------------------------------------
+		// Forward declarations
+		//----------------------------------------------
+
 		friend class GmodIndividualizableSet;
 
 		friend dnv::vista::sdk::TraversalHandlerResult internal::parseInternalTraversalHandler(
@@ -34,26 +53,42 @@ namespace dnv::vista::sdk
 	public:
 		class Enumerator;
 
-	public:
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
+
 		GmodPath( const Gmod& gmod, GmodNode* node, std::vector<GmodNode*> parents = {} );
 
 		GmodPath();
 		GmodPath( const GmodPath& other );
 		GmodPath( GmodPath&& other ) noexcept;
+
+		~GmodPath();
+
+		//----------------------------------------------
+		// Assignment Operators
+		//----------------------------------------------
+
 		GmodPath& operator=( const GmodPath& other );
 		GmodPath& operator=( GmodPath&& other ) noexcept;
-		~GmodPath();
+
+		//----------------------------------------------
+		// Equality Operators
+		//----------------------------------------------
 
 		[[nodiscard]] bool operator==( const GmodPath& other ) const noexcept;
 		[[nodiscard]] bool operator!=( const GmodPath& other ) const noexcept;
 
+		//----------------------------------------------
+		// Lookup Operators
+		//----------------------------------------------
+
 		[[nodiscard]] GmodNode* operator[]( size_t index ) const;
 		[[nodiscard]] GmodNode*& operator[]( size_t index );
 
-		[[nodiscard]] static bool isValid( const std::vector<GmodNode*>& parents, const GmodNode& node );
-		[[nodiscard]] static bool isValid( const std::vector<GmodNode*>& parents, const GmodNode& node, size_t& missingLinkAt );
-		[[nodiscard]] bool isMappable() const;
-		[[nodiscard]] bool isIndividualizable() const;
+		//----------------------------------------------
+		// Accessors
+		//----------------------------------------------
 
 		VisVersion visVersion() const noexcept;
 		size_t hashCode() const noexcept;
@@ -70,29 +105,66 @@ namespace dnv::vista::sdk
 		[[nodiscard]] std::optional<std::string> normalAssignmentName( size_t nodeDepth ) const;
 		[[nodiscard]] std::vector<std::pair<size_t, std::string>> commonNames() const;
 
+		[[nodiscard]] Enumerator fullPath() const;
+		[[nodiscard]] Enumerator fullPathFrom( size_t fromDepth ) const;
+
+		//----------------------------------------------
+		// Utility Methods
+		//----------------------------------------------
+
+		[[nodiscard]] static bool isValid( const std::vector<GmodNode*>& parents, const GmodNode& node );
+		[[nodiscard]] static bool isValid( const std::vector<GmodNode*>& parents, const GmodNode& node, size_t& missingLinkAt );
+		[[nodiscard]] bool isMappable() const;
+
 		[[nodiscard]] std::string toString() const;
-		void toString( std::stringstream& builder, char separator = '/' ) const;
-
 		[[nodiscard]] std::string toStringDump() const;
-		void toStringDump( std::stringstream& builder ) const;
-
 		[[nodiscard]] std::string toFullPathString() const;
+
+		void toString( std::stringstream& builder, char separator = '/' ) const;
+		void toStringDump( std::stringstream& builder ) const;
 		void toFullPathString( std::stringstream& builder ) const;
 
 		[[nodiscard]] GmodPath withoutLocations() const;
 
+		//----------------------------------------------
+		// Public Static Parsing Methods
+		//----------------------------------------------
+
 		[[nodiscard]] static GmodPath parse( std::string_view pathString, VisVersion visVersion );
-		[[nodiscard]] static bool tryParse( std::string_view pathString, VisVersion visVersion, std::optional<GmodPath>& outPath );
-
 		[[nodiscard]] static GmodPath parse( std::string_view pathString, const Gmod& gmod, const Locations& locations );
-		[[nodiscard]] static bool tryParse( std::string_view pathString, const Gmod& gmod, const Locations& locations, std::optional<GmodPath>& outPath );
-
 		[[nodiscard]] static GmodPath parseFullPath( std::string_view pathString, VisVersion visVersion );
+
+		[[nodiscard]] static bool tryParse( std::string_view pathString, VisVersion visVersion, std::optional<GmodPath>& outPath );
+		[[nodiscard]] static bool tryParse( std::string_view pathString, const Gmod& gmod, const Locations& locations, std::optional<GmodPath>& outPath );
 		[[nodiscard]] static bool tryParseFullPath( std::string_view pathString, VisVersion visVersion, std::optional<GmodPath>& outPath );
 		[[nodiscard]] static bool tryParseFullPath( std::string_view pathString, const Gmod& gmod, const Locations& locations, std::optional<GmodPath>& outPath );
 
-		[[nodiscard]] Enumerator fullPath() const;
-		[[nodiscard]] Enumerator fullPathFrom( size_t fromDepth ) const;
+	private:
+		//----------------------------------------------
+		// Private Member Variables
+		//----------------------------------------------
+
+		VisVersion m_visVersion;
+		const Gmod* m_gmod;
+		GmodNode* m_node;
+		std::vector<GmodNode*> m_parents;
+		std::vector<GmodNode*> m_ownedNodes;
+
+	private:
+		//----------------------------------------------
+		// Private Static Parsing Methods
+		//----------------------------------------------
+
+		static std::unique_ptr<GmodParsePathResult> parseInternal(
+			std::string_view item, const Gmod& gmod, const Locations& locations );
+
+		static std::unique_ptr<GmodParsePathResult> parseFullPathInternal(
+			std::string_view item, const Gmod& gmod, const Locations& locations );
+
+	public:
+		//----------------------------------------------
+		// GmodPath::Enumerator Class
+		//----------------------------------------------
 
 		class Enumerator final
 		{
@@ -128,60 +200,90 @@ namespace dnv::vista::sdk
 			void reset();
 
 		private:
-			friend class GmodPath;
 			const GmodPath* m_pathInstance;
 			size_t m_currentIndex;
 		};
-
-	private:
-		VisVersion m_visVersion;
-		const Gmod* m_gmod;
-		GmodNode* m_node;
-		std::vector<GmodNode*> m_parents;
-		std::vector<GmodNode*> m_ownedNodes;
-
-	private:
-		static std::unique_ptr<GmodParsePathResult> parseInternal(
-			std::string_view item, const Gmod& gmod, const Locations& locations );
-
-		static std::unique_ptr<GmodParsePathResult> parseFullPathInternal(
-			std::string_view item, const Gmod& gmod, const Locations& locations );
 	};
+
+	//=====================================================================
+	// GmodIndividualizableSet Class
+	//=====================================================================
 
 	class GmodIndividualizableSet final
 	{
 	public:
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
+
 		GmodIndividualizableSet( const std::vector<int>& nodeIndices, const GmodPath& sourcePath );
 
 		GmodIndividualizableSet() = delete;
 		GmodIndividualizableSet( const GmodIndividualizableSet& ) = delete;
 		GmodIndividualizableSet( GmodIndividualizableSet&& ) noexcept = default;
-		GmodIndividualizableSet& operator=( const GmodIndividualizableSet& ) = delete;
-		GmodIndividualizableSet& operator=( GmodIndividualizableSet&& ) noexcept = delete;
+
 		~GmodIndividualizableSet() = default;
 
+		//----------------------------------------------
+		// Assignment Operators
+		//----------------------------------------------
+
+		GmodIndividualizableSet& operator=( const GmodIndividualizableSet& ) = delete;
+		GmodIndividualizableSet& operator=( GmodIndividualizableSet&& ) noexcept = delete;
+
+		//----------------------------------------------
+		// Build
+		//----------------------------------------------
+
 		GmodPath build();
+
+		//----------------------------------------------
+		// Accessors
+		//----------------------------------------------
 
 		[[nodiscard]] std::vector<GmodNode*> nodes() const;
 		[[nodiscard]] const std::vector<int>& nodeIndices() const noexcept;
 		[[nodiscard]] std::optional<Location> location() const;
+
+		//----------------------------------------------
+		// Utility Methods
+		//----------------------------------------------
+
 		void setLocation( const std::optional<Location>& location );
 		[[nodiscard]] std::string toString() const;
 
 	private:
+		//----------------------------------------------
+		// Private Member Variables
+		//----------------------------------------------
+
 		std::vector<int> m_nodeIndices;
 		GmodPath m_path;
 		bool m_isBuilt;
 	};
 
+	//=====================================================================
+	// GmodParsePathResult Class
+	//=====================================================================
+
 	class GmodParsePathResult
 	{
+		//----------------------------------------------
+		// Construction / Destruction
+		//----------------------------------------------
 	protected:
 		GmodParsePathResult() = default;
 
 		GmodParsePathResult( const GmodParsePathResult& ) = delete;
-		GmodParsePathResult& operator=( const GmodParsePathResult& ) = delete;
 		GmodParsePathResult( GmodParsePathResult&& ) = delete;
+
+	public:
+		//----------------------------------------------
+		// Assignment Operators
+		//----------------------------------------------
+
+	protected:
+		GmodParsePathResult& operator=( const GmodParsePathResult& ) = delete;
 		GmodParsePathResult& operator=( GmodParsePathResult&& ) = delete;
 
 	public:
@@ -191,7 +293,7 @@ namespace dnv::vista::sdk
 		class Err;
 	};
 
-	class GmodParsePathResult::Ok : public GmodParsePathResult
+	class GmodParsePathResult::Ok final : public GmodParsePathResult
 	{
 	public:
 		explicit Ok( GmodPath path );
@@ -201,11 +303,13 @@ namespace dnv::vista::sdk
 		Ok& operator=( const Ok& ) = delete;
 		Ok& operator=( Ok&& ) noexcept = delete;
 
+		virtual ~Ok() = default;
+
 	public:
-		GmodPath m_path;
+		GmodPath path;
 	};
 
-	class GmodParsePathResult::Err : public GmodParsePathResult
+	class GmodParsePathResult::Err final : public GmodParsePathResult
 	{
 	public:
 		explicit Err( std::string errorString );
@@ -214,6 +318,8 @@ namespace dnv::vista::sdk
 		Err( Err&& ) noexcept = delete;
 		Err& operator=( const Err& ) = delete;
 		Err& operator=( Err&& ) noexcept = delete;
+
+		virtual ~Err() = default;
 
 	public:
 		std::string error;

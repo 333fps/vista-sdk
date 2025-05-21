@@ -96,9 +96,6 @@ namespace dnv::vista::sdk
 
 			Gmod gmod( visVersion, dto );
 
-			SPDLOG_INFO( "Created Gmod with {} nodes in dictionary",
-				!gmod.isEmpty() ? "non-empty" : "EMPTY" );
-
 			return gmod;
 		} );
 	}
@@ -111,7 +108,7 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "Invalid VIS version" );
 		}
 
-		SPDLOG_INFO( "Getting codebooks for version: {}",
+		SPDLOG_TRACE( "Getting codebooks for version: {}",
 			VisVersionExtensions::toVersionString( visVersion ) );
 
 		return m_codebooksCache.getOrCreate( visVersion, [this, visVersion]() {
@@ -130,7 +127,7 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "Invalid VIS version" );
 		}
 
-		SPDLOG_INFO( "Getting locations for version: {}",
+		SPDLOG_TRACE( "Getting locations for version: {}",
 			VisVersionExtensions::toVersionString( visVersion ) );
 
 		return m_locationsCache.getOrCreate( visVersion, [this, visVersion]() {

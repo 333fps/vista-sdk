@@ -19,13 +19,12 @@ namespace dnv::vista::sdk
 		//=====================================================================
 
 		static constexpr const char* NODE_CATEGORY_PRODUCT = "PRODUCT";
+		static constexpr const char* NODE_CATEGORY_VALUE_FUNCTION = "FUNCTION";
 		static constexpr const char* NODE_CATEGORY_ASSET = "ASSET";
 		static constexpr const char* NODE_CATEGORY_ASSET_FUNCTION = "ASSET FUNCTION";
 
-		static constexpr const char* NODE_TYPE_SELECTION = "SELECTION";
+		static constexpr const char* NODE_TYPE_VALUE_SELECTION = "SELECTION";
 		static constexpr const char* NODE_TYPE_VALUE_TYPE = "TYPE";
-
-		static constexpr const char* NODE_CATEGORY_VALUE_FUNCTION = "FUNCTION";
 
 		/** List of node types classified as leaf nodes */
 		static const std::unordered_set<std::string> s_leafTypesSet = { "ASSET FUNCTION LEAF", "PRODUCT FUNCTION LEAF" };
@@ -236,11 +235,6 @@ namespace dnv::vista::sdk
 		return *m_rootNode;
 	}
 
-	bool Gmod::isEmpty() const
-	{
-		return m_nodeMap.size() == 0;
-	}
-
 	//----------------------------------------------
 	// Node Query Methods
 	//----------------------------------------------
@@ -320,12 +314,13 @@ namespace dnv::vista::sdk
 
 	bool Gmod::isFunctionNode( const GmodNodeMetadata& metadata )
 	{
-		return metadata.category() == NODE_CATEGORY_ASSET_FUNCTION || metadata.category() == NODE_CATEGORY_VALUE_FUNCTION;
+		const auto& category = metadata.category();
+		return category != NODE_CATEGORY_PRODUCT && category != NODE_CATEGORY_ASSET;
 	}
 
 	bool Gmod::isProductSelection( const GmodNodeMetadata& metadata )
 	{
-		return metadata.category() == NODE_CATEGORY_PRODUCT && metadata.type() == NODE_TYPE_SELECTION;
+		return metadata.category() == NODE_CATEGORY_PRODUCT && metadata.type() == NODE_TYPE_VALUE_SELECTION;
 	}
 
 	bool Gmod::isProductType( const GmodNodeMetadata& metadata )
@@ -360,7 +355,7 @@ namespace dnv::vista::sdk
 			return false;
 		if ( parent->metadata().category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
 			return false;
-		if ( child->metadata().category().find( NODE_CATEGORY_PRODUCT ) == std::string::npos || child->metadata().type() != NODE_TYPE_SELECTION )
+		if ( child->metadata().category().find( NODE_CATEGORY_PRODUCT ) == std::string::npos || child->metadata().type() != NODE_TYPE_VALUE_SELECTION )
 			return false;
 		return true;
 	}

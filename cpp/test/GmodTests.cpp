@@ -250,7 +250,7 @@ namespace dnv::vista::sdk::tests
 
 			TraversalState state( 5 );
 
-			dnv::vista::sdk::TraverseHandlerWithState<TraversalState> handler_func =
+			dnv::vista::sdk::TraverseHandlerWithState<TraversalState> handler =
 				[]( TraversalState& currentState, const std::vector<const GmodNode*>& parents, [[maybe_unused]] const GmodNode& node ) -> TraversalHandlerResult {
 				EXPECT_TRUE( parents.empty() || parents[0]->isRoot() );
 				if ( ++currentState.nodeCount == currentState.stopAfter )
@@ -261,7 +261,7 @@ namespace dnv::vista::sdk::tests
 				return TraversalHandlerResult::Continue;
 			};
 
-			bool completed = GmodTraversal::traverse( gmod, state, handler_func );
+			bool completed = GmodTraversal::traverse( gmod, state, handler );
 
 			EXPECT_EQ( state.stopAfter, state.nodeCount );
 			EXPECT_FALSE( completed );
@@ -279,7 +279,7 @@ namespace dnv::vista::sdk::tests
 
 			const GmodNode& startNode = gmod["400a"];
 
-			dnv::vista::sdk::TraverseHandlerWithState<TraversalState> handler_func =
+			dnv::vista::sdk::TraverseHandlerWithState<TraversalState> handler =
 				[]( TraversalState& currentState, const std::vector<const GmodNode*>& parents, [[maybe_unused]] const GmodNode& node ) -> TraversalHandlerResult {
 				EXPECT_TRUE( parents.empty() || ( parents[0] != nullptr && parents[0]->code() == "400a" ) );
 
@@ -288,7 +288,7 @@ namespace dnv::vista::sdk::tests
 				return TraversalHandlerResult::Continue;
 			};
 
-			bool completed = GmodTraversal::traverse( state, startNode, handler_func );
+			bool completed = GmodTraversal::traverse( state, startNode, handler );
 
 			EXPECT_TRUE( completed );
 		}
