@@ -261,7 +261,7 @@ namespace dnv::vista::sdk::tests
 					while ( enumerator.next() )
 					{
 						const auto& errorEntry = enumerator.current();
-						actualErrors.push_back( errorEntry.second );
+						actualErrors.push_back( errorEntry.message );
 					}
 
 					ASSERT_EQ( expectedErrorMessages, actualErrors );

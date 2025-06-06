@@ -1109,7 +1109,7 @@ namespace dnv::vista::sdk
 						}
 						else
 						{
-							errorBuilder.addError( LocalIdParsingState::PrimaryItem, predefinedMessage );
+							errorBuilder.addError( LocalIdParsingState::PrimaryItem );
 						}
 						errorBuilder.addError( LocalIdParsingState::PrimaryItem,
 							"Invalid or missing '/meta' prefix after Primary item" );

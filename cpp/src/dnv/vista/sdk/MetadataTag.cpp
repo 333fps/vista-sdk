@@ -89,7 +89,7 @@ namespace dnv::vista::sdk
 	}
 
 	//-------------------------------------------------------------------------
-	// String Conversion Methods
+	// String conversion methods
 	//-------------------------------------------------------------------------
 
 	std::string MetadataTag::toString() const noexcept

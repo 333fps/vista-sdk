@@ -67,7 +67,7 @@ namespace dnv::vista::sdk::tests
 		EXPECT_TRUE( e4.equals( ParsingErrors::Empty ) );
 
 		ParsingErrors empty = ParsingErrors::Empty;
-		EXPECT_TRUE( e4.equals( static_cast<const void*>( &empty ) ) );
+		EXPECT_TRUE( e4.equals( empty ) );
 	}
 
 	//----------------------------------------------
@@ -427,8 +427,8 @@ namespace dnv::vista::sdk::tests
 		auto enumerator = errorBuilder.enumerator();
 		while ( enumerator.next() )
 		{
-			const auto& [errorType, errorMsg] = enumerator.current();
-			actualErrorMessages.push_back( errorMsg );
+			const auto& [type, message] = enumerator.current();
+			actualErrorMessages.push_back( message );
 		}
 
 		EXPECT_EQ( expectedErrorMessages, actualErrorMessages );

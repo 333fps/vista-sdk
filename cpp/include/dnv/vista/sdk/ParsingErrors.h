@@ -20,25 +20,11 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//----------------------------------------------
-		// Types definitions
-		//----------------------------------------------
-
-		/** @brief Represents a single parsing error entry. */
-		using ErrorEntry = std::pair<std::string, std::string>;
-
-		//----------------------------------------------
-		// Static members
-		//----------------------------------------------
-
-		/** @brief A static instance representing an empty set of parsing errors. */
-		static const ParsingErrors Empty;
-
-	private:
-		//----------------------------------------------
 		// Forward declarations
 		//----------------------------------------------
 
 		class Enumerator;
+		struct ErrorEntry;
 
 		//----------------------------------------------
 		// Friends access
@@ -48,14 +34,28 @@ namespace dnv::vista::sdk
 		friend class LocationParsingErrorBuilder;
 
 		//----------------------------------------------
+		// Public static members
+		//----------------------------------------------
+
+		/** @brief A static instance representing an empty set of parsing errors. */
+		static const ParsingErrors Empty;
+
+		//----------------------------------------------
 		// Construction / destruction
 		//----------------------------------------------
 
 		/**
-		 * @brief Internal constructor for creating ParsingErrors with error entries.
-		 * @param errors A vector of error entries.
+		 * @brief Internal constructor for creating ParsingErrors with error entries (copy).
+		 * @param errors A vector of error entries to copy.
 		 */
-		ParsingErrors( const std::vector<ErrorEntry>& errors );
+		explicit ParsingErrors( const std::vector<ErrorEntry>& errors );
+
+		/**
+		 * @brief Internal constructor for creating ParsingErrors with error entries (move).
+		 * @param errors A vector of error entries to move from.
+		 * @note This constructor takes ownership of the provided vector for optimal performance.
+		 */
+		explicit ParsingErrors( std::vector<ErrorEntry>&& errors ) noexcept;
 
 	public:
 		/** @brief Default constructor */
@@ -65,7 +65,7 @@ namespace dnv::vista::sdk
 		ParsingErrors( const ParsingErrors& ) = default;
 
 		/** @brief Move constructor */
-		ParsingErrors( ParsingErrors&& ) noexcept = default;
+		ParsingErrors( ParsingErrors&& errors ) noexcept;
 
 		/** @brief Destructor */
 		~ParsingErrors() = default;
@@ -89,84 +89,77 @@ namespace dnv::vista::sdk
 		 * @param other The other ParsingErrors object to compare.
 		 * @return True if the two ParsingErrors objects are equal, false otherwise.
 		 */
-		bool operator==( const ParsingErrors& other ) const;
+		[[nodiscard]] bool operator==( const ParsingErrors& other ) const noexcept;
 
 		/**
 		 * @brief Inequality operator.
 		 * @param other The other ParsingErrors object to compare.
 		 * @return True if the two ParsingErrors objects are not equal, false otherwise.
 		 */
-		bool operator!=( const ParsingErrors& other ) const;
-
-		//----------------------------------------------
-		// Public methods
-		//----------------------------------------------
-
-		/**
-		 * @brief Checks if there are any errors.
-		 * @return True if there are errors, false otherwise.
-		 */
-		bool hasErrors() const;
-
-		/**
-		 * @brief Checks if there is an error of a specific type.
-		 * @param type The type of error to check for.
-		 * @return True if an error of the specified type exists, false otherwise.
-		 */
-		bool hasErrorType( const std::string& type ) const;
+		[[nodiscard]] bool operator!=( const ParsingErrors& other ) const noexcept;
 
 		/**
 		 * @brief Checks if this ParsingErrors object is equal to another.
 		 * @param other The other ParsingErrors object to compare.
 		 * @return True if the two ParsingErrors objects are equal, false otherwise.
 		 */
-		bool equals( const ParsingErrors& other ) const;
+		[[nodiscard]] bool equals( const ParsingErrors& other ) const noexcept;
 
-		/**
-		 * @brief Checks if this ParsingErrors object is equal to another object.
-		 * @param obj The other object to compare (as void pointer).
-		 * @return True if the objects are equal, false otherwise.
-		 */
-		bool equals( const void* obj ) const;
+		//----------------------------------------------
+		// Accessors
+		//----------------------------------------------
 
 		/**
 		 * @brief Gets the number of error entries.
 		 * @return The count of error entries.
 		 */
-		size_t count() const;
+		[[nodiscard]] size_t count() const noexcept;
 
 		/**
 		 * @brief Gets the hash code for this ParsingErrors object.
-		 * @return The hash code (can be negative).
+		 * @return The hash code as an unsigned integer.
 		 */
 		[[nodiscard]] size_t hashCode() const noexcept;
+
+		//----------------------------------------------
+		// State inspection methods
+		//----------------------------------------------
+
+		/**
+		 * @brief Checks if there are any errors.
+		 * @return True if there are errors, false otherwise.
+		 */
+		[[nodiscard]] bool hasErrors() const noexcept;
+
+		/**
+		 * @brief Checks if there is an error of a specific type.
+		 * @param type The type of error to check for.
+		 * @return True if an error of the specified type exists, false otherwise.
+		 */
+		[[nodiscard]] bool hasErrorType( std::string_view type ) const noexcept;
+
+		//----------------------------------------------
+		// String conversion methods
+		//----------------------------------------------
 
 		/**
 		 * @brief Converts the parsing errors to a string representation.
 		 * @return A string representation of the parsing errors.
 		 */
-		std::string toString() const;
+		[[nodiscard]] std::string toString() const;
 
-		//----------------------------
+		//----------------------------------------------
 		// Enumeration
-		//----------------------------
+		//----------------------------------------------
 
 		/**
 		 * @brief Gets an enumerator for the error entries.
 		 * @return An enumerator for iterating through the errors.
 		 */
-		Enumerator enumerator() const;
+		[[nodiscard]] Enumerator enumerator() const;
 
-	private:
 		//----------------------------------------------
-		// Private member variables
-		//----------------------------------------------
-
-		std::vector<ErrorEntry> m_errors;
-
-	private:
-		//----------------------------------------------
-		// ParsingErrors enumerator
+		// ParsingErrors::enumerator class
 		//----------------------------------------------
 
 		/**
@@ -219,18 +212,19 @@ namespace dnv::vista::sdk
 			 * @return True if the enumerator successfully moved to the next element;
 			 *         false if the enumerator has passed the end of the collection.
 			 */
-			bool next();
+			[[nodiscard]] bool next() noexcept;
 
 			/**
 			 * @brief Gets the current element.
 			 * @return The current error entry.
+			 * @throws std::out_of_range if enumerator is not positioned on a valid element
 			 */
-			const ErrorEntry& current() const;
+			[[nodiscard]] const ErrorEntry& current() const;
 
 			/**
 			 * @brief Resets the enumerator to its initial position.
 			 */
-			void reset();
+			void reset() noexcept;
 
 		private:
 			//----------------------------
@@ -239,7 +233,31 @@ namespace dnv::vista::sdk
 
 			const std::vector<ErrorEntry>* m_data;
 			size_t m_index;
-			ErrorEntry m_current;
+		};
+
+	private:
+		//----------------------------------------------
+		// Private member variables
+		//----------------------------------------------
+
+		std::vector<ErrorEntry> m_errors;
+
+	public:
+		//----------------------------------------------
+		// ParsingErrors::ErrorEntry struct
+		//----------------------------------------------
+
+		struct ErrorEntry
+		{
+			std::string type;
+			std::string message;
+
+			ErrorEntry() = default;
+			ErrorEntry( std::string_view type, std::string_view message );
+			ErrorEntry( std::string&& type, std::string&& message );
+
+			[[nodiscard]] bool operator==( const ErrorEntry& other ) const noexcept;
+			[[nodiscard]] bool operator!=( const ErrorEntry& other ) const noexcept;
 		};
 	};
 }

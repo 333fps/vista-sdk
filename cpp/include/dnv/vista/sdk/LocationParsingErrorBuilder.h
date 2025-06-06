@@ -54,7 +54,7 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/** @brief Default constructor */
-		LocationParsingErrorBuilder() = default;
+		LocationParsingErrorBuilder();
 
 		/** @brief Copy constructor */
 		LocationParsingErrorBuilder( const LocationParsingErrorBuilder& ) = default;
@@ -76,6 +76,16 @@ namespace dnv::vista::sdk
 		LocationParsingErrorBuilder& operator=( LocationParsingErrorBuilder&& ) noexcept = default;
 
 		//----------------------------------------------
+		// State inspection methods
+		//----------------------------------------------
+
+		/**
+		 * @brief Checks if any errors have been added to the builder.
+		 * @return `true` if at least one error has been added, `false` otherwise.
+		 */
+		[[nodiscard]] bool hasError() const;
+
+		//----------------------------------------------
 		// Static factory method
 		//----------------------------------------------
 
@@ -87,7 +97,19 @@ namespace dnv::vista::sdk
 		[[nodiscard]] static LocationParsingErrorBuilder create();
 
 		//----------------------------------------------
-		// Public methods
+		// ParsingErrors construction
+		//----------------------------------------------
+
+		/**
+		 * @brief Constructs a `ParsingErrors` object from the errors collected by this builder.
+		 * @details Formats the collected validation result/message pairs into a final `ParsingErrors` object.
+		 * @return A `ParsingErrors` object containing the formatted error messages.
+		 *         Returns `ParsingErrors::Empty` if `hasError()` is false.
+		 */
+		[[nodiscard]] ParsingErrors build() const;
+
+		//----------------------------------------------
+		// Error addition
 		//----------------------------------------------
 
 		/**
@@ -97,20 +119,6 @@ namespace dnv::vista::sdk
 		 * @return A reference to this builder instance for method chaining.
 		 */
 		LocationParsingErrorBuilder& addError( LocationValidationResult validationResult, const std::optional<std::string>& message );
-
-		/**
-		 * @brief Checks if any errors have been added to the builder.
-		 * @return `true` if at least one error has been added, `false` otherwise.
-		 */
-		[[nodiscard]] bool hasError() const;
-
-		/**
-		 * @brief Constructs a `ParsingErrors` object from the errors collected by this builder.
-		 * @details Formats the collected validation result/message pairs into a final `ParsingErrors` object.
-		 * @return A `ParsingErrors` object containing the formatted error messages.
-		 *         Returns `ParsingErrors::Empty` if `hasError()` is false.
-		 */
-		[[nodiscard]] ParsingErrors build() const;
 
 	private:
 		//----------------------------------------------

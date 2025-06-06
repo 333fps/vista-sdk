@@ -59,7 +59,7 @@ foreach(test_source ${TEST_SOURCES})
 
 
 	if(NOT TARGET ${test_target_name})
-		add_executable(${test_target_name} TestDataLoader.h ${test_source})
+		add_executable(${test_target_name} TestDataLoader.h TestDataLoader.cpp ${test_source})
 
 		target_precompile_headers(${test_target_name} PRIVATE pch.h)
 

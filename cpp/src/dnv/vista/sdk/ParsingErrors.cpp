@@ -14,7 +14,7 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	//----------------------------------------------
-	// Static members
+	// Public static members
 	//----------------------------------------------
 
 	const ParsingErrors ParsingErrors::Empty = ParsingErrors{};
@@ -28,8 +28,18 @@ namespace dnv::vista::sdk
 	{
 	}
 
+	ParsingErrors::ParsingErrors( std::vector<ErrorEntry>&& errors ) noexcept
+		: m_errors{ std::move( errors ) }
+	{
+	}
+
 	ParsingErrors::ParsingErrors()
 		: m_errors{}
+	{
+	}
+
+	ParsingErrors::ParsingErrors( ParsingErrors&& errors ) noexcept
+		: m_errors{ std::move( errors.m_errors ) }
 	{
 	}
 
@@ -37,66 +47,75 @@ namespace dnv::vista::sdk
 	// Operators
 	//----------------------------------------------
 
-	bool ParsingErrors::operator==( const ParsingErrors& other ) const
+	bool ParsingErrors::operator==( const ParsingErrors& other ) const noexcept
 	{
-		return m_errors == other.m_errors;
-	}
+		if ( this == &other )
+		{
+			return true;
+		}
 
-	bool ParsingErrors::operator!=( const ParsingErrors& other ) const
-	{
-		return !( *this == other );
-	}
-
-	//----------------------------------------------
-	// Public methods
-	//----------------------------------------------
-
-	bool ParsingErrors::hasErrors() const
-	{
-		return !m_errors.empty();
-	}
-
-	bool ParsingErrors::hasErrorType( const std::string& type ) const
-	{
-		bool found = std::any_of( m_errors.begin(), m_errors.end(),
-			[&type]( const ErrorEntry& error ) { return error.first == type; } );
-
-		return found;
-	}
-
-	bool ParsingErrors::equals( const ParsingErrors& other ) const
-	{
-		return *this == other;
-	}
-
-	bool ParsingErrors::equals( const void* obj ) const
-	{
-		if ( obj == nullptr )
+		if ( m_errors.size() != other.m_errors.size() )
 		{
 			return false;
 		}
 
-		const ParsingErrors* other = static_cast<const ParsingErrors*>( obj );
-
-		return equals( *other );
+		return m_errors == other.m_errors;
 	}
 
-	size_t ParsingErrors::count() const
+	bool ParsingErrors::operator!=( const ParsingErrors& other ) const noexcept
+	{
+		return !( *this == other );
+	}
+
+	bool ParsingErrors::equals( const ParsingErrors& other ) const noexcept
+	{
+		return *this == other;
+	}
+
+	//----------------------------------------------
+	// Accessors
+	//----------------------------------------------
+
+	size_t ParsingErrors::count() const noexcept
 	{
 		return m_errors.size();
 	}
 
 	size_t ParsingErrors::hashCode() const noexcept
 	{
-		std::size_t hash = 0;
+		size_t hash = 0;
+		std::hash<std::string> stringHasher;
+
 		for ( const auto& error : m_errors )
 		{
-			hash ^= std::hash<std::string>{}( error.first ) + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-			hash ^= std::hash<std::string>{}( error.second ) + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
+			size_t typeHash = stringHasher( error.type );
+			size_t messageHash = stringHasher( error.message );
+
+			hash ^= typeHash + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
+			hash ^= messageHash + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
 		}
 
 		return hash;
 	}
+
+	//----------------------------------------------
+	// State inspection methods
+	//----------------------------------------------
+
+	bool ParsingErrors::hasErrors() const noexcept
+	{
+		return !m_errors.empty();
+	}
+
+	bool ParsingErrors::hasErrorType( std::string_view type ) const noexcept
+	{
+		return std::any_of( m_errors.begin(), m_errors.end(),
+			[type]( const ErrorEntry& error ) { return error.type == type; } );
+	}
+
+	//----------------------------------------------
+	// String conversion methods
+	//----------------------------------------------
 
 	std::string ParsingErrors::toString() const
 	{
@@ -105,22 +124,34 @@ namespace dnv::vista::sdk
 			return "Success";
 		}
 
-		std::ostringstream builder;
-		builder << "Parsing errors:\n";
-
-		for ( const auto& [type, message] : m_errors )
+		/* Pre-calculate exact capacity */
+		size_t capacity = 15;
+		for ( const auto& error : m_errors )
 		{
-			builder << '\t' << type << " - " << message << '\n';
+			capacity += 1 + error.type.size() + 3 + error.message.size() + 1;
+			/*          ↑                       ↑                          ↑ */
+			/*        '\t'                    " - "                      '\n' */
 		}
 
-		std::string result = builder.str();
+		std::string result;
+		result.reserve( capacity );
+		result = "Parsing errors:\n";
+
+		for ( const auto& error : m_errors )
+		{
+			result.append( 1, '\t' );
+			result.append( error.type );
+			result.append( " - " );
+			result.append( error.message );
+			result.append( 1, '\n' );
+		}
 
 		return result;
 	}
 
-	//----------------------------
+	//----------------------------------------------
 	// Enumeration
-	//----------------------------
+	//----------------------------------------------
 
 	ParsingErrors::Enumerator ParsingErrors::enumerator() const
 	{
@@ -128,7 +159,7 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// ParsingErrors enumerator
+	// ParsingErrors::enumerator class
 	//----------------------------------------------
 
 	//----------------------------
@@ -137,8 +168,7 @@ namespace dnv::vista::sdk
 
 	ParsingErrors::Enumerator::Enumerator( const std::vector<ErrorEntry>* data )
 		: m_data{ data },
-		  m_index{ 0 },
-		  m_current{}
+		  m_index{ 0 }
 	{
 	}
 
@@ -146,28 +176,55 @@ namespace dnv::vista::sdk
 	// Enumeration methods
 	//----------------------------
 
-	bool ParsingErrors::Enumerator::next()
+	bool ParsingErrors::Enumerator::next() noexcept
 	{
-		if ( m_index < m_data->size() )
+		if ( m_index < m_data->size() ) [[likely]]
 		{
-			m_current = m_data->at( m_index );
 			++m_index;
+
 			return true;
 		}
 
-		m_index = m_data->size() + 1;
-		m_current = {};
 		return false;
 	}
 
 	const ParsingErrors::ErrorEntry& ParsingErrors::Enumerator::current() const
 	{
-		return m_current;
+		if ( m_index == 0 || m_index > m_data->size() )
+		{
+			throw std::out_of_range( "Enumerator not positioned on valid element" );
+		}
+
+		return ( *m_data )[m_index - 1];
 	}
 
-	void ParsingErrors::Enumerator::reset()
+	void ParsingErrors::Enumerator::reset() noexcept
 	{
 		m_index = 0;
-		m_current = {};
+	}
+
+	//----------------------------------------------
+	// ParsingErrors::ErrorEntry struct
+	//----------------------------------------------
+
+	ParsingErrors::ErrorEntry::ErrorEntry( std::string_view type, std::string_view message )
+		: type{ type }, message{ message }
+	{
+	}
+
+	ParsingErrors::ErrorEntry::ErrorEntry( std::string&& type, std::string&& message )
+		: type{ std::move( type ) },
+		  message{ std::move( message ) }
+	{
+	}
+
+	bool ParsingErrors::ErrorEntry::operator==( const ErrorEntry& other ) const noexcept
+	{
+		return type == other.type && message == other.message;
+	}
+
+	bool ParsingErrors::ErrorEntry::operator!=( const ErrorEntry& other ) const noexcept
+	{
+		return !( *this == other );
 	}
 }

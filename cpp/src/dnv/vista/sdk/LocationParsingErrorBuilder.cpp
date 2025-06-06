@@ -14,20 +14,74 @@ namespace dnv::vista::sdk
 	namespace
 	{
 		//=====================================================================
-		// Static data maps
+		// Internal helper functions and constants
 		//=====================================================================
 
-		static const std::unordered_map<LocationValidationResult, std::string> VALIDATION_RESULT_TO_STRING = {
-			{ LocationValidationResult::Invalid, "Invalid" },
-			{ LocationValidationResult::InvalidCode, "InvalidCode" },
-			{ LocationValidationResult::InvalidOrder, "InvalidOrder" },
-			{ LocationValidationResult::NullOrWhiteSpace, "NullOrWhiteSpace" },
-			{ LocationValidationResult::Valid, "Valid" } };
+		//----------------------------------------------
+		// String view constants for Enum Conversion
+		//----------------------------------------------
+
+		static constexpr std::string_view INVALID_RESULT = "Invalid";
+		static constexpr std::string_view INVALID_CODE_RESULT = "InvalidCode";
+		static constexpr std::string_view INVALID_ORDER_RESULT = "InvalidOrder";
+		static constexpr std::string_view NULL_OR_WHITESPACE_RESULT = "NullOrWhiteSpace";
+		static constexpr std::string_view VALID_RESULT = "Valid";
+
+		//----------------------------------------------
+		// Enum to string view conversion function
+		//----------------------------------------------
+
+		/**
+		 * @brief Converts LocationValidationResult enum to string_view representation.
+		 * @details Uses constexpr switch for zero-cost, compile-time optimization.
+		 *          Returns string_view to avoid memory allocations during conversion.
+		 * @param result The validation result enum to convert
+		 * @return Corresponding string_view representation
+		 * @note This function is marked constexpr for compile-time evaluation
+		 */
+
+		constexpr std::string_view locationValidationResultToStringView( LocationValidationResult result ) noexcept
+		{
+			switch ( result )
+			{
+				case LocationValidationResult::Invalid:
+					return INVALID_RESULT;
+				case LocationValidationResult::InvalidCode:
+					return INVALID_CODE_RESULT;
+				case LocationValidationResult::InvalidOrder:
+					return INVALID_ORDER_RESULT;
+				case LocationValidationResult::NullOrWhiteSpace:
+					return NULL_OR_WHITESPACE_RESULT;
+				case LocationValidationResult::Valid:
+					return VALID_RESULT;
+				default:
+					return "Unknown";
+			}
+		}
 	}
 
 	//=====================================================================
 	// LocationParsingErrorBuilder class
 	//=====================================================================
+
+	//----------------------------------------------
+	// Construction / destruction
+	//----------------------------------------------
+
+	LocationParsingErrorBuilder::LocationParsingErrorBuilder()
+	{
+		/* Memory: 8 × sizeof(std::pair<LocationValidationResult, std::string>) = 8 × (4 + 32) = ~288 bytes */
+		m_errors.reserve( 8 );
+	}
+
+	//----------------------------------------------
+	// State inspection methods
+	//----------------------------------------------
+
+	bool LocationParsingErrorBuilder::hasError() const
+	{
+		return !m_errors.empty();
+	}
 
 	//----------------------------------------------
 	// Static factory method
@@ -39,24 +93,8 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Public methods
+	// ParsingErrors construction
 	//----------------------------------------------
-
-	LocationParsingErrorBuilder& LocationParsingErrorBuilder::addError( LocationValidationResult validationResult, const std::optional<std::string>& message )
-	{
-		std::string actualMessage = message.has_value() ? *message : "";
-
-		SPDLOG_ERROR( "Adding location parsing error for validation result {}: {}", static_cast<int>( validationResult ), actualMessage );
-
-		m_errors.emplace_back( validationResult, actualMessage );
-
-		return *this;
-	}
-
-	bool LocationParsingErrorBuilder::hasError() const
-	{
-		return !m_errors.empty();
-	}
 
 	ParsingErrors LocationParsingErrorBuilder::build() const
 	{
@@ -70,19 +108,42 @@ namespace dnv::vista::sdk
 
 		for ( const auto& [validationResult, message] : m_errors )
 		{
-			auto it = VALIDATION_RESULT_TO_STRING.find( validationResult );
-			std::string resultStr = ( it != VALIDATION_RESULT_TO_STRING.end() )
-										? it->second
-										: "ValidationResult" + std::to_string( static_cast<int>( validationResult ) );
-
-			if ( it == VALIDATION_RESULT_TO_STRING.end() )
-			{
-				SPDLOG_WARN( "Building ParsingErrors with unknown validation result enum value: {}", static_cast<int>( validationResult ) );
-			}
-
-			errorEntries.emplace_back( resultStr, message );
+			errorEntries.emplace_back( locationValidationResultToStringView( validationResult ), message );
 		}
 
-		return ParsingErrors{ errorEntries };
+		return ParsingErrors{ std::move( errorEntries ) };
+	}
+
+	//----------------------------------------------
+	// Error addition
+	//----------------------------------------------
+
+	LocationParsingErrorBuilder& LocationParsingErrorBuilder::addError(
+		LocationValidationResult validationResult,
+		const std::optional<std::string>& message )
+	{
+		if ( m_errors.size() == m_errors.capacity() ) [[unlikely]]
+		{
+			/* 8 × sizeof(std::pair<LocationValidationResult, std::string>) = 8 × (4 + 32) = ~288 bytes */
+			m_errors.reserve( std::max( static_cast<size_t>( 8 ), m_errors.capacity() * 2 ) );
+		}
+
+		if ( message.has_value() ) [[likely]]
+		{
+			if ( !message->empty() ) [[likely]]
+			{
+				m_errors.emplace_back( validationResult, *message );
+			}
+			else
+			{
+				m_errors.emplace_back( validationResult, std::string{} );
+			}
+		}
+		else
+		{
+			m_errors.emplace_back( validationResult, std::string{} );
+		}
+
+		return *this;
 	}
 }

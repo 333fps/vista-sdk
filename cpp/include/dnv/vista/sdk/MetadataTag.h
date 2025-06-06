@@ -131,7 +131,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] bool isCustom() const noexcept;
 
 		//-------------------------------------------------------------------------
-		// String Conversion Methods
+		// String conversion methods
 		//-------------------------------------------------------------------------
 
 		/**
