@@ -17,12 +17,6 @@ set(PUBLIC_HEADERS
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodTraversal.h
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioning.h
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/GmodVersioningDto.h
-	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.h
-	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalId.inl
-	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalIdBuilder.h
-	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ILocalIdBuilder.inl
-	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/IUniversalIdBuilder.h
-	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/IUniversalId.h
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ImoNumber.h
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/ISO19848Dtos.h
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/LocalId.h

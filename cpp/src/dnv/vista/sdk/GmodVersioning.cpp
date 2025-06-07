@@ -11,7 +11,9 @@
 #include "dnv/vista/sdk/GmodNode.h"
 #include "dnv/vista/sdk/GmodPath.h"
 #include "dnv/vista/sdk/GmodTraversal.h"
+#include "dnv/vista/sdk/LocalId.h"
 #include "dnv/vista/sdk/LocalIdBuilder.h"
+#include "dnv/vista/sdk/MetadataTag.h"
 #include "dnv/vista/sdk/VIS.h"
 #include "dnv/vista/sdk/VISVersion.h"
 
@@ -51,7 +53,7 @@ namespace dnv::vista::sdk
 	}
 
 	//=====================================================================
-	// GmodVersioning Class
+	// GmodVersioning class
 	//=====================================================================
 
 	//----------------------------------------------
@@ -536,7 +538,7 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// GmodVersioningNode Class
+	// GmodVersioningNode class
 	//----------------------------------------------
 
 	//----------------------------------------------
@@ -679,7 +681,7 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Private Validation Methods
+	// Private validation methods
 	//----------------------------------------------
 
 	void GmodVersioning::validateSourceAndTargetVersions(
@@ -735,7 +737,7 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Private Static Utility Methods
+	// Private static utility methods
 	//----------------------------------------------
 
 	GmodVersioning::ConversionType GmodVersioning::parseConversionType( const std::string& type )

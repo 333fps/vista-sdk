@@ -22,15 +22,49 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	//----------------------------------------------
+	// Assignment operators
+	//----------------------------------------------
+
+	UniversalIdBuilder& UniversalIdBuilder::operator=( UniversalIdBuilder&& other ) noexcept
+	{
+		if ( this != &other )
+		{
+			m_imoNumber = std::move( other.m_imoNumber );
+			m_localIdBuilder = std::move( other.m_localIdBuilder );
+		}
+
+		return *this;
+	}
+
+	//----------------------------------------------
+	// Operators
+	//----------------------------------------------
+
+	bool UniversalIdBuilder::operator==( const UniversalIdBuilder& other ) const
+	{
+		return equals( other );
+	}
+
+	bool UniversalIdBuilder::operator!=( const UniversalIdBuilder& other ) const
+	{
+		return !equals( other );
+	}
+
+	bool UniversalIdBuilder::equals( const UniversalIdBuilder& other ) const
+	{
+		return m_imoNumber == other.m_imoNumber && m_localIdBuilder == other.m_localIdBuilder;
+	}
+
+	//----------------------------------------------
 	// Accessors
 	//----------------------------------------------
 
-	const std::optional<ImoNumber>& UniversalIdBuilder::imoNumber() const
+	const std::optional<ImoNumber>& UniversalIdBuilder::imoNumber() const noexcept
 	{
 		return m_imoNumber;
 	}
 
-	const std::optional<LocalIdBuilder>& UniversalIdBuilder::localId() const
+	const std::optional<LocalIdBuilder>& UniversalIdBuilder::localId() const noexcept
 	{
 		return m_localIdBuilder;
 	}
@@ -52,9 +86,36 @@ namespace dnv::vista::sdk
 	// State inspection methods
 	//----------------------------------------------
 
-	bool UniversalIdBuilder::isValid() const
+	bool UniversalIdBuilder::isValid() const noexcept
 	{
 		return m_imoNumber.has_value() && m_localIdBuilder.has_value() && m_localIdBuilder->isValid();
+	}
+
+	//----------------------------------------------
+	// String conversion
+	//----------------------------------------------
+
+	std::string UniversalIdBuilder::toString() const
+	{
+		if ( !m_imoNumber.has_value() )
+		{
+			throw std::invalid_argument( "Invalid Universal Id state: Missing IMO Number" );
+		}
+
+		if ( !m_localIdBuilder.has_value() )
+		{
+			throw std::invalid_argument( "Invalid Universal Id state: Missing LocalId" );
+		}
+
+		std::ostringstream builder;
+
+		builder << namingEntity;
+		builder << "/";
+		builder << m_imoNumber->toString();
+
+		builder << m_localIdBuilder->toString();
+
+		return builder.str();
 	}
 
 	//----------------------------------------------
@@ -169,60 +230,28 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Conversion and comparison
-	//----------------------------------------------
-
-	std::string UniversalIdBuilder::toString() const
-	{
-		if ( !m_imoNumber.has_value() )
-		{
-			throw std::invalid_argument( "Invalid Universal Id state: Missing IMO Number" );
-		}
-
-		if ( !m_localIdBuilder.has_value() )
-		{
-			throw std::invalid_argument( "Invalid Universal Id state: Missing LocalId" );
-		}
-
-		std::ostringstream builder;
-
-		builder << namingEntity;
-		builder << "/";
-		builder << m_imoNumber->toString();
-
-		builder << m_localIdBuilder->toString();
-
-		return builder.str();
-	}
-
-	bool UniversalIdBuilder::equals( const UniversalIdBuilder& other ) const
-	{
-		return m_imoNumber == other.m_imoNumber && m_localIdBuilder == other.m_localIdBuilder;
-	}
-
-	//----------------------------------------------
 	// Static parsing methods
 	//----------------------------------------------
 
-	UniversalIdBuilder UniversalIdBuilder::parse( const std::string& universalIdStr )
+	UniversalIdBuilder UniversalIdBuilder::parse( std::string_view universalIdStr )
 	{
 		ParsingErrors errors;
 		std::optional<UniversalIdBuilder> builder;
 		if ( !tryParse( universalIdStr, errors, builder ) )
 		{
-			std::string errorMessage = "Couldn't parse universal ID from: '" + universalIdStr + "'. " + errors.toString();
+			std::string errorMessage = "Couldn't parse universal ID from: '" + std::string( universalIdStr ) + "'. " + errors.toString();
 			throw std::invalid_argument( errorMessage );
 		}
 		return builder.value();
 	}
 
-	bool UniversalIdBuilder::tryParse( const std::string& universalId, std::optional<UniversalIdBuilder>& universalIdBuilder )
+	bool UniversalIdBuilder::tryParse( std::string_view universalId, std::optional<UniversalIdBuilder>& universalIdBuilder )
 	{
 		ParsingErrors errors;
 		return tryParse( universalId, errors, universalIdBuilder );
 	}
 
-	bool UniversalIdBuilder::tryParse( const std::string& universalId, ParsingErrors& errors, std::optional<UniversalIdBuilder>& universalIdBuilder )
+	bool UniversalIdBuilder::tryParse( std::string_view universalId, ParsingErrors& errors, std::optional<UniversalIdBuilder>& universalIdBuilder )
 	{
 		universalIdBuilder = std::nullopt;
 		auto errorBuilder = LocalIdParsingErrorBuilder::create();
@@ -242,8 +271,8 @@ namespace dnv::vista::sdk
 			return false;
 		}
 
-		std::string universalIdSegment = universalId.substr( 0, localIdStartIndex );
-		std::string localIdSegment = universalId.substr( localIdStartIndex );
+		std::string universalIdSegment = std::string( universalId.substr( 0, localIdStartIndex ) );
+		std::string localIdSegment = std::string( universalId.substr( localIdStartIndex ) );
 
 		std::optional<ImoNumber> imoNumber = std::nullopt;
 

@@ -63,9 +63,9 @@ cmake --build build --target BM_CodebooksLookup
 
 | Operation             | Windows C++ | vs Baseline | Linux C++ | vs Baseline | Notes                         |
 | :-------------------- | :---------- | :---------: | :-------- | :---------: | :---------------------------- |
-| **Array Lookup**      | 0.935 ns    |  **1.00x**  | _TBD_     |    _TBD_    | ⚡ Fastest possible operation |
-| **Hash Table Lookup** | 2.01 ns     |  **2.15x**  | _TBD_     |    _TBD_    | 🔥 2.15x slower than baseline |
-| **SDK Codebooks API** | 2.78 ns     |  **2.97x**  | _TBD_     |    _TBD_    | 🐌 2.97x slower than baseline |
+| **Array Lookup**      | 0.928 ns    |  **1.00x**  | _TBD_     |    _TBD_    | ⚡ Fastest possible operation |
+| **Hash Table Lookup** | 1.96 ns     |  **2.11x**  | _TBD_     |    _TBD_    | 🔥 2.11x slower than baseline |
+| **SDK Codebooks API** | 2.78 ns     |  **2.99x**  | _TBD_     |    _TBD_    | 🐌 2.99x slower than baseline |
 
 ### Codebooks Lookup Performance (Windows)
 
@@ -73,17 +73,17 @@ Performance comparison between C++ and C# implementations for codebook access op
 
 | C++ Method            | C++ Time | C++ Implementation                    | C# Method     | C# Time | C# Implementation             | Performance Ratio   |
 | :-------------------- | :------- | :------------------------------------ | :------------ | :------ | :---------------------------- | :------------------ |
-| **hashTableLookup**   | 2.01 ns  | `std::unordered_map::find()`          | **Dict**      | 4.90 ns | `Dictionary.TryGetValue()`    | ✅ **2.44x faster** |
-| **sdkApiCodebooks**   | 2.78 ns  | `codebooks_ref[enum_key]` + try/catch | **Codebooks** | 0.69 ns | `array[index]` + bounds check | ❌ **4.02x slower** |
-| **sdkApiArrayLookup** | 0.935 ns | `std::array[index] != nullptr`        | _No equiv_    | _N/A_   | _N/A_                         | _N/A_               |
+| **hashTableLookup**   | 1.96 ns  | `std::unordered_map::find()`          | **Dict**      | 4.90 ns | `Dictionary.TryGetValue()`    | ✅ **2.50x faster** |
+| **sdkApiCodebooks**   | 2.78 ns  | `codebooks_ref[enum_key]` + try/catch | **Codebooks** | 0.69 ns | `array[index]` + bounds check | ❌ **4.03x slower** |
+| **sdkApiArrayLookup** | 0.928 ns | `std::array[index] != nullptr`        | _No equiv_    | _N/A_   | _N/A_                         | _N/A_               |
 
 #### Detailed C++ Results (Windows)
 
 | Benchmark             | Time     | CPU      | Iterations | Memory Usage |
 | :-------------------- | :------- | :------- | :--------- | :----------- |
-| **hashTableLookup**   | 2.01 ns  | 2.01 ns  | 7.1B       | 0 KB         |
+| **hashTableLookup**   | 1.96 ns  | 1.96 ns  | 7.3B       | 0 KB         |
 | **sdkApiCodebooks**   | 2.78 ns  | 2.78 ns  | 5.0B       | 0 KB         |
-| **sdkApiArrayLookup** | 0.935 ns | 0.934 ns | 15.2B      | 0 KB         |
+| **sdkApiArrayLookup** | 0.928 ns | 0.928 ns | 15.2B      | 0 KB         |
 
 #### Detailed C# Results (Windows)
 

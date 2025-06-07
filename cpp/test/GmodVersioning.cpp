@@ -8,6 +8,7 @@
 #include "dnv/vista/sdk/GmodTraversal.h"
 #include "dnv/vista/sdk/GmodVersioning.h"
 #include "dnv/vista/sdk/LocalIdBuilder.h"
+#include "dnv/vista/sdk/ParsingErrors.h"
 #include "dnv/vista/sdk/VIS.h"
 
 namespace dnv::vista::sdk::tests

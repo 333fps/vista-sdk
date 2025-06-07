@@ -1,6 +1,14 @@
+/**
+ * @file UniversalIdBuilder.h
+ * @brief High-performance fluent builder for UniversalId objects.
+ * @details Concrete implementation using immutable fluent pattern with direct value storage.
+ *          Optimized for performance without interface overhead.
+ */
+
 #pragma once
 
-#include "IUniversalIdBuilder.h"
+#include "ImoNumber.h"
+#include "LocalIdBuilder.h"
 
 namespace dnv::vista::sdk
 {
@@ -8,25 +16,34 @@ namespace dnv::vista::sdk
 	// Forward declarations
 	//=====================================================================
 
-	class ImoNumber;
-	class LocalIdBuilder;
 	class ParsingErrors;
 	class UniversalId;
 	class LocalIdParsingErrorBuilder;
 	enum class LocalIdParsingState;
+	enum class VISVersion;
 
 	//=====================================================================
 	// UniversalIdBuilder class
 	//=====================================================================
 
-	class UniversalIdBuilder final : public IUniversalIdBuilder
+	/**
+	 * @class UniversalIdBuilder
+	 * @brief High-performance fluent builder for UniversalId objects.
+	 *
+	 * @details Concrete implementation using immutable fluent pattern with direct value storage.
+	 * Uses move semantics and direct method calls for optimal performance.
+	 */
+	class UniversalIdBuilder final
 	{
 	public:
 		//----------------------------------------------
 		// Constants
 		//----------------------------------------------
 
-		/** @brief Naming entity constant for universal IDs.*/
+		/**
+		 * @brief Standard naming entity for Universal IDs.
+		 * @details Always "data.dnv.com" for DNV Universal ID format.
+		 */
 		static const std::string namingEntity;
 
 		//----------------------------------------------
@@ -34,7 +51,10 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 	protected:
-		/** @brief Default constructor. */
+		/**
+		 * @brief Protected default constructor.
+		 * @details Use static factory methods for construction.
+		 */
 		UniversalIdBuilder() = default;
 
 	public:
@@ -45,7 +65,7 @@ namespace dnv::vista::sdk
 		UniversalIdBuilder( UniversalIdBuilder&& ) noexcept = default;
 
 		/** @brief Destructor */
-		virtual ~UniversalIdBuilder() = default;
+		~UniversalIdBuilder() = default;
 
 		//----------------------------------------------
 		// Assignment operators
@@ -55,27 +75,55 @@ namespace dnv::vista::sdk
 		UniversalIdBuilder& operator=( const UniversalIdBuilder& ) = delete;
 
 		/** @brief Move assignment operator */
-		UniversalIdBuilder& operator=( UniversalIdBuilder&& ) noexcept = delete;
+		UniversalIdBuilder& operator=( UniversalIdBuilder&& other ) noexcept;
+
+		//----------------------------------------------
+		// Operators
+		//----------------------------------------------
+
+		/**
+		 * @brief Equality operator.
+		 * @param[in] other The other builder to compare.
+		 * @return True if equal, false otherwise.
+		 */
+		bool operator==( const UniversalIdBuilder& other ) const;
+
+		/**
+		 * @brief Inequality operator.
+		 * @param[in] other The other builder to compare.
+		 * @return True if not equal, false otherwise.
+		 */
+		bool operator!=( const UniversalIdBuilder& other ) const;
+
+		/**
+		 * @brief Deep equality comparison with another builder.
+		 * @param[in] other The other builder to compare.
+		 * @return True if all components are equal.
+		 */
+		bool equals( const UniversalIdBuilder& other ) const;
 
 		//----------------------------------------------
 		// Accessors
 		//----------------------------------------------
 
 		/**
-		 * Gets the IMO number.
-		 * @return The optional IMO number.
+		 * @brief Gets the IMO number currently set in builder.
+		 * @return Constant reference to optional IMO number.
+		 * @note Zero-copy access via const reference.
 		 */
-		virtual const std::optional<ImoNumber>& imoNumber() const override;
+		[[nodiscard]] const std::optional<ImoNumber>& imoNumber() const noexcept;
 
 		/**
-		 * Gets the local ID builder.
-		 * @return The optional local ID builder.
+		 * @brief Gets the Local ID builder currently set.
+		 * @return Constant reference to optional LocalIdBuilder.
+		 * @note Zero-copy access via const reference.
 		 */
-		virtual const std::optional<LocalIdBuilder>& localId() const override;
+		[[nodiscard]] const std::optional<LocalIdBuilder>& localId() const noexcept;
 
 		/**
-		 * Gets the hash code for this builder.
-		 * @return The hash code.
+		 * @brief Computes hash code for container usage.
+		 * @return Hash value combining IMO number and Local ID builder.
+		 * @note This method is guaranteed not to throw (noexcept).
 		 */
 		[[nodiscard]] size_t hashCode() const noexcept;
 
@@ -84,36 +132,32 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * Checks if the builder is in a valid state.
-		 * @return True if valid, false otherwise.
+		 * @brief Checks if builder state is valid for building UniversalId.
+		 * @details Requires both IMO number and valid LocalIdBuilder.
+		 * @return True if build() will succeed.
+		 * @note This method is guaranteed not to throw (noexcept).
 		 */
-		virtual bool isValid() const override;
+		[[nodiscard]] bool isValid() const noexcept;
 
 		//----------------------------------------------
-		// Conversion and comparison
+		// String conversion
 		//----------------------------------------------
 
 		/**
-		 * Converts the builder to a string representation.
-		 * @return The string representation.
+		 * @brief Generates string representation of current builder state.
+		 * @return String in Universal ID format.
+		 * @throws std::invalid_argument If builder state is invalid.
 		 */
-		virtual std::string toString() const override;
-
-		/**
-		 * Checks equality with another UniversalIdBuilder.
-		 * @param other The other UniversalIdBuilder to compare.
-		 * @return True if equal, false otherwise.
-		 */
-		bool equals( const UniversalIdBuilder& other ) const;
+		[[nodiscard]] std::string toString() const;
 
 		//----------------------------------------------
 		// Static factory methods
 		//----------------------------------------------
 
 		/**
-		 * Creates a new UniversalIdBuilder for the specified VIS version.
-		 * @param version The VIS version.
-		 * @return A new UniversalIdBuilder instance.
+		 * @brief Creates new UniversalIdBuilder for specified VIS version.
+		 * @param[in] version VIS version for the Local ID component.
+		 * @return New UniversalIdBuilder instance.
 		 */
 		static UniversalIdBuilder create( VisVersion version );
 
@@ -121,96 +165,107 @@ namespace dnv::vista::sdk
 		// Build methods (Immutable fluent interface)
 		//----------------------------------------------
 
-		//----------------------------
-		// Build
-		//----------------------------
-
 		/**
-		 * Builds a UniversalId from this builder.
-		 * @return The constructed UniversalId.
-		 * @throws std::invalid_argument If the builder is in an invalid state.
+		 * @brief Builds UniversalId from current builder state.
+		 * @return Constructed UniversalId.
+		 * @throws std::invalid_argument If builder state is invalid.
 		 */
-		UniversalId build() const;
+		[[nodiscard]] UniversalId build() const;
 
 		//----------------------------
 		// Local Id
 		//----------------------------
 
 		/**
-		 * Sets the local ID.
-		 * @param localId The local ID builder.
-		 * @return A new UniversalIdBuilder instance with the updated local ID.
+		 * @brief Returns new builder with Local ID builder set.
+		 * @param[in] localId LocalIdBuilder to set.
+		 * @return New UniversalIdBuilder instance.
+		 * @throws std::invalid_argument If localId is invalid.
 		 */
-		virtual UniversalIdBuilder withLocalId( const LocalIdBuilder& localId ) const override;
+		[[nodiscard]] UniversalIdBuilder withLocalId( const LocalIdBuilder& localId ) const;
 
 		/**
-		 * Tries to set the local ID.
-		 * @param localId The optional local ID builder.
-		 * @return A new UniversalIdBuilder instance with the updated local ID.
+		 * @brief Returns new builder with optional Local ID builder.
+		 * @param[in] localId Optional LocalIdBuilder to set.
+		 * @return New UniversalIdBuilder instance.
 		 */
-		virtual UniversalIdBuilder tryWithLocalId( const std::optional<LocalIdBuilder>& localId ) const override;
+		[[nodiscard]] UniversalIdBuilder tryWithLocalId( const std::optional<LocalIdBuilder>& localId ) const;
 
 		/**
-		 * Tries to set the local ID.
-		 * @param localId The optional local ID builder.
-		 * @param succeeded Output parameter indicating success.
-		 * @return A new UniversalIdBuilder instance with the updated local ID.
+		 * @brief Returns new builder with optional Local ID builder, reporting success.
+		 * @param[in] localId Optional LocalIdBuilder to set.
+		 * @param[out] succeeded True if LocalIdBuilder was set successfully.
+		 * @return New UniversalIdBuilder instance.
 		 */
-		virtual UniversalIdBuilder tryWithLocalId( const std::optional<LocalIdBuilder>& localId, bool& succeeded ) const override;
+		[[nodiscard]] UniversalIdBuilder tryWithLocalId( const std::optional<LocalIdBuilder>& localId, bool& succeeded ) const;
 
 		/**
-		 * Removes the local ID.
-		 * @return A new UniversalIdBuilder instance without the local ID.
+		 * @brief Returns new builder without Local ID builder.
+		 * @return New UniversalIdBuilder instance.
 		 */
-		virtual UniversalIdBuilder withoutLocalId() const override;
+		[[nodiscard]] UniversalIdBuilder withoutLocalId() const;
 
 		//----------------------------
 		// IMO number
 		//----------------------------
 
 		/**
-		 * Sets the IMO number.
-		 * @param imoNumber The IMO number.
-		 * @return A new UniversalIdBuilder instance with the updated IMO number.
+		 * @brief Returns new builder with IMO number set.
+		 * @param[in] imoNumber IMO number to set.
+		 * @return New UniversalIdBuilder instance.
+		 * @throws std::invalid_argument If imoNumber is invalid.
 		 */
-		virtual UniversalIdBuilder withImoNumber( const ImoNumber& imoNumber ) const override;
+		[[nodiscard]] UniversalIdBuilder withImoNumber( const ImoNumber& imoNumber ) const;
 
 		/**
-		 * Removes the IMO number.
-		 * @return A new UniversalIdBuilder instance without the IMO number.
+		 * @brief Returns new builder with optional IMO number.
+		 * @param[in] imoNumber Optional IMO number to set.
+		 * @return New UniversalIdBuilder instance.
 		 */
-		virtual UniversalIdBuilder withoutImoNumber() const override;
+		[[nodiscard]] UniversalIdBuilder tryWithImoNumber( const std::optional<ImoNumber>& imoNumber ) const;
 
 		/**
-		 * Tries to set the IMO number.
-		 * @param imoNumber The optional IMO number.
-		 * @return A new UniversalIdBuilder instance with the updated IMO number.
+		 * @brief Returns new builder with optional IMO number, reporting success.
+		 * @param[in] imoNumber Optional IMO number to set.
+		 * @param[out] succeeded True if IMO number was set successfully.
+		 * @return New UniversalIdBuilder instance.
 		 */
-		virtual UniversalIdBuilder tryWithImoNumber( const std::optional<ImoNumber>& imoNumber ) const override;
+		[[nodiscard]] UniversalIdBuilder tryWithImoNumber( const std::optional<ImoNumber>& imoNumber, bool& succeeded ) const;
 
 		/**
-		 * Tries to set the IMO number.
-		 * @param imoNumber The optional IMO number.
-		 * @param succeeded Output parameter indicating success.
-		 * @return A new UniversalIdBuilder instance with the updated IMO number.
+		 * @brief Returns new builder without IMO number.
+		 * @return New UniversalIdBuilder instance.
 		 */
-		virtual UniversalIdBuilder tryWithImoNumber( const std::optional<ImoNumber>& imoNumber, bool& succeeded ) const override;
+		[[nodiscard]] UniversalIdBuilder withoutImoNumber() const;
 
 		//----------------------------------------------
 		// Static parsing methods
 		//----------------------------------------------
 
 		/**
-		 * Parses a UniversalIdBuilder from a string.
-		 * @param universalIdStr The string representation of the UniversalId.
-		 * @return The parsed UniversalIdBuilder.
+		 * @brief Parses UniversalIdBuilder from string representation.
+		 * @param[in] universalIdStr String to parse.
+		 * @return Parsed UniversalIdBuilder.
 		 * @throws std::invalid_argument If parsing fails.
 		 */
-		static UniversalIdBuilder parse( const std::string& universalIdStr );
+		static UniversalIdBuilder parse( std::string_view universalIdStr );
 
-		static bool tryParse( const std::string& universalId, std::optional<UniversalIdBuilder>& universalIdBuilder );
+		/**
+		 * @brief Attempts to parse UniversalIdBuilder from string.
+		 * @param[in] universalIdStr String to parse.
+		 * @param[out] universalIdBuilder Parsed result if successful.
+		 * @return True if parsing succeeded.
+		 */
+		static bool tryParse( std::string_view universalIdStr, std::optional<UniversalIdBuilder>& universalIdBuilder );
 
-		static bool tryParse( const std::string& universalId, ParsingErrors& errors, std::optional<UniversalIdBuilder>& universalIdBuilder );
+		/**
+		 * @brief Attempts to parse UniversalIdBuilder from string with error reporting.
+		 * @param[in] universalIdStr String to parse.
+		 * @param[out] errors Parsing errors if unsuccessful.
+		 * @param[out] universalIdBuilder Parsed result if successful.
+		 * @return True if parsing succeeded.
+		 */
+		static bool tryParse( std::string_view universalIdStr, ParsingErrors& errors, std::optional<UniversalIdBuilder>& universalIdBuilder );
 
 	private:
 		//----------------------------------------------

@@ -1,14 +1,13 @@
 /**
  * @file LocalId.h
- * @brief Concrete implementation of the Local ID interface.
- * @details This file contains the definition of the `LocalId` class,
- *          which provides a concrete, immutable implementation of the `ILocalId`
- *          interface based on the configuration provided by a `LocalIdBuilder`.
+ * @brief High-performance, immutable Local ID implementation.
+ * @details Concrete implementation of a VIS Local ID with direct value storage
+ *          for optimal performance and zero-overhead property access.
  */
 
 #pragma once
 
-#include "ILocalId.h"
+#include "LocalIdBuilder.h"
 
 namespace dnv::vista::sdk
 {
@@ -16,11 +15,10 @@ namespace dnv::vista::sdk
 	// Forward declarations
 	//=====================================================================
 
-	enum class VisVersion;
 	class GmodPath;
-	class LocalIdBuilder;
 	class MetadataTag;
 	class ParsingErrors;
+	enum class VisVersion;
 
 	//=====================================================================
 	// LocalId class
@@ -28,239 +26,296 @@ namespace dnv::vista::sdk
 
 	/**
 	 * @class LocalId
-	 * @brief Concrete, immutable representation of a Local ID.
+	 * @brief Immutable representation of a VIS Local ID with optimal performance.
 	 *
-	 * @details Implements the `ILocalId<LocalId>` interface. An instance of this class
-	 * represents a complete and validated Local ID according to the VIS standard (ISO 19848).
-	 * Instances are typically created via a `LocalIdBuilder` or the static `parse`/`tryParse` methods.
-	 * The internal state is held by a shared pointer to a const `LocalIdBuilder`.
+	 * @details Represents a validated Local ID according to VIS standard (ISO 19848).
+	 * Uses direct value storage for zero-overhead access. All instances are immutable
+	 * and thread-safe for concurrent read access.
+	 *
+	 * Construction via LocalIdBuilder or static parse() methods.
+	 * All property accessors are inline and noexcept for maximum performance.
 	 */
-	class LocalId final : public ILocalId<LocalId>
+	class LocalId final
 	{
+	public:
 		//----------------------------------------------
 		// Construction / destruction
 		//----------------------------------------------
 
-	public:
 		/**
-		 * @brief Constructs a `LocalId` from a `LocalIdBuilder`.
-		 * @details Takes ownership of the builder's state via a shared pointer.
-		 *          The provided builder is moved into the `LocalId`.
-		 * @param[in] builder A `LocalIdBuilder` instance configured with the desired Local ID state.
-		 *                    The builder must be valid (`builder.isValid()` must be true).
-		 * @throws std::invalid_argument if the provided `builder` is not valid.
+		 * @brief Constructs LocalId from validated LocalIdBuilder.
+		 * @param[in] builder Valid LocalIdBuilder instance (moved).
+		 * @throws std::invalid_argument If builder is invalid or empty.
 		 */
 		explicit LocalId( LocalIdBuilder builder );
 
 		/** @brief Copy constructor */
-		LocalId( const LocalId& ) = delete;
+		LocalId( const LocalId& other ) = default;
 
 		/** @brief Move constructor */
 		LocalId( LocalId&& other ) noexcept = default;
 
 		/** @brief Destructor */
-		virtual ~LocalId() = default;
+		~LocalId() = default;
 
 		//----------------------------------------------
 		// Assignment operators
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
-		LocalId& operator=( const LocalId& ) = delete;
+		LocalId& operator=( const LocalId& other ) = default;
 
 		/** @brief Move assignment operator */
 		LocalId& operator=( LocalId&& other ) noexcept = default;
 
 		//----------------------------------------------
-		// Operators
+		// Lookup operators
 		//----------------------------------------------
 
 		/**
-		 * @brief Equality comparison operator.
-		 * @details Delegates to the `equals` method for state comparison.
-		 * @param[in] other The `LocalId` instance to compare against.
-		 * @return True if the Local IDs represent the same state, false otherwise.
-		 * @throws Can throw exceptions if the underlying `equals` method throws (e.g., `std::invalid_argument` on VIS mismatch).
-		 * @see equals
+		 * @brief Performs deep equality comparison.
+		 * @param[in] other LocalId to compare against.
+		 * @return true if semantically equal.
 		 */
-		[[nodiscard]] bool operator==( const LocalId& other ) const;
-
-		/**
-		 * @brief Inequality comparison operator.
-		 * @details Returns the negation of the `equals` method result.
-		 * @param[in] other The `LocalId` instance to compare against.
-		 * @return True if the Local IDs represent different states, false otherwise.
-		 * @throws Can throw exceptions if the underlying `equals` method throws (e.g., `std::invalid_argument` on VIS mismatch).
-		 * @see equals
-		 */
-		[[nodiscard]] bool operator!=( const LocalId& other ) const;
+		[[nodiscard]] bool equals( const LocalId& other ) const
+		{
+			return m_builder == other.m_builder;
+		}
 
 		//----------------------------------------------
-		// Accessors
+		// Core property accessors
 		//----------------------------------------------
 
 		/**
-		 * @brief Gets a constant reference to the underlying `LocalIdBuilder` holding the state.
-		 * @details Provides access to the internal builder state. Primarily for internal use or
-		 *          advanced scenarios where direct access to builder properties is needed.
-		 * @return A constant reference to the internal `LocalIdBuilder`.
+		 * @brief Gets direct access to underlying LocalIdBuilder.
+		 * @return Const reference to internal builder.
+		 * @note Zero-overhead access via direct reference.
 		 */
-		[[nodiscard]] const LocalIdBuilder& builder() const;
+		[[nodiscard]] const LocalIdBuilder& builder() const noexcept
+		{
+			return m_builder;
+		}
 
 		/**
-		 * @brief Gets the VIS version associated with this Local ID.
-		 * @details Delegates to the underlying builder. Assumes the VIS version is present
-		 *          due to validation during `LocalId` construction.
-		 * @return The `VisVersion` enum value.
-		 * @note This method relies on the `LocalId` constructor ensuring a valid VIS version exists.
+		 * @brief Gets VIS version of this Local ID.
+		 * @return VIS version enum value.
+		 * @note Guaranteed to contain value for valid LocalId.
 		 */
-		[[nodiscard]] virtual VisVersion visVersion() const override;
+		[[nodiscard]] VisVersion visVersion() const noexcept
+		{
+			return m_builder.visVersion().value();
+		}
 
 		/**
-		 * @brief Gets the primary GMOD path item of the Local ID.
-		 * @details Delegates to the underlying builder. Assumes the primary item is present
-		 *          due to validation during `LocalId` construction.
-		 * @return A constant reference to an `std::optional<GmodPath>` which holds the primary item.
-		 *         For a valid `LocalId`, this optional is guaranteed to contain a value.
-		 * @note This method relies on the `LocalId` constructor ensuring a valid primary item exists.
+		 * @brief Gets primary GMOD path item.
+		 * @return Const reference to optional containing primary item.
+		 * @note Zero-copy access. Guaranteed to contain value for valid LocalId.
 		 */
-		[[nodiscard]] virtual const std::optional<GmodPath>& primaryItem() const override;
+		[[nodiscard]] const std::optional<GmodPath>& primaryItem() const noexcept
+		{
+			return m_builder.primaryItem();
+		}
 
 		/**
-		 * @brief Gets the optional secondary GMOD path item.
-		 * @details Delegates to the underlying builder.
-		 * @return A constant reference to an `std::optional<GmodPath>` containing the secondary
-		 *         item path if present, or `std::nullopt` otherwise.
+		 * @brief Gets optional secondary GMOD path item.
+		 * @return Const reference to optional containing secondary item.
+		 * @note Zero-copy access. May be empty if no secondary item specified.
 		 */
-		[[nodiscard]] virtual const std::optional<GmodPath>& secondaryItem() const override;
+		[[nodiscard]] const std::optional<GmodPath>& secondaryItem() const noexcept
+		{
+			return m_builder.secondaryItem();
+		}
 
 		/**
-		 * @brief Gets all metadata tags associated with the Local ID.
-		 * @details Delegates to the underlying builder. Returns a collection of the `MetadataTag` objects.
-		 * @return A vector containing copies of the `MetadataTag` objects.
+		 * @brief Gets all metadata tags as collection.
+		 * @return Vector containing copies of all present metadata tags.
 		 */
-		[[nodiscard]] virtual std::vector<MetadataTag> metadataTags() const override;
+		[[nodiscard]] std::vector<MetadataTag> metadataTags() const noexcept
+		{
+			return m_builder.metadataTags();
+		}
 
 		/**
-		 * @brief Calculate hash code based on Local ID content.
-		 * @details Computes a hash value representing the state of the Local ID,
-		 *          suitable for use in hash-based containers like `std::unordered_set`.
-		 *          Local IDs that are equal according to `equals()` must produce the same hash code.
-		 *          Delegates to the underlying builder's `hashCode`.
-		 * @return A `size_t` hash code.
-		 * @see equals, LocalIdBuilder::hashCode
+		 * @brief Calculates hash code for container use.
+		 * @return Hash value suitable for std::unordered_set/map.
 		 */
-		[[nodiscard]] size_t hashCode() const noexcept;
+		[[nodiscard]] size_t hashCode() const noexcept
+		{
+			return m_builder.hashCode();
+		}
 
-		//----------------------------
+		//----------------------------------------------
 		// Metadata accessors
-		//----------------------------
-
-		/**
-		 * @brief Gets the quantity metadata tag, if present.
-		 * @details Convenience method, delegates to the underlying builder.
-		 * @return A const reference to an `std::optional<MetadataTag>` for quantity.
-		 */
-		[[nodiscard]] const std::optional<MetadataTag>& quantity() const;
-
-		/**
-		 * @brief Gets the content metadata tag, if present.
-		 * @details Convenience method, delegates to the underlying builder.
-		 * @return A const reference to an `std::optional<MetadataTag>` for content.
-		 */
-		[[nodiscard]] const std::optional<MetadataTag>& content() const;
-
-		/**
-		 * @brief Gets the calculation metadata tag, if present.
-		 * @details Convenience method, delegates to the underlying builder.
-		 * @return A const reference to an `std::optional<MetadataTag>` for calculation.
-		 */
-		[[nodiscard]] const std::optional<MetadataTag>& calculation() const;
-
-		/**
-		 * @brief Gets the state metadata tag, if present.
-		 * @details Convenience method, delegates to the underlying builder.
-		 * @return A const reference to an `std::optional<MetadataTag>` for state.
-		 */
-		[[nodiscard]] const std::optional<MetadataTag>& state() const;
-
-		/**
-		 * @brief Gets the command metadata tag, if present.
-		 * @details Convenience method, delegates to the underlying builder.
-		 * @return A const reference to an `std::optional<MetadataTag>` for command.
-		 */
-		[[nodiscard]] const std::optional<MetadataTag>& command() const;
-
-		/**
-		 * @brief Gets the type metadata tag, if present.
-		 * @details Convenience method, delegates to the underlying builder.
-		 * @return A const reference to an `std::optional<MetadataTag>` for type.
-		 */
-		[[nodiscard]] const std::optional<MetadataTag>& type() const;
-
-		/**
-		 * @brief Gets the position metadata tag, if present.
-		 * @details Convenience method, delegates to the underlying builder.
-		 * @return A const reference to an `std::optional<MetadataTag>` for position.
-		 */
-		[[nodiscard]] const std::optional<MetadataTag>& position() const;
-
-		/**
-		 * @brief Gets the detail metadata tag, if present.
-		 * @details Convenience method, delegates to the underlying builder.
-		 * @return A const reference to an `std::optional<MetadataTag>` for detail.
-		 */
-		[[nodiscard]] const std::optional<MetadataTag>& detail() const;
-
-		//----------------------------------------------
-		// State inspection methods
 		//----------------------------------------------
 
 		/**
-		 * @brief Checks if the Local ID was parsed or generated in verbose mode.
-		 * @details Delegates to the underlying builder.
-		 * @return True if verbose mode is indicated, false otherwise.
+		 * @brief Gets quantity metadata tag.
+		 * @return Const reference to optional quantity metadata.
 		 */
-		[[nodiscard]] virtual bool isVerboseMode() const noexcept override;
+		[[nodiscard]] const std::optional<MetadataTag>& quantity() const noexcept
+		{
+			return m_builder.quantity();
+		}
 
 		/**
-		 * @brief Checks if the Local ID includes any custom (non-standard) metadata tags.
-		 * @details Delegates to the underlying builder.
-		 * @return True if at least one custom tag exists, false otherwise.
+		 * @brief Gets content metadata tag.
+		 * @return Const reference to optional content metadata.
 		 */
-		[[nodiscard]] virtual bool hasCustomTag() const noexcept override;
+		[[nodiscard]] const std::optional<MetadataTag>& content() const noexcept
+		{
+			return m_builder.content();
+		}
+
+		/**
+		 * @brief Gets calculation metadata tag.
+		 * @return Const reference to optional calculation metadata.
+		 */
+		[[nodiscard]] const std::optional<MetadataTag>& calculation() const noexcept
+		{
+			return m_builder.calculation();
+		}
+
+		/**
+		 * @brief Gets state metadata tag.
+		 * @return Const reference to optional state metadata.
+		 */
+		[[nodiscard]] const std::optional<MetadataTag>& state() const noexcept
+		{
+			return m_builder.state();
+		}
+
+		/**
+		 * @brief Gets command metadata tag.
+		 * @return Const reference to optional command metadata.
+		 */
+		[[nodiscard]] const std::optional<MetadataTag>& command() const noexcept
+		{
+			return m_builder.command();
+		}
+
+		/**
+		 * @brief Gets type metadata tag.
+		 * @return Const reference to optional type metadata.
+		 */
+		[[nodiscard]] const std::optional<MetadataTag>& type() const noexcept
+		{
+			return m_builder.type();
+		}
+
+		/**
+		 * @brief Gets position metadata tag.
+		 * @return Const reference to optional position metadata.
+		 */
+		[[nodiscard]] const std::optional<MetadataTag>& position() const noexcept
+		{
+			return m_builder.position();
+		}
+
+		/**
+		 * @brief Gets detail metadata tag.
+		 * @return Const reference to optional detail metadata.
+		 */
+		[[nodiscard]] const std::optional<MetadataTag>& detail() const noexcept
+		{
+			return m_builder.detail();
+		}
 
 		//----------------------------------------------
-		// Conversion and comparison
+		// State inspection
 		//----------------------------------------------
 
 		/**
-		 * @brief Converts the Local ID to its canonical string representation.
-		 * @details Delegates to the underlying builder's `toString` method.
-		 * @return The `std::string` representation of the Local ID.
+		 * @brief Checks if Local ID is in verbose mode.
+		 * @return true if verbose mode enabled.
 		 */
-		[[nodiscard]] virtual std::string toString() const override;
+		[[nodiscard]] bool isVerboseMode() const noexcept
+		{
+			return m_builder.isVerboseMode();
+		}
 
 		/**
-		 * @brief Performs a deep equality comparison with another Local ID.
-		 * @details Compares the underlying builders for equality.
-		 * @param[in] other The `LocalId` object to compare against.
-		 * @return True if the underlying builders are equal, false otherwise.
-		 * @throws Can throw exceptions if the underlying `LocalIdBuilder::equals` method throws
-		 *         (e.g., `std::invalid_argument` on VIS mismatch).
+		 * @brief Checks if Local ID contains custom metadata tags.
+		 * @return true if any custom tags present.
 		 */
-		[[nodiscard]] virtual bool equals( const LocalId& other ) const override;
+		[[nodiscard]] bool hasCustomTag() const noexcept
+		{
+			return m_builder.hasCustomTag();
+		}
+
+		//----------------------------------------------
+		// String conversion
+		//----------------------------------------------
+
+		/**
+		 * @brief Converts LocalId to canonical string representation.
+		 * @return VIS-compliant Local ID string.
+		 * @throws std::invalid_argument If conversion fails.
+		 */
+		[[nodiscard]] std::string toString() const
+		{
+			return m_builder.toString();
+		}
+
+		//----------------------------------------------
+		// Static parsing methods
+		//----------------------------------------------
+
+		/**
+		 * @brief Parses Local ID string into LocalId object.
+		 * @param[in] localIdStr VIS Local ID string to parse.
+		 * @return Parsed LocalId object.
+		 * @throws std::invalid_argument If parsing fails.
+		 */
+		[[nodiscard]] static LocalId parse( std::string_view localIdStr )
+		{
+			return LocalId( LocalIdBuilder::parse( localIdStr ) );
+		}
+
+		/**
+		 * @brief Attempts to parse Local ID string with error reporting.
+		 * @param[in] localIdStr String to parse.
+		 * @param[out] errors Detailed parsing errors.
+		 * @param[out] localId Parsed result on success.
+		 * @return true if parsing succeeded.
+		 */
+		[[nodiscard]] static bool tryParse( std::string_view localIdStr, ParsingErrors& errors, std::optional<LocalId>& localId )
+		{
+			std::optional<LocalIdBuilder> builder;
+			bool success = LocalIdBuilder::tryParse( localIdStr, errors, builder );
+			if ( success && builder.has_value() )
+			{
+				localId = LocalId( std::move( builder.value() ) );
+			}
+			return success;
+		}
+
+		/**
+		 * @brief Attempts to parse Local ID string.
+		 * @param[in] localIdStr String to parse.
+		 * @param[out] localId Parsed result on success.
+		 * @return true if parsing succeeded.
+		 */
+		[[nodiscard]] static bool tryParse( std::string_view localIdStr, std::optional<LocalId>& localId )
+		{
+			std::optional<LocalIdBuilder> builder;
+			bool success = LocalIdBuilder::tryParse( localIdStr, builder );
+			if ( success && builder.has_value() )
+			{
+				localId = LocalId( std::move( builder.value() ) );
+			}
+			return success;
+		}
 
 	private:
 		//----------------------------------------------
-		// Private member variables
+		// Private members variables
 		//----------------------------------------------
 
 		/**
-		 * @brief Shared pointer to the immutable builder holding the Local ID's state.
-		 * @details Using `shared_ptr<const LocalIdBuilder>` allows efficient sharing of the
-		 *          immutable state generated by the builder.
+		 * @brief Direct value storage of LocalIdBuilder state.
+		 * @details Uses direct storage (not shared_ptr) for optimal performance
+		 *          with zero indirection overhead.
 		 */
-		std::shared_ptr<const LocalIdBuilder> m_builder;
+		LocalIdBuilder m_builder;
 	};
 }

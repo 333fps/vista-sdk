@@ -1,13 +1,14 @@
 /**
  * @file UniversalId.h
- * @brief
- * @details
-
+ * @brief High-performance Universal ID implementation.
+ * @details Combines IMO number with Local ID for globally unique vessel identification.
+ *          Uses direct value storage for optimal performance.
  */
 
 #pragma once
 
-#include "IUniversalId.h"
+#include "ImoNumber.h"
+#include "LocalId.h"
 
 namespace dnv::vista::sdk
 {
@@ -15,42 +16,52 @@ namespace dnv::vista::sdk
 	// Forward declarations
 	//=====================================================================
 
-	class IUniversalIdBuilder;
 	class UniversalIdBuilder;
-	class LocalId;
 	class ParsingErrors;
 
 	//=====================================================================
-	// UniversalId Class
+	// UniversalId class
 	//=====================================================================
 
-	class UniversalId final : public IUniversalId
+	/**
+	 * @class UniversalId
+	 * @brief High-performance Universal ID with direct value storage.
+	 *
+	 * @details Immutable Universal ID combining vessel IMO number with Local ID.
+	 * Uses direct member storage instead of interface inheritance for optimal performance.
+	 */
+	class UniversalId final
 	{
 	public:
 		//----------------------------------------------
 		// Construction / destruction
 		//----------------------------------------------
 
+		/**
+		 * @brief Constructs UniversalId from validated UniversalIdBuilder.
+		 * @param[in] builder Valid UniversalIdBuilder instance.
+		 * @throws std::invalid_argument If builder is invalid.
+		 */
 		explicit UniversalId( const UniversalIdBuilder& builder );
 
-		/** @brief Default constructor. */
+		/** @brief Default constructor */
 		UniversalId() = delete;
 
 		/** @brief Copy constructor */
-		UniversalId( const UniversalId& ) = delete;
+		UniversalId( const UniversalId& ) = default;
 
 		/** @brief Move constructor */
 		UniversalId( UniversalId&& ) noexcept = default;
 
 		/** @brief Destructor */
-		virtual ~UniversalId() = default;
+		~UniversalId() = default;
 
 		//----------------------------------------------
 		// Assignment operators
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
-		UniversalId& operator=( const UniversalId& ) = delete;
+		UniversalId& operator=( const UniversalId& ) = default;
 
 		/** @brief Move assignment operator */
 		UniversalId& operator=( UniversalId&& ) noexcept = default;
@@ -60,75 +71,81 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * Equality operator.
-		 * @param other The other UniversalId to compare.
+		 * @brief Equality operator.
+		 * @param[in] other The other UniversalId to compare.
 		 * @return True if equal, false otherwise.
 		 */
 		bool operator==( const UniversalId& other ) const;
 
 		/**
-		 * Inequality operator.
-		 * @param other The other UniversalId to compare.
+		 * @brief Inequality operator.
+		 * @param[in] other The other UniversalId to compare.
 		 * @return True if not equal, false otherwise.
 		 */
-		virtual bool operator!=( const UniversalId& other ) const;
+		bool operator!=( const UniversalId& other ) const;
+
+		/**
+		 * @brief Deep equality comparison.
+		 * @param[in] other The other UniversalId to compare.
+		 * @return True if all components are equal.
+		 */
+		bool equals( const UniversalId& other ) const;
 
 		//----------------------------------------------
 		// Accessors
 		//----------------------------------------------
 
 		/**
-		 * Gets the IMO number.
-		 * @return The IMO number.
-		 * @throws std::runtime_error If the IMO number is invalid.
+		 * @brief Gets the IMO number component.
+		 * @return Constant reference to the IMO number.
+		 * @note Guaranteed to be valid for successfully constructed UniversalId.
 		 */
-		virtual const ImoNumber& imoNumber() const override;
+		[[nodiscard]] const ImoNumber& imoNumber() const;
 
 		/**
-		 * Gets the local ID.
-		 * @return The local ID.
+		 * @brief Gets the Local ID component.
+		 * @return Constant reference to the Local ID.
+		 * @note Guaranteed to be valid for successfully constructed UniversalId.
 		 */
-		virtual const LocalId& localId() const override;
+		[[nodiscard]] const LocalId& localId() const noexcept;
 
+		/**
+		 * @brief Computes hash code for container usage.
+		 * @return Hash value suitable for std::unordered_set/map.
+		 * @note This method is guaranteed not to throw (noexcept).
+		 */
 		[[nodiscard]] size_t hashCode() const noexcept;
 
 		//----------------------------------------------
-		// Conversion and comparison
+		// String conversion
 		//----------------------------------------------
 
 		/**
-		 * Converts the UniversalId to a string representation.
-		 * @return The string representation.
+		 * @brief Converts to canonical string representation.
+		 * @return String in format "data.dnv.com/IMO1234567/dnv-v2/vis-3-4a/...".
 		 */
-		[[nodiscard]] virtual std::string toString() const override;
-
-		/**
-		 * Checks equality with another UniversalId.
-		 * @param other The other UniversalId to compare.
-		 * @return True if equal, false otherwise.
-		 */
-		virtual bool equals( const UniversalId& other ) const;
+		[[nodiscard]] std::string toString() const;
 
 		//----------------------------------------------
 		// Static parsing methods
 		//----------------------------------------------
 
 		/**
-		 * Parses a UniversalId from a string.
-		 * @param universalIdStr The string representation of the UniversalId.
-		 * @return The parsed UniversalId.
+		 * @brief Parses UniversalId from string representation.
+		 * @param[in] universalIdStr String to parse.
+		 * @return Parsed UniversalId.
 		 * @throws std::invalid_argument If parsing fails.
 		 */
-		static UniversalId parse( const std::string& universalIdStr );
+		static UniversalId parse( std::string_view universalIdStr );
 
 		/**
-		 * Tries to parse a UniversalId from a string.
-		 * @param universalIdStr The string representation of the UniversalId.
-		 * @param errors Container for parsing errors.
-		 * @param universalId The parsed UniversalId if successful.
-		 * @return True if parsing succeeded, false otherwise.
+		 * @brief Attempts to parse UniversalId from string.
+		 * @param[in] universalIdStr String to parse.
+		 * @param[out] errors Parsing errors if unsuccessful.
+		 * @param[out] universalId Parsed result if successful.
+		 * @return True if parsing succeeded.
 		 */
-		static bool tryParse( const std::string& universalIdStr, ParsingErrors& errors, std::optional<UniversalId>& universalId );
+		static bool tryParse( std::string_view universalIdStr, ParsingErrors& errors, std::optional<UniversalId>& universalId );
 
 	private:
 		//----------------------------------------------
@@ -136,7 +153,6 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		ImoNumber m_imoNumber;
-		std::shared_ptr<IUniversalIdBuilder> m_builder;
 		LocalId m_localId;
 	};
 }

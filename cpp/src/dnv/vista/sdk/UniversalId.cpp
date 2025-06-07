@@ -2,34 +2,29 @@
 
 #include "dnv/vista/sdk/UniversalId.h"
 
-#include "dnv/vista/sdk/IUniversalIdBuilder.h"
+#include "dnv/vista/sdk/ImoNumber.h"
 #include "dnv/vista/sdk/LocalId.h"
+#include "dnv/vista/sdk/LocalIdBuilder.h"
 #include "dnv/vista/sdk/ParsingErrors.h"
 #include "dnv/vista/sdk/UniversalIdBuilder.h"
 
 namespace dnv::vista::sdk
 {
+	//=====================================================================
+	// UniversalId class
+	//=====================================================================
+
 	//----------------------------------------------
 	// Construction / destruction
 	//----------------------------------------------
 
 	UniversalId::UniversalId( const UniversalIdBuilder& builder )
 		: m_imoNumber( *builder.imoNumber() ),
-		  m_localId( *builder.localId() )
+		  m_localId( builder.localId()->build() )
 	{
 		if ( !builder.isValid() )
 		{
 			throw std::invalid_argument( "Invalid UniversalIdBuilder state" );
-		}
-
-		if ( !builder.imoNumber().has_value() )
-		{
-			throw std::invalid_argument( "UniversalIdBuilder missing IMO number" );
-		}
-
-		if ( !builder.localId().has_value() )
-		{
-			throw std::invalid_argument( "UniversalIdBuilder missing Local ID" );
 		}
 	}
 
@@ -46,55 +41,64 @@ namespace dnv::vista::sdk
 	{
 		return !equals( other );
 	}
+
+	bool UniversalId::equals( const UniversalId& other ) const
+	{
+		return m_imoNumber == other.m_imoNumber &&
+			   m_localId.equals( other.m_localId );
+	}
+
 	//----------------------------------------------
 	// Accessors
 	//----------------------------------------------
 
 	const ImoNumber& UniversalId::imoNumber() const
 	{
-		if ( !m_builder->imoNumber().has_value() )
-		{
-			throw std::runtime_error( "Invalid ImoNumber" );
-		}
 		return m_imoNumber;
 	}
 
-	const LocalId& UniversalId::localId() const
+	const LocalId& UniversalId::localId() const noexcept
 	{
 		return m_localId;
 	}
 
 	size_t UniversalId::hashCode() const noexcept
 	{
-		return std::hash<std::string>{}( m_builder->toString() );
+		size_t hash = 0;
+
+		hash ^= m_imoNumber.hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
+		hash ^= m_localId.hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
+
+		return hash;
 	}
 
 	//----------------------------------------------
-	// Conversion and comparison
+	// String conversion
 	//----------------------------------------------
 
 	std::string UniversalId::toString() const
 	{
-		return m_builder->toString();
-	}
+		std::ostringstream oss;
 
-	bool UniversalId::equals( const UniversalId& other ) const
-	{
-		return m_builder->toString() == other.m_builder->toString();
+		oss << UniversalIdBuilder::namingEntity;
+		oss << "/" << m_imoNumber.toString();
+		oss << m_localId.toString();
+
+		return oss.str();
 	}
 
 	//----------------------------------------------
 	// Static parsing methods
 	//----------------------------------------------
 
-	UniversalId UniversalId::parse( const std::string& universalIdStr )
+	UniversalId UniversalId::parse( std::string_view universalIdStr )
 	{
 		auto builder = UniversalIdBuilder::parse( universalIdStr );
 
 		return builder.build();
 	}
 
-	bool UniversalId::tryParse( const std::string& universalIdStr, ParsingErrors& errors, std::optional<UniversalId>& universalId )
+	bool UniversalId::tryParse( std::string_view universalIdStr, ParsingErrors& errors, std::optional<UniversalId>& universalId )
 	{
 		std::optional<UniversalIdBuilder> builder;
 
