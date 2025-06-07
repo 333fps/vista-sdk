@@ -319,7 +319,7 @@ namespace dnv::vista::sdk
 		 * @param[in] key The string key to hash (ASCII characters assumed).
 		 * @return The calculated 32-bit hash value, compatible with C# implementation.
 		 */
-		static uint32_t hash( std::string_view key ) noexcept;
+		__forceinline static uint32_t hash( std::string_view key ) noexcept;
 
 		//----------------------------------------------
 		// Private member variables

@@ -69,8 +69,21 @@ foreach(benchmark_source ${BENCHMARK_SOURCES})
 			add_compile_options($<$<CONFIG:Release>:/O2>)        # Maximum speed optimization
 			add_compile_options($<$<CONFIG:Release>:/Oi>)        # Enable intrinsic functions
 			add_compile_options($<$<CONFIG:Release>:/Ot>)        # Favor fast code over small code
-			add_compile_options($<$<CONFIG:Release>:/Gy>)        # Enable Function-Level Linking
+			#add_compile_options($<$<CONFIG:Release>:/Ob3>)       # Aggressive inlining
+			#add_compile_options($<$<CONFIG:Release>:/GL>)        # Whole program optimization
+			add_compile_options($<$<CONFIG:Release>:/Gy>)        # Function-Level Linking
 			add_compile_options($<$<CONFIG:Release>:/DNDEBUG>)   # Disable debug assertions
+
+			# Architecture optimizations
+			add_compile_options(/arch:AVX)
+			add_compile_options(/arch:AVX2)
+			add_compile_options($<$<CONFIG:Release>:/Qpar>)      # Auto-parallelization
+
+
+			# Add linker optimizations for Release
+			add_link_options($<$<CONFIG:Release>:/LTCG>)         # Link Time Code Generation
+			add_link_options($<$<CONFIG:Release>:/OPT:REF>)      # Remove unreferenced functions
+			add_link_options($<$<CONFIG:Release>:/OPT:ICF>)      # Identical COMDAT folding
 
 			# ============================================================================
 			# Warning suppressions

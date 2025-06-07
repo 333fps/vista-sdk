@@ -213,40 +213,7 @@ namespace dnv::vista::sdk
 
 	bool Gmod::tryGetNode( std::string_view code, const GmodNode*& node ) const
 	{
-		node = nullptr;
-		try
-		{
-			if ( code.empty() )
-			{
-				SPDLOG_WARN( "TryGetNode: Attempted to look up empty node code" );
-
-				return false;
-			}
-
-			if ( !m_nodeMap.tryGetValue( code, node ) )
-			{
-				SPDLOG_WARN( "TryGetNode: Node '{}' not found in GMOD", code );
-
-				return false;
-			}
-
-			if ( node == nullptr )
-			{
-				SPDLOG_WARN( "TryGetNode: m_nodeMap.tryGetValue succeeded but outNodePtr is null for code '{}'", code );
-
-				return false;
-			}
-
-			return true;
-		}
-		catch ( [[maybe_unused]] const std::exception& ex )
-		{
-			SPDLOG_ERROR( "Exception in TryGetNode for '{}': {}", code, ex.what() );
-
-			node = nullptr;
-
-			return false;
-		}
+		return m_nodeMap.tryGetValue( code, node );
 	}
 
 	//----------------------------------------------
@@ -313,15 +280,20 @@ namespace dnv::vista::sdk
 		return metadata.category() == NODE_CATEGORY_ASSET_FUNCTION;
 	}
 
-	bool Gmod::isProductTypeAssignment( const GmodNode* parent, const GmodNode* child )
+	bool Gmod::isProductTypeAssignment( const GmodNode* parent, const GmodNode* child ) noexcept
 	{
-		if ( parent == nullptr || child == nullptr )
+		if ( !parent || !child ) [[unlikely]]
+		{
 			return false;
-		if ( parent->metadata().category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
-			return false;
-		if ( child->metadata().category() != NODE_CATEGORY_PRODUCT || child->metadata().type() != NODE_TYPE_VALUE_TYPE )
-			return false;
-		return true;
+		}
+
+		const std::string_view parentCategory = parent->metadata().category();
+		const std::string_view childCategory = child->metadata().category();
+		const std::string_view childType = child->metadata().type();
+
+		return parentCategory.find( NODE_CATEGORY_VALUE_FUNCTION ) != std::string_view::npos &&
+			   childCategory == NODE_CATEGORY_PRODUCT &&
+			   childType == NODE_TYPE_VALUE_TYPE;
 	}
 
 	bool Gmod::isProductSelectionAssignment( const GmodNode* parent, const GmodNode* child )

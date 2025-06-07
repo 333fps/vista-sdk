@@ -361,7 +361,7 @@ namespace dnv::vista::sdk
 	}
 
 	template <typename TValue>
-	bool ChdDictionary<TValue>::tryGetValue( std::string_view key, const TValue*& outValue ) const
+	__forceinline bool ChdDictionary<TValue>::tryGetValue( std::string_view key, const TValue*& outValue ) const
 	{
 		outValue = nullptr;
 
@@ -376,15 +376,24 @@ namespace dnv::vista::sdk
 		}
 
 		const uint32_t hashValue = hash( key );
-		const size_t tableSize = m_table.size();
-		const size_t index = hashValue & ( tableSize - 1 );
+		const uint32_t tableSize = static_cast<uint32_t>( m_table.size() );
+		const uint32_t index = hashValue & ( tableSize - 1 );
 		const int seed = m_seeds[index];
 
-		const size_t finalIndex = ( seed < 0 ) ? static_cast<size_t>( -seed - 1 ) : internal::Hashing::seed( static_cast<uint32_t>( seed ), hashValue, tableSize );
-
-		assert( finalIndex < tableSize );
+		size_t finalIndex;
+		if ( seed < 0 ) [[likely]]
+		{
+			finalIndex = static_cast<size_t>( -seed - 1 );
+		}
+		else [[unlikely]]
+		{
+			finalIndex = static_cast<size_t>( internal::Hashing::seed(
+				static_cast<uint32_t>( seed ), hashValue,
+				static_cast<uint64_t>( tableSize ) ) );
+		}
 
 		const auto& kvp = m_table[finalIndex];
+
 		if ( key != kvp.first ) [[unlikely]]
 		{
 			return false;
@@ -446,7 +455,7 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	uint32_t ChdDictionary<TValue>::hash( std::string_view key ) noexcept
 	{
-		if ( key.empty() ) [[unlikely]]
+		if ( key.empty() )
 		{
 			return internal::FNV_OFFSET_BASIS;
 		}
@@ -454,22 +463,18 @@ namespace dnv::vista::sdk
 		uint32_t hashValue = internal::FNV_OFFSET_BASIS;
 		static const bool hasSSE42 = internal::hasSSE42Support();
 
-		if ( hasSSE42 ) [[likely]]
+		if ( hasSSE42 )
 		{
 			for ( const char ch : key )
 			{
-				const uint8_t lowByte = static_cast<uint8_t>( ch );
-				hashValue = internal::Hashing::crc32( hashValue, lowByte );
-				hashValue = internal::Hashing::crc32( hashValue, 0 );
+				hashValue = internal::Hashing::crc32( hashValue, static_cast<uint8_t>( ch ) );
 			}
 		}
 		else
 		{
 			for ( const char ch : key )
 			{
-				const uint8_t lowByte = static_cast<uint8_t>( ch );
-				hashValue = internal::Hashing::fnv1a( hashValue, lowByte );
-				hashValue = internal::Hashing::fnv1a( hashValue, 0 );
+				hashValue = internal::Hashing::fnv1a( hashValue, static_cast<uint8_t>( ch ) );
 			}
 		}
 

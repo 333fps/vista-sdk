@@ -42,69 +42,65 @@ namespace dnv::vista::sdk::benchmarks
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
 		for ( auto _ : state )
 		{
+			const GmodNode* node1 = nullptr;
+			const GmodNode* node2 = nullptr;
+			const GmodNode* node3 = nullptr;
+			const GmodNode* node4 = nullptr;
+
+			auto it1 = g_dict.find( "VE" );
+			auto it2 = g_dict.find( "400a" );
+			auto it3 = g_dict.find( "400" );
+			auto it4 = g_dict.find( "H346.11112" );
+
 			bool result =
-				( g_dict.find( "VE" ) != g_dict.end() ) &&
-				( g_dict.find( "400a" ) != g_dict.end() ) &&
-				( g_dict.find( "400" ) != g_dict.end() ) &&
-				( g_dict.find( "H346.11112" ) != g_dict.end() );
+				( it1 != g_dict.end() && ( node1 = it1->second ) ) &&
+				( it2 != g_dict.end() && ( node2 = it2->second ) ) &&
+				( it3 != g_dict.end() && ( node3 = it3->second ) ) &&
+				( it4 != g_dict.end() && ( node4 = it4->second ) );
 
 			benchmark::DoNotOptimize( result );
+			benchmark::DoNotOptimize( node1 );
+			benchmark::DoNotOptimize( node2 );
+			benchmark::DoNotOptimize( node3 );
+			benchmark::DoNotOptimize( node4 );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_frozenDict( benchmark::State& state )
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
 		for ( auto _ : state )
 		{
+			const GmodNode* node1 = nullptr;
+			const GmodNode* node2 = nullptr;
+			const GmodNode* node3 = nullptr;
+			const GmodNode* node4 = nullptr;
+
+			auto it1 = g_frozenDict.find( "VE" );
+			auto it2 = g_frozenDict.find( "400a" );
+			auto it3 = g_frozenDict.find( "400" );
+			auto it4 = g_frozenDict.find( "H346.11112" );
+
 			bool result =
-				( g_frozenDict.find( "VE" ) != g_frozenDict.end() ) &&
-				( g_frozenDict.find( "400a" ) != g_frozenDict.end() ) &&
-				( g_frozenDict.find( "400" ) != g_frozenDict.end() ) &&
-				( g_frozenDict.find( "H346.11112" ) != g_frozenDict.end() );
+				( it1 != g_frozenDict.end() && ( node1 = it1->second ) ) &&
+				( it2 != g_frozenDict.end() && ( node2 = it2->second ) ) &&
+				( it3 != g_frozenDict.end() && ( node3 = it3->second ) ) &&
+				( it4 != g_frozenDict.end() && ( node4 = it4->second ) );
 
 			benchmark::DoNotOptimize( result );
+			benchmark::DoNotOptimize( node1 );
+			benchmark::DoNotOptimize( node2 );
+			benchmark::DoNotOptimize( node3 );
+			benchmark::DoNotOptimize( node4 );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_gmod( benchmark::State& state )
 	{
 		initializeData();
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
 
 		for ( auto _ : state )
 		{
@@ -116,15 +112,7 @@ namespace dnv::vista::sdk::benchmarks
 				g_gmod->tryGetNode( "H346.11112", node );
 
 			benchmark::DoNotOptimize( result );
-			benchmark::DoNotOptimize( node );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	BENCHMARK( BM_dict )

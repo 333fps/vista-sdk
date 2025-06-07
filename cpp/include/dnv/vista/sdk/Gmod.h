@@ -228,7 +228,7 @@ namespace dnv::vista::sdk
 		 * @param child Pointer to the child GmodNode. Can be nullptr.
 		 * @return True if it's a product type assignment, false otherwise or if inputs are invalid.
 		 */
-		static bool isProductTypeAssignment( const GmodNode* parent, const GmodNode* child );
+		static bool isProductTypeAssignment( const GmodNode* parent, const GmodNode* child ) noexcept;
 
 		/**
 		 * @brief Checks if the relationship between a parent and child node constitutes a product selection assignment.
