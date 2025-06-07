@@ -5,6 +5,7 @@
 
 #include "pch.h"
 
+#include "dnv/vista/sdk/Gmod.h"
 #include "dnv/vista/sdk/GmodPath.h"
 #include "dnv/vista/sdk/VIS.h"
 

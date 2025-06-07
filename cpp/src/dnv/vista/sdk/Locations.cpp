@@ -6,6 +6,7 @@
 #include "pch.h"
 
 #include "dnv/vista/sdk/Locations.h"
+
 #include "dnv/vista/sdk/LocationParsingErrorBuilder.h"
 #include "dnv/vista/sdk/ParsingErrors.h"
 #include "dnv/vista/sdk/VISVersion.h"

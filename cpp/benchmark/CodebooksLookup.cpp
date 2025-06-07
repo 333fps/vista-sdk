@@ -10,6 +10,9 @@
 
 #include "pch.h"
 
+#include "dnv/vista/sdk/Codebook.h"
+#include "dnv/vista/sdk/Codebooks.h"
+#include "dnv/vista/sdk/CodebookName.h"
 #include "dnv/vista/sdk/VIS.h"
 
 using namespace dnv::vista::sdk;

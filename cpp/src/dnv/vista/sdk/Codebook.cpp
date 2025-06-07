@@ -7,6 +7,7 @@
 
 #include "dnv/vista/sdk/Codebook.h"
 
+#include "dnv/vista/sdk/Codebooks.h"
 #include "dnv/vista/sdk/MetadataTag.h"
 #include "dnv/vista/sdk/VIS.h"
 
@@ -182,10 +183,6 @@ namespace dnv::vista::sdk
 	{
 		return lhs == rhs;
 	}
-
-	//=====================================================================
-	// PositionValidationResults class
-	//=====================================================================
 
 	//=====================================================================
 	// CodebookStandardValues class

@@ -38,8 +38,10 @@ set(PUBLIC_HEADERS
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/UniversalIdBuilder.h
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/UniversalId.h
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VIS.h
-	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VIS.inl
 	${VISTA_SDK_CPP_INCLUDE_DIR}/dnv/vista/sdk/VISVersion.h
+)
+
+set(PRIVATE_HEADERS
 )
 
 set(PRIVATE_SOURCES

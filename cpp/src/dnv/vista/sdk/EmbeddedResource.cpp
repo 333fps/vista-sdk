@@ -6,6 +6,7 @@
 #include "pch.h"
 
 #include "dnv/vista/sdk/EmbeddedResource.h"
+
 #include "dnv/vista/sdk/CodebooksDto.h"
 #include "dnv/vista/sdk/GmodDto.h"
 #include "dnv/vista/sdk/GmodVersioningDto.h"

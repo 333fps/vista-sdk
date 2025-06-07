@@ -181,6 +181,8 @@ The C++ implementation includes a perfect hashing system (as well as c# version)
 
 -   **Core Implementation:**
 
+    -   **[CRITICAL] Fix map methods cache bypass:** The `gmodsMap()`, `codebooksMap()`, and `locationsMap()` methods currently bypass the caching system and create new objects directly from DTOs, unlike the C# master implementation which uses cached objects via `GetGmod(v)`, `GetCodebooks(v)`, and `GetLocations(v)`.
+        This creates behavioral inconsistency and performance issues.
     -   Implement MQTT-specific aspects for `LocalId` (parsing from topics, builder methods, topic validation).
 
 -   **Code Organization / Patterns:**

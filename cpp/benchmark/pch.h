@@ -11,6 +11,7 @@
 /* STL */
 #include <array>
 #include <mutex>
+#include <shared_mutex>
 #include <unordered_set>
 
 /* Libs */

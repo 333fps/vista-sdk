@@ -7,8 +7,9 @@
 
 #include "TestDataLoader.h"
 
-#include "dnv/vista/sdk/VIS.h"
+#include "dnv/vista/sdk/Codebooks.h"
 #include "dnv/vista/sdk/MetadataTag.h"
+#include "dnv/vista/sdk/VIS.h"
 
 namespace dnv::vista::sdk
 {

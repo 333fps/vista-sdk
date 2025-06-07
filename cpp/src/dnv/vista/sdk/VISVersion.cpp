@@ -15,7 +15,7 @@ namespace dnv::vista::sdk
 			case VisVersion::v3_8a:
 				return true;
 			case VisVersion::Unknown:
-				return false;
+			case VisVersion::COUNT_VALID:
 			default:
 				return false;
 		}
@@ -37,6 +37,7 @@ namespace dnv::vista::sdk
 				return "vis-3-8a";
 			case VisVersion::Unknown:
 				return "Unknown";
+			case VisVersion::COUNT_VALID:
 			default:
 			{
 				throw std::invalid_argument( "Invalid VIS version: " + std::to_string( static_cast<int>( version ) ) );
@@ -106,7 +107,6 @@ namespace dnv::vista::sdk
 
 	VisVersion VisVersionExtensions::latestVersion()
 	{
-		auto versions{ allVersions() };
-		return versions.empty() ? VisVersion::Unknown : versions.back();
+		return VisVersion::LATEST;
 	}
 }

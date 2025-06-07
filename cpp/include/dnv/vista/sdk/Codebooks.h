@@ -64,7 +64,7 @@ namespace dnv::vista::sdk
 		Codebooks() = default;
 
 		/** @brief Copy constructor */
-		Codebooks( const Codebooks& ) = delete;
+		Codebooks( const Codebooks& ) = default;
 
 		/** @brief Move constructor */
 		Codebooks( Codebooks&& ) noexcept = default;
@@ -77,7 +77,7 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
-		Codebooks& operator=( const Codebooks& ) = delete;
+		Codebooks& operator=( const Codebooks& ) = default;
 
 		/** @brief Move assignment operator */
 		Codebooks& operator=( Codebooks&& ) noexcept = default;

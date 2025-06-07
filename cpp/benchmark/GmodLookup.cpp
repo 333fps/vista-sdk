@@ -5,6 +5,7 @@
 
 #include "pch.h"
 
+#include "dnv/vista/sdk/Gmod.h"
 #include "dnv/vista/sdk/VIS.h"
 
 using namespace dnv::vista::sdk;
@@ -12,7 +13,7 @@ using namespace dnv::vista::sdk;
 namespace dnv::vista::sdk::benchmarks
 {
 	static std::unordered_map<std::string, const GmodNode*> g_dict;
-	static std::unordered_map<std::string, const GmodNode*> g_frozenDict; // Simulate FrozenDict
+	static std::unordered_map<std::string, const GmodNode*> g_frozenDict;
 	static const Gmod* g_gmod = nullptr;
 	static bool g_initialized = false;
 

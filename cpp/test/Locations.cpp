@@ -7,6 +7,7 @@
 
 #include "TestDataLoader.h"
 
+#include "dnv/vista/sdk/Gmod.h"
 #include "dnv/vista/sdk/Locations.h"
 #include "dnv/vista/sdk/LocationBuilder.h"
 #include "dnv/vista/sdk/ParsingErrors.h"

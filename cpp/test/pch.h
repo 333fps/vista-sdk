@@ -4,6 +4,7 @@
 #include <fstream>
 #include <future>
 #include <queue>
+#include <shared_mutex>
 #include <unordered_set>
 
 /* Libs */

@@ -27,6 +27,7 @@
 #include <queue>
 #include <regex>
 #include <set>
+#include <shared_mutex>
 #include <span>
 #include <sstream>
 #include <stack>

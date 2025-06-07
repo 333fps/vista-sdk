@@ -86,7 +86,9 @@ target_sources(${PROJECT_NAME}
 	PUBLIC
 		${PUBLIC_HEADERS}
 	PRIVATE
+		${PRIVATE_HEADERS}
 		${PRIVATE_SOURCES}
+
 )
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${VISTA_SDK_CPP_SOURCE_DIR}/dnv/vista/sdk/pch.h)
 target_include_directories(${PROJECT_NAME}

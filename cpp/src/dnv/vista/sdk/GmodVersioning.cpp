@@ -8,9 +8,9 @@
 #include "dnv/vista/sdk/GmodVersioning.h"
 
 #include "dnv/vista/sdk/Gmod.h"
-#include "dnv/vista/sdk/GmodTraversal.h"
 #include "dnv/vista/sdk/GmodNode.h"
 #include "dnv/vista/sdk/GmodPath.h"
+#include "dnv/vista/sdk/GmodTraversal.h"
 #include "dnv/vista/sdk/LocalIdBuilder.h"
 #include "dnv/vista/sdk/VIS.h"
 #include "dnv/vista/sdk/VISVersion.h"

@@ -5,6 +5,8 @@
 
 #include "pch.h"
 
+#include "dnv/vista/sdk/Gmod.h"
+#include "dnv/vista/sdk/GmodDto.h"
 #include "dnv/vista/sdk/VIS.h"
 
 using namespace dnv::vista::sdk;
