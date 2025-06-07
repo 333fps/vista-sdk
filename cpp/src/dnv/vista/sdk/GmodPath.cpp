@@ -905,7 +905,7 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Utility Methods
+	// Utility methods
 	//----------------------------------------------
 
 	bool GmodPath::isValid( const std::vector<GmodNode*>& parents, const GmodNode& node )
@@ -1088,7 +1088,7 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Public Static Parsing Methods
+	// Public static parsing methods
 	//----------------------------------------------
 
 	GmodPath GmodPath::parse( std::string_view item, VisVersion visVersion )
@@ -1206,7 +1206,7 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Private Static Parsing Methods
+	// Private static parsing methods
 	//----------------------------------------------
 
 	std::unique_ptr<GmodParsePathResult> GmodPath::parseInternal( std::string_view item, const Gmod& gmod, const Locations& locations )
@@ -1680,7 +1680,7 @@ namespace dnv::vista::sdk
 	}
 
 	//=====================================================================
-	// GmodIndividualizableSet Class
+	// GmodIndividualizableSet class
 	//=====================================================================
 
 	GmodIndividualizableSet::GmodIndividualizableSet( const std::vector<int>& nodeIndices, const GmodPath& sourcePath )
@@ -1885,7 +1885,7 @@ namespace dnv::vista::sdk
 	}
 
 	//=====================================================================
-	// GmodParsePathResult Class
+	// GmodParsePathResult class
 	//=====================================================================
 
 	GmodParsePathResult::Ok::Ok( GmodPath path )

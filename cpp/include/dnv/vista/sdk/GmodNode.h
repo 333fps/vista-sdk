@@ -24,7 +24,7 @@ namespace dnv::vista::sdk
 	class Gmod;
 
 	//=====================================================================
-	// GmodNodeMetadata Class
+	// GmodNodeMetadata class
 	//=====================================================================
 
 	/**
@@ -193,7 +193,7 @@ namespace dnv::vista::sdk
 	};
 
 	//=====================================================================
-	// GmodNode Class
+	// GmodNode class
 	//=====================================================================
 
 	/**
@@ -307,7 +307,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] size_t hashCode() const noexcept;
 
 		//----------------------------------------------
-		// Relationship Accessors
+		// Relationship accessors
 		//----------------------------------------------
 
 		/**
@@ -337,7 +337,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] const GmodNode* productSelection() const;
 
 		//----------------------------------------------
-		// Node Location Methods
+		// Node location methods
 		//----------------------------------------------
 
 		/**
@@ -460,7 +460,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] bool isRoot() const noexcept;
 
 		//----------------------------------------------
-		// Node Relationship Query Methods
+		// Node relationship query methods
 		//----------------------------------------------
 
 		/**
@@ -479,7 +479,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] bool isChild( const std::string& code ) const;
 
 		//----------------------------------------------
-		// Utility Methods
+		// Utility methods
 		//----------------------------------------------
 
 		/**
@@ -498,7 +498,7 @@ namespace dnv::vista::sdk
 
 	private:
 		//----------------------------------------------
-		// Relationship Management Methods
+		// Relationship management methods
 		//----------------------------------------------
 
 		/**
@@ -547,5 +547,8 @@ namespace dnv::vista::sdk
 
 		/** @brief Set of child codes for efficient `isChild(const std::string&)` lookups. Maintained by addChild/trim. */
 		std::unordered_set<std::string> m_childrenSet;
+
+		mutable std::optional<const GmodNode*> m_cachedProductType;
+		mutable std::optional<const GmodNode*> m_cachedProductSelection;
 	};
 }

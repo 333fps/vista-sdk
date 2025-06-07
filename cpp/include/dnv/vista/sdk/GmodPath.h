@@ -104,7 +104,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] std::vector<std::pair<size_t, std::string>> commonNames() const;
 
 		//----------------------------------------------
-		// Utility Mmthods
+		// Utility methods
 		//----------------------------------------------
 
 		[[nodiscard]] static bool isValid( const std::vector<GmodNode*>& parents, const GmodNode& node );
@@ -249,7 +249,7 @@ namespace dnv::vista::sdk
 	};
 
 	//=====================================================================
-	// GmodIndividualizableSet Class
+	// GmodIndividualizableSet class
 	//=====================================================================
 
 	class GmodIndividualizableSet final
@@ -289,7 +289,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] std::optional<Location> location() const;
 
 		//----------------------------------------------
-		// Utility Methods
+		// Utility methods
 		//----------------------------------------------
 
 		void setLocation( const std::optional<Location>& location );
@@ -306,7 +306,7 @@ namespace dnv::vista::sdk
 	};
 
 	//=====================================================================
-	// GmodParsePathResult Class
+	// GmodParsePathResult class
 	//=====================================================================
 
 	class GmodParsePathResult

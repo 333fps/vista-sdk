@@ -24,7 +24,7 @@ namespace dnv::vista::sdk
 	class GmodPath;
 
 	//=====================================================================
-	// Gmod Class
+	// Gmod class
 	//=====================================================================
 
 	/**
@@ -72,7 +72,7 @@ namespace dnv::vista::sdk
 		Gmod() = delete;
 
 		/** @brief Copy constructor */
-		Gmod( const Gmod& ) = delete;
+		Gmod( const Gmod& ) = default;
 
 		/** @brief Move constructor */
 		Gmod( Gmod&& ) noexcept = default;
@@ -85,10 +85,10 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
-		Gmod& operator=( const Gmod& ) = delete;
+		Gmod& operator=( const Gmod& ) = default;
 
 		/** @brief Move assignment operator */
-		Gmod& operator=( Gmod&& ) noexcept = delete;
+		Gmod& operator=( Gmod&& ) noexcept = default;
 
 		//----------------------------------------------
 		// Lookup operators
@@ -122,7 +122,7 @@ namespace dnv::vista::sdk
 		[[nodiscard]] const GmodNode& rootNode() const;
 
 		//----------------------------------------------
-		// Node Query Methods
+		// Node query methods
 		//----------------------------------------------
 
 		/**
@@ -134,7 +134,7 @@ namespace dnv::vista::sdk
 		bool tryGetNode( std::string_view code, const GmodNode*& node ) const;
 
 		//----------------------------------------------
-		// Path Parsing & Navigation
+		// Path parsing & navigation
 		//----------------------------------------------
 
 		/**
@@ -170,7 +170,7 @@ namespace dnv::vista::sdk
 		bool tryParseFromFullPath( const std::string& item, std::optional<GmodPath>& path ) const;
 
 		//----------------------------------------------
-		// Static Utility Methods
+		// Static utility methods
 		//----------------------------------------------
 
 		/**
@@ -313,7 +313,7 @@ namespace dnv::vista::sdk
 
 			/**
 			 * @brief Resets the enumerator to its initial state, positioned before the first node.
-			 * @details After calling reset, moveNext() must be called to access the first node.
+			 * @details After calling reset, next() must be called to access the first node.
 			 */
 			void reset() noexcept;
 
