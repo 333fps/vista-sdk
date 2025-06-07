@@ -6,6 +6,36 @@
 
 namespace dnv::vista::sdk
 {
+	namespace
+	{
+		//=====================================================================
+		// Constants
+		//=====================================================================
+
+		static constexpr std::string_view NODE_CATEGORY_ASSET_FUNCTION = "ASSET FUNCTION";
+	}
+
+	namespace
+	{
+		struct PathExistsContext
+		{
+			const GmodNode& toNode;
+			std::vector<const GmodNode*> remainingParents_list;
+			const std::vector<const GmodNode*>& fromPathList;
+
+			PathExistsContext( const GmodNode& to, const std::vector<const GmodNode*>& fromPath )
+				: toNode{ to },
+				  fromPathList{ fromPath }
+			{
+			}
+
+			PathExistsContext( const PathExistsContext& ) = delete;
+			PathExistsContext( PathExistsContext&& ) = delete;
+			PathExistsContext& operator=( const PathExistsContext& ) = delete;
+			PathExistsContext& operator=( PathExistsContext&& ) = delete;
+		};
+	}
+
 	namespace GmodTraversal
 	{
 		namespace detail
@@ -13,36 +43,50 @@ namespace dnv::vista::sdk
 			Parents::Parents()
 			{
 				m_parents.reserve( 64 );
+				m_occurrences.reserve( 32 );
 			}
 
 			void Parents::push( const GmodNode* parent )
 			{
 				m_parents.push_back( parent );
-				m_occurrences[parent->code()]++;
+				std::string key = parent->code();
+				auto [it, inserted] = m_occurrences.try_emplace( key, 1 );
+
+				if ( !inserted )
+				{
+					it->second++;
+				}
 			}
 
 			void Parents::pop()
 			{
-				if ( m_parents.empty() )
+				if ( m_parents.empty() ) [[unlikely]]
+				{
 					return;
+				}
 
 				const GmodNode* parent = m_parents.back();
-				auto it = m_occurrences.find( parent->code() );
-				if ( it != m_occurrences.end() )
+				m_parents.pop_back();
+
+				std::string key = parent->code();
+				if ( auto it = m_occurrences.find( key ); it != m_occurrences.end() )
 				{
-					it->second--;
-					if ( it->second == 0 )
+					if ( --it->second == 0 )
 					{
 						m_occurrences.erase( it );
 					}
 				}
-				m_parents.pop_back();
 			}
 
 			int Parents::occurrences( const GmodNode& node ) const
 			{
-				auto it = m_occurrences.find( node.code() );
-				return ( it != m_occurrences.end() ) ? it->second : 0;
+				std::string key = node.code();
+				if ( auto it = m_occurrences.find( key ); it != m_occurrences.end() )
+				{
+					return it->second;
+				}
+
+				return 0;
 			}
 
 			const GmodNode* Parents::lastOrDefault() const
@@ -63,6 +107,7 @@ namespace dnv::vista::sdk
 				[handler]( [[maybe_unused]] bool& s, const std::vector<const GmodNode*>& parents_list, const GmodNode& nodeRef ) {
 					return handler( parents_list, nodeRef );
 				};
+
 			return GmodTraversal::traverse<bool>( dummyState, gmodInstance.rootNode(), wrappedHandler, options );
 		}
 
@@ -73,28 +118,8 @@ namespace dnv::vista::sdk
 				[handler]( [[maybe_unused]] bool& s, const std::vector<const GmodNode*>& parents_list, const GmodNode& nodeRef ) {
 					return handler( parents_list, nodeRef );
 				};
+
 			return GmodTraversal::traverse<bool>( dummyState, rootNode, wrappedHandler, options );
-		}
-
-		namespace
-		{
-			struct PathExistsContext
-			{
-				const GmodNode& toNode;
-				std::vector<const GmodNode*> remainingParents_list;
-				const std::vector<const GmodNode*>& fromPathList;
-
-				PathExistsContext( const GmodNode& to, const std::vector<const GmodNode*>& fromPath )
-					: toNode{ to },
-					  fromPathList{ fromPath }
-				{
-				}
-
-				PathExistsContext( const PathExistsContext& ) = delete;
-				PathExistsContext( PathExistsContext&& ) = delete;
-				PathExistsContext& operator=( const PathExistsContext& ) = delete;
-				PathExistsContext& operator=( PathExistsContext&& ) = delete;
-			};
 		}
 
 		bool pathExistsBetween(
@@ -104,11 +129,11 @@ namespace dnv::vista::sdk
 			std::vector<const GmodNode*>& remainingParents )
 		{
 			remainingParents.clear();
-			const GmodNode* lastAssetFunction = nullptr;
 
+			const GmodNode* lastAssetFunction = nullptr;
 			for ( auto it = fromPath.rbegin(); it != fromPath.rend(); ++it )
 			{
-				if ( ( *it ) && Gmod::isAssetFunctionNode( ( *it )->metadata() ) )
+				if ( *it && ( *it )->metadata().category() == NODE_CATEGORY_ASSET_FUNCTION )
 				{
 					lastAssetFunction = *it;
 					break;
@@ -119,57 +144,57 @@ namespace dnv::vista::sdk
 
 			TraverseHandlerWithState<PathExistsContext> handler =
 				[]( PathExistsContext& ctx, const std::vector<const GmodNode*>& currentTraversalParents, const GmodNode& currentNode ) -> TraversalHandlerResult {
-				if ( currentNode.code() != ctx.toNode.code() )
-				{
+				if ( currentNode.code() != ctx.toNode.code() ) [[likely]]
 					return TraversalHandlerResult::Continue;
-				}
 
-				std::vector<const GmodNode*> absolutePathToCurrentNodeParent = currentTraversalParents;
-				if ( !absolutePathToCurrentNodeParent.empty() && !absolutePathToCurrentNodeParent[0]->isRoot() )
+				const std::vector<const GmodNode*>* parents = &currentTraversalParents;
+				std::vector<const GmodNode*> actualParents;
+
+				if ( !parents->empty() && !( *parents )[0]->isRoot() )
 				{
-					std::vector<const GmodNode*> prefixPath;
-					const GmodNode* head = absolutePathToCurrentNodeParent[0];
+					actualParents = *parents;
+					parents = &actualParents;
+
+					const GmodNode* head = ( *parents )[0];
 					while ( head && !head->isRoot() )
 					{
 						if ( head->parents().empty() )
+						{
 							break;
-						if ( head->parents().size() != 1 )
+						}
+						if ( head->parents().size() != 1 ) [[unlikely]]
+						{
 							throw std::runtime_error( "Invalid state - expected one parent during path reconstruction for PathExistsBetween" );
+						}
 						head = head->parents()[0];
 						if ( head )
-							prefixPath.insert( prefixPath.begin(), head );
-						else
-							break;
+						{
+							actualParents.insert( actualParents.begin(), head );
+						}
 					}
-					absolutePathToCurrentNodeParent.insert( absolutePathToCurrentNodeParent.begin(), prefixPath.begin(), prefixPath.end() );
 				}
 
-				if ( absolutePathToCurrentNodeParent.size() < ctx.fromPathList.size() )
-				{
+				if ( parents->size() < ctx.fromPathList.size() ) [[likely]]
 					return TraversalHandlerResult::Continue;
-				}
 
-				bool match = true;
 				for ( size_t i = 0; i < ctx.fromPathList.size(); ++i )
 				{
-					if ( absolutePathToCurrentNodeParent[i]->code() != ctx.fromPathList[i]->code() )
+					if ( ( *parents )[i]->code() != ctx.fromPathList[i]->code() ) [[likely]]
 					{
-						match = false;
-						break;
+						return TraversalHandlerResult::Continue;
 					}
 				}
 
-				if ( match )
+				ctx.remainingParents_list.clear();
+				const size_t remainingSize = parents->size() - ctx.fromPathList.size();
+				ctx.remainingParents_list.reserve( remainingSize );
+
+				for ( size_t i = ctx.fromPathList.size(); i < parents->size(); ++i )
 				{
-					ctx.remainingParents_list.clear();
-					for ( size_t i = ctx.fromPathList.size(); i < absolutePathToCurrentNodeParent.size(); ++i )
-					{
-						ctx.remainingParents_list.push_back( absolutePathToCurrentNodeParent[i] );
-					}
-
-					return TraversalHandlerResult::Stop;
+					ctx.remainingParents_list.push_back( ( *parents )[i] );
 				}
-				return TraversalHandlerResult::Continue;
+
+				return TraversalHandlerResult::Stop;
 			};
 
 			bool traversalCompletedNaturally = GmodTraversal::traverse<PathExistsContext>(
@@ -177,7 +202,8 @@ namespace dnv::vista::sdk
 				( lastAssetFunction ? *lastAssetFunction : gmodInstance.rootNode() ),
 				handler );
 
-			remainingParents = context.remainingParents_list;
+			remainingParents = std::move( context.remainingParents_list );
+
 			return !traversalCompletedNaturally;
 		}
 	}
