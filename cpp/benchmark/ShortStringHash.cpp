@@ -23,34 +23,31 @@ namespace dnv::vista::sdk::benchmarks
 	}
 
 	template <typename THasher>
-	static uint32_t hash( std::string_view inputStr )
+	[[nodiscard]] static inline uint32_t hash( std::string_view inputStr ) noexcept
 	{
-		const char* data = inputStr.data();
-		size_t length = inputStr.length();
-
 		uint32_t hash = 0x811C9DC5;
 
-		for ( size_t i = 0; i < length; ++i )
+		for ( char ch : inputStr )
 		{
-			hash = THasher::hash( hash, static_cast<uint8_t>( data[i] ) );
+			const uint8_t lowByte = static_cast<uint8_t>( ch );
+			hash = THasher::hash( hash, lowByte );
+			hash = THasher::hash( hash, 0 );
 		}
 
 		return hash;
 	}
 
-	/*
 	struct LarssonHasher
 	{
-		static uint32_t hash( uint32_t hash, uint8_t ch )
+		[[nodiscard]] static __forceinline uint32_t hash( uint32_t hash, uint8_t ch ) noexcept
 		{
-			 return internal::Hashing::larssonHash( hash, ch );
+			return internal::Hashing::Larsson( hash, ch );
 		}
 	};
-	*/
 
-	struct Crc32IntrinsicHasher
+	struct CRC32IntrinsicHasher
 	{
-		static uint32_t hash( uint32_t hash, uint8_t ch )
+		[[nodiscard]] static __forceinline uint32_t hash( uint32_t hash, uint8_t ch ) noexcept
 		{
 			return internal::Hashing::crc32( hash, ch );
 		}
@@ -58,7 +55,7 @@ namespace dnv::vista::sdk::benchmarks
 
 	struct FnvHasher
 	{
-		static uint32_t hash( uint32_t hash, uint8_t ch )
+		[[nodiscard]] static __forceinline uint32_t hash( uint32_t hash, uint8_t ch ) noexcept
 		{
 			return internal::Hashing::fnv1a( hash, ch );
 		}
@@ -122,215 +119,101 @@ namespace dnv::vista::sdk::benchmarks
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
 		const std::string input = "400";
 		for ( auto _ : state )
 		{
 			auto result = std::hash<std::string>{}( input );
 			benchmark::DoNotOptimize( result );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_bcl_H346_11112( benchmark::State& state )
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
 		const std::string input = "H346.11112";
 		for ( auto _ : state )
 		{
 			auto result = std::hash<std::string>{}( input );
 			benchmark::DoNotOptimize( result );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_bclOrd_400( benchmark::State& state )
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
 		const std::string input = "400";
 		for ( auto _ : state )
 		{
 			auto result = hashCodeOrdinal( input );
 			benchmark::DoNotOptimize( result );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_bclOrd_H346_11112( benchmark::State& state )
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
 		const std::string input = "H346.11112";
 		for ( auto _ : state )
 		{
 			auto result = hashCodeOrdinal( input );
 			benchmark::DoNotOptimize( result );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_larsson_400( benchmark::State& state )
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
-		/*
 		const std::string input = "400";
 		for ( auto _ : state )
 		{
-			auto result = Hash<LarssonHasher>( input );
+			auto result = hash<LarssonHasher>( input );
 			benchmark::DoNotOptimize( result );
 		}
-		*/
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_larsson_H346_11112( benchmark::State& state )
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
-		/*
 		const std::string input = "H346.11112";
 		for ( auto _ : state )
 		{
-			auto result = Hash<LarssonHasher>( input );
+			auto result = hash<LarssonHasher>( input );
 			benchmark::DoNotOptimize( result );
 		}
-		*/
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_crc32Intrinsic_400( benchmark::State& state )
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
 		const std::string input = "400";
 		for ( auto _ : state )
 		{
-			auto result = hash<Crc32IntrinsicHasher>( input );
+			auto result = hash<CRC32IntrinsicHasher>( input );
 			benchmark::DoNotOptimize( result );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_crc32Intrinsic_H346_11112( benchmark::State& state )
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
-
 		const std::string input = "H346.11112";
 		for ( auto _ : state )
 		{
-			auto result = hash<Crc32IntrinsicHasher>( input );
+			auto result = hash<CRC32IntrinsicHasher>( input );
 			benchmark::DoNotOptimize( result );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_fnv_400( benchmark::State& state )
 	{
 		initializeData();
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
 
 		const std::string input = "400";
 		for ( auto _ : state )
@@ -338,24 +221,11 @@ namespace dnv::vista::sdk::benchmarks
 			auto result = hash<FnvHasher>( input );
 			benchmark::DoNotOptimize( result );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	static void BM_fnv_H346_11112( benchmark::State& state )
 	{
 		initializeData();
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
 
 		const std::string input = "H346.11112";
 		for ( auto _ : state )
@@ -363,13 +233,6 @@ namespace dnv::vista::sdk::benchmarks
 			auto result = hash<FnvHasher>( input );
 			benchmark::DoNotOptimize( result );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	BENCHMARK( BM_bcl_400 )

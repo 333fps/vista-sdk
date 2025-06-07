@@ -56,7 +56,6 @@ The C++ SDK currently implements:
     -   Internal Data Transfer Objects (DTOs) for robust resource deserialization.
     -   Embedded resource handling, including decompression of gzipped JSON data.
     -   `ChdDictionary` (Perfect Hashing utility) - Includes input validation for empty/duplicate keys.
-        _Note: The binary format of the dictionary is incompatible with the C# version due to differences in hash inputs and internal caching._
     -   `ParsingErrors` mechanism for collecting and reporting issues during parsing operations.
     -   `ImoNumber` with full validation and parsing capabilities.
     -   Complete `VisVersion` enumeration and extension methods.
@@ -132,7 +131,7 @@ This C++ implementation follows the same core design principles (Immutability, B
 | **Collections**     | `std::vector`, `std::unordered_map`, `std::deque`, `std::array`                           | `List<T>`, `Dictionary<K,V>`, `T[]`, `FrozenDictionary`    | Uses STL containers with performance optimizations.            |
 | **String Handling** | `std::string`, `std::string_view`, `std::stringstream`, extensive view usage              | `string`, `ReadOnlySpan<char>`, `StringBuilder`            | C++ version uses string_view extensively for performance.      |
 | **Error Handling**  | `std::exception` hierarchy, comprehensive `ParsingErrors` system, `std::invalid_argument` | `.NET` exceptions, `ParsingErrors` struct                  |
-| **Hashing (CHD)**   | FNV1a/CRC32 (SSE4.2), thread-local cache, comprehensive input validation                  | FNV1a/CRC32 (SSE4.2)                                       | **Incompatible binary formats** due to different hash inputs.  |
+| **Hashing (CHD)**   | FNV1a/CRC32 (SSE4.2), thread-local cache, comprehensive input validation                  | FNV1a/CRC32 (SSE4.2)                                       |                                                                |
 | **Logging**         | `spdlog` with extensive diagnostic logging throughout                                     | Minimal built-in logging                                   |
 | **Build System**    | CMake (`FetchContent`) with comprehensive dependency management                           | .NET SDK (MSBuild/NuGet)                                   | CMake configuration with cross-platform support.               |
 | **Dependencies**    | `nlohmann/json`, `spdlog`, `zlib`, `fmt`, `gtest`, `libcpuid`                             | NuGet packages                                             | Managed via `FetchContent` with version pinning.               |
@@ -147,7 +146,6 @@ The C++ implementation includes a perfect hashing system (as well as c# version)
 -   Thread-local caching for performance optimization.
 -   Comprehensive input validation (empty keys, duplicates).
 -   SSE4.2 accelerated hashing when available.
--   **Note:** Binary format incompatible with C# version due to different hash inputs and caching strategy.
 
 ### Path Parsing and Validation
 
@@ -197,10 +195,6 @@ The C++ implementation includes a perfect hashing system (as well as c# version)
     -   Implement `LocalIdQuery` for querying and filtering LocalId collections.
     -   Implement `LocalIdQueryBuilder` with fluent interface for building complex LocalId queries.
     -   Implement `MetadataTagsQuery` for advanced metadata tag searching and filtering.
-
--   **Cross-Platform Alignment:**
-
-    -   Evaluate hash algorithm alignment between C++ and C# implementations for scenarios requiring cross-platform hash consistency.
 
 -   **Testing:**
 
@@ -395,4 +389,4 @@ The C++ Vista SDK follows a consistent coding style throughout the codebase.
 
 ---
 
-_Last updated: June 5, 2025_
+_Last updated: June 7, 2025_

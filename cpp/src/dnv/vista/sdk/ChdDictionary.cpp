@@ -44,40 +44,5 @@ namespace dnv::vista::sdk
 
 			return s_hasSSE42;
 		}
-
-		//----------------------------------------------
-		// Hashing class
-		//----------------------------------------------
-
-		//----------------------------
-		// Public static methods
-		//----------------------------
-
-		uint32_t Hashing::fnv1a( uint32_t hash, uint8_t ch )
-		{
-			auto result{ ( ch ^ hash ) * FNV_PRIME };
-
-			return result;
-		}
-
-		uint32_t Hashing::crc32( uint32_t hash, uint8_t ch )
-		{
-			auto result{ _mm_crc32_u8( hash, ch ) };
-
-			return result;
-		}
-
-		uint32_t Hashing::seed( uint32_t seed, uint32_t hash, uint64_t size )
-		{
-			/* Mixes the primary hash with the seed to find the final table slot */
-			uint32_t x{ seed + hash };
-			x ^= x >> 12;
-			x ^= x << 25;
-			x ^= x >> 27;
-
-			auto result{ static_cast<uint32_t>( ( static_cast<uint64_t>( x ) * 0x2545F4914F6CDD1DUL ) & ( size - 1 ) ) };
-
-			return result;
-		}
 	}
 }

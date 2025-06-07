@@ -63,14 +63,26 @@ foreach(benchmark_source ${BENCHMARK_SOURCES})
 		)
 
 		if(MSVC)
-			target_compile_options(${benchmark_target_name} PRIVATE
-				/wd4625 # copy constructor was implicitly defined as deleted
-				/wd4626 # assignment operator was implicitly defined as deleted
-				/wd4702 # unreachable code
-				/wd4834 # discarding return value of function with [[nodiscard]] attribute
-				/wd5026 # move constructor was implicitly defined as deleted
-				/wd5027 # move assignment operator was implicitly defined as deleted
-			)
+			# ============================================================================
+			# Optimization settings by build configuration
+			# ============================================================================
+			add_compile_options($<$<CONFIG:Release>:/O2>)        # Maximum speed optimization
+			add_compile_options($<$<CONFIG:Release>:/Oi>)        # Enable intrinsic functions
+			add_compile_options($<$<CONFIG:Release>:/Ot>)        # Favor fast code over small code
+			add_compile_options($<$<CONFIG:Release>:/Gy>)        # Enable Function-Level Linking
+			add_compile_options($<$<CONFIG:Release>:/DNDEBUG>)   # Disable debug assertions
+
+			# ============================================================================
+			# Warning suppressions
+			# ============================================================================
+			add_compile_options(/wd4505) # unreferenced local function has been removed
+			add_compile_options(/wd4514) # unreferenced inline function has been removed
+			add_compile_options(/wd4625) # copy constructor was implicitly defined as deleted
+			add_compile_options(/wd4626) # assignment operator was implicitly defined as deleted
+			add_compile_options(/wd4702) # unreachable code
+			add_compile_options(/wd4834) # discarding return value of function with [[nodiscard]] attribute
+			add_compile_options(/wd5026) # move constructor was implicitly defined as deleted
+			add_compile_options(/wd5027) # move assignment operator was implicitly defined as deleted
 		endif()
 
 		if(NOT TARGET benchmarks)

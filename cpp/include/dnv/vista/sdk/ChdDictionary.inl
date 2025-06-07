@@ -14,11 +14,11 @@ namespace dnv::vista::sdk
 	static constexpr uint32_t MAX_SEED_SEARCH_MULTIPLIER = 100;
 
 	//=====================================================================
-	// ChdDictionary Class
+	// ChdDictionary class
 	//=====================================================================
 
 	//----------------------------------------------
-	// Iterator Inner Class
+	// ChdDictionary::Iterator
 	//----------------------------------------------
 
 	//---------------------------
@@ -124,8 +124,6 @@ namespace dnv::vista::sdk
 		: m_table{},
 		  m_seeds{}
 	{
-		auto start = std::chrono::high_resolution_clock::now();
-
 		if ( items.empty() )
 		{
 			return;
@@ -318,28 +316,31 @@ namespace dnv::vista::sdk
 		}
 
 		m_seeds = std::move( seeds );
-
-		auto end = std::chrono::high_resolution_clock::now();
-		[[maybe_unused]] auto duration = std::chrono::duration<double, std::milli>( end - start ).count();
-		SPDLOG_DEBUG( "CHD Dictionary construction complete: {} entries, {} seeds in {:.2f}ms", m_table.size(), m_seeds.size(), duration );
-
-		[[maybe_unused]] auto memoryUsage = sizeof( typename decltype( m_table )::value_type ) * m_table.capacity() + sizeof( int ) * m_seeds.capacity();
-		SPDLOG_DEBUG( "CHD Dictionary memory usage: {:.2f}KB ({:.2f}MB) ({} table entries, {} seeds)", static_cast<float>( memoryUsage ) / 1024.0f, static_cast<float>( memoryUsage ) / ( 1024.0f * 1024.0f ), m_table.size(), m_seeds.size() );
 	}
 
 	//----------------------------------------------
-	// Lookup Operators
+	// Lookup operators
 	//----------------------------------------------
 
 	template <typename TValue>
 	TValue& ChdDictionary<TValue>::operator[]( std::string_view key )
 	{
-		const TValue& const_val_ref = static_cast<const ChdDictionary<TValue>*>( this )->at( key );
-		return const_cast<TValue&>( const_val_ref );
+		if ( isEmpty() )
+		{
+			throw std::out_of_range( "Key not found in dictionary: ChdDictionary is empty." );
+		}
+
+		const TValue* outValue = nullptr;
+		if ( tryGetValue( key, outValue ) && outValue != nullptr )
+		{
+			return const_cast<TValue&>( *outValue );
+		}
+
+		throw std::out_of_range( "Key not found in dictionary: " + std::string( key ) );
 	}
 
 	//----------------------------------------------
-	// Lookup Methods
+	// Lookup methods
 	//----------------------------------------------
 
 	template <typename TValue>
@@ -362,108 +363,34 @@ namespace dnv::vista::sdk
 	template <typename TValue>
 	bool ChdDictionary<TValue>::tryGetValue( std::string_view key, const TValue*& outValue ) const
 	{
-		auto start = std::chrono::high_resolution_clock::now();
 		outValue = nullptr;
 
-		if ( key.empty() || m_table.empty() || m_seeds.empty() )
+		if ( key.empty() ) [[unlikely]]
 		{
 			return false;
 		}
 
-		++s_lookupCount;
-		if ( s_lookupCount % 10000 == 0 )
+		if ( m_table.empty() ) [[unlikely]]
 		{
-			SPDLOG_DEBUG( "Dictionary performance: {} lookups, hit rate: {:.1f}%", s_lookupCount, 100.0f * static_cast<float>( s_lookupHits ) / static_cast<float>( s_lookupCount ) );
+			return false;
 		}
 
-		uint32_t hashValue{ hash( key ) };
-		auto size{ m_table.size() };
-		auto index{ hashValue & ( size - 1 ) }; /* Use bitwise AND as fast modulo since size is power of 2 */
-		int seed{ m_seeds[index] };
+		const uint32_t hashValue = hash( key );
+		const size_t tableSize = m_table.size();
+		const size_t index = hashValue & ( tableSize - 1 );
+		const int seed = m_seeds[index];
 
-		const std::pair<std::string, TValue>* kvp{ nullptr };
-		size_t finalIndex = 0;
+		const size_t finalIndex = ( seed < 0 ) ? static_cast<size_t>( -seed - 1 ) : internal::Hashing::seed( static_cast<uint32_t>( seed ), hashValue, tableSize );
 
-		if ( seed < 0 )
+		assert( finalIndex < tableSize );
+
+		const auto& kvp = m_table[finalIndex];
+		if ( key != kvp.first ) [[unlikely]]
 		{
-			/* Negative seed directly encodes the final index (minus 1) */
-			finalIndex = static_cast<size_t>( -seed - 1 );
-			if ( finalIndex >= m_table.size() )
-			{
-				std::string errorMsg = fmt::format(
-					"CHD lookup corruption: Invalid negative seed index {} (from seed {}) for key '{}' "
-					"with table size {}. This indicates corrupted CHD data or construction bug.",
-					finalIndex, seed, key, m_table.size() );
-
-				throw std::logic_error( errorMsg );
-			}
-			kvp = &m_table[finalIndex];
-		}
-		else
-		{
-			/* Positive seed requires secondary hash calculation */
-			finalIndex = internal::Hashing::seed( static_cast<uint32_t>( seed ), hashValue, static_cast<uint64_t>( size ) );
-			if ( finalIndex >= m_table.size() )
-			{
-				std::string errorMsg = fmt::format(
-					"CHD lookup corruption: Invalid positive seed index {} (from seed {}) for key '{}' "
-					"with table size {}. This indicates corrupted CHD data or hash function bug.",
-					finalIndex, seed, key, m_table.size() );
-
-				throw std::logic_error( errorMsg );
-			}
-			kvp = &m_table[finalIndex];
+			return false;
 		}
 
-		{
-			static thread_local size_t consecutiveMismatches = 0;
-
-			if ( key != kvp->first )
-			{
-				if ( !kvp->first.empty() )
-				{
-					++consecutiveMismatches;
-
-					if ( consecutiveMismatches > 100 )
-					{
-						std::string errorMsg = fmt::format(
-							"CHD lookup corruption suspected: {} consecutive key mismatches. "
-							"Latest mismatch at index {} - searched '{}', found '{}'. "
-							"This may indicate corrupted dictionary data.",
-							consecutiveMismatches, finalIndex, key, kvp->first );
-
-						consecutiveMismatches = 0;
-
-						throw std::logic_error( errorMsg );
-					}
-				}
-				else
-				{
-					consecutiveMismatches = 0;
-				}
-
-				auto end = std::chrono::high_resolution_clock::now();
-				s_totalLookupDuration += ( end - start );
-				return false;
-			}
-
-			consecutiveMismatches = 0;
-		}
-
-		outValue = &kvp->second;
-
-		++s_lookupHits;
-
-		auto end = std::chrono::high_resolution_clock::now();
-		s_totalLookupDuration += ( end - start );
-
-		if ( s_lookupCount > 0 && s_lookupCount % 100000 == 0 )
-		{
-			[[maybe_unused]] auto avgDurationNs = s_totalLookupDuration / s_lookupCount;
-			[[maybe_unused]] auto avgDurationMs = std::chrono::duration<double, std::milli>( avgDurationNs ).count();
-
-			SPDLOG_DEBUG( "Dictionary lookup stats: avg time {:.3f}ms, hit rate {:.1f}%", avgDurationMs, 100.0f * static_cast<float>( s_lookupHits ) / static_cast<float>( s_lookupCount ) );
-		}
+		outValue = &kvp.second;
 
 		return true;
 	}
@@ -509,7 +436,7 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Private Helper Methods
+	// Private helper methods
 	//----------------------------------------------
 
 	//---------------------------
@@ -517,84 +444,35 @@ namespace dnv::vista::sdk
 	//---------------------------
 
 	template <typename TValue>
-	uint32_t ChdDictionary<TValue>::processHashByte( uint32_t hash, uint8_t byte )
+	uint32_t ChdDictionary<TValue>::hash( std::string_view key ) noexcept
 	{
-		static const auto hasSSE42Support{ internal::hasSSE42Support() };
-
-		return hasSSE42Support ? internal::Hashing::crc32( hash, byte ) : internal::Hashing::fnv1a( hash, byte );
-	}
-
-	template <typename TValue>
-	uint32_t ChdDictionary<TValue>::hash( std::string_view key )
-	{
-		if ( key.empty() )
+		if ( key.empty() ) [[unlikely]]
 		{
 			return internal::FNV_OFFSET_BASIS;
 		}
 
-		/* Cache lookup - Simple cache index using key length and first/last chars */
-		auto cacheIndex = ( ( static_cast<size_t>( key[0] ) * 23 ) ^ ( key.length() * 37 ) ^ ( key.back() * 41 ) ) % s_hashCache.size();
-		if ( s_hashCache[cacheIndex].key == key )
+		uint32_t hashValue = internal::FNV_OFFSET_BASIS;
+		static const bool hasSSE42 = internal::hasSSE42Support();
+
+		if ( hasSSE42 ) [[likely]]
 		{
-			++s_cacheHits;
-			if ( s_cacheHits % 10000 == 0 )
+			for ( const char ch : key )
 			{
-				SPDLOG_DEBUG( "Hash cache hit for '{}' (hits: {}, rate: {:.1f}%)", key, s_cacheHits, 100.0f * static_cast<float>( s_cacheHits ) / static_cast<float>( s_cacheHits + s_cacheMisses ) );
+				const uint8_t lowByte = static_cast<uint8_t>( ch );
+				hashValue = internal::Hashing::crc32( hashValue, lowByte );
+				hashValue = internal::Hashing::crc32( hashValue, 0 );
 			}
-
-			return s_hashCache[cacheIndex].hash;
 		}
-		++s_cacheMisses;
-
-		if ( s_cacheMisses % 10000 == 0 )
+		else
 		{
-			SPDLOG_DEBUG( "Hash cache performance: {} hits, {} misses, {:.1f}% hit rate", s_cacheHits, s_cacheMisses, 100.0f * static_cast<float>( s_cacheHits ) / static_cast<float>( s_cacheHits + s_cacheMisses ) );
-		}
-
-		/* Hashing logic */
-		auto length{ key.length() };
-		auto hashValue{ internal::FNV_OFFSET_BASIS };
-		auto data{ key.data() };
-
-		for ( size_t i = 0; i < length; ++i )
-		{
-			hashValue = processHashByte( hashValue, static_cast<uint8_t>( data[i] ) );
-		}
-
-		/* Cache update */
-		s_hashCacheStorage[cacheIndex].assign( key.data(), key.size() );
-		s_hashCache[cacheIndex] = HashCacheEntry{ .key = s_hashCacheStorage[cacheIndex], .hash = hashValue };
-
-		if ( s_cacheMisses % 1000 == 0 )
-		{
-			SPDLOG_DEBUG( "Hash cache updated at index {}: key='{}', hash={}", cacheIndex, s_hashCache[cacheIndex].key, s_hashCache[cacheIndex].hash );
+			for ( const char ch : key )
+			{
+				const uint8_t lowByte = static_cast<uint8_t>( ch );
+				hashValue = internal::Hashing::fnv1a( hashValue, lowByte );
+				hashValue = internal::Hashing::fnv1a( hashValue, 0 );
+			}
 		}
 
 		return hashValue;
 	}
-
-	//----------------------------------------------
-	// Caching and Performance Monitoring
-	//----------------------------------------------
-
-	template <typename TValue>
-	thread_local std::array<std::string, internal::HASH_CACHE_SIZE> ChdDictionary<TValue>::s_hashCacheStorage{};
-
-	template <typename TValue>
-	thread_local std::array<typename ChdDictionary<TValue>::HashCacheEntry, internal::HASH_CACHE_SIZE> ChdDictionary<TValue>::s_hashCache{};
-
-	template <typename TValue>
-	thread_local size_t ChdDictionary<TValue>::s_cacheHits = 0;
-
-	template <typename TValue>
-	thread_local size_t ChdDictionary<TValue>::s_cacheMisses = 0;
-
-	template <typename TValue>
-	thread_local size_t ChdDictionary<TValue>::s_lookupCount = 0;
-
-	template <typename TValue>
-	thread_local size_t ChdDictionary<TValue>::s_lookupHits = 0;
-
-	template <typename TValue>
-	thread_local std::chrono::nanoseconds ChdDictionary<TValue>::s_totalLookupDuration{ 0 };
 }
