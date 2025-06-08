@@ -43,17 +43,17 @@ cmake --build build --target BM_CodebooksLookup
 
 ## Summary
 
-| Operation Category          | C++ vs C# Performance            |  Status  | Key Findings                     |
-| :-------------------------- | :------------------------------- | :------: | :------------------------------- |
-| **Hash Table Operations**   | **1.14-2.61x faster**            |    ✅    | Superior low-level performance   |
-| **Codebook Access**         | **2.44x faster**                 |    ✅    | Hash maps dominate dictionaries  |
-| **High-Level APIs**         | **5.13x slower**                 |    ❌    | **Major optimization needed**    |
-| **String Hashing**          | **1.02x faster to 1.39x slower** |    ✅    | Average parity                   |
-| **GMOD Loading**            | **1.15x faster**                 |    ✅    | Competitive with 68x less memory |
-| **GMOD Lookup**             | **1.06-2.35x faster**            |    ✅    | Hash table advantage maintained  |
-| **GMOD Traversal**          | **1.7x slower**                  |    ❌    | **Major optimization needed**    |
-| **Path Parsing**            | **1.88-32.2x slower**            |   ❌❌   | **Critical optimization needed** |
-| **Version Path Conversion** | **280x slower**                  | ❌❌❌❌ | **CATASTROPHIC**                 |
+| Operation Category          | C++ vs C# Performance            | Status | Key Findings                     |
+| :-------------------------- | :------------------------------- | :----: | :------------------------------- |
+| **Hash Table Operations**   | **1.14-2.61x faster**            |   ✅   | Superior low-level performance   |
+| **Codebook Access**         | **2.44x faster**                 |   ✅   | Hash maps dominate dictionaries  |
+| **High-Level APIs**         | **5.13x slower**                 |   ❌   | **Major optimization needed**    |
+| **String Hashing**          | **1.02x faster to 1.39x slower** |   ✅   | Average parity                   |
+| **GMOD Loading**            | **1.15x faster**                 |   ✅   | Competitive with 68x less memory |
+| **GMOD Lookup**             | **1.06-2.35x faster**            |   ✅   | Hash table advantage maintained  |
+| **GMOD Traversal**          | **1.7x slower**                  |   ❌   | **Major optimization needed**    |
+| **Path Parsing**            | **1.88-32.2x slower**            |  ❌❌  | **Critical optimization needed** |
+| **Version Path Conversion** | **152 slower**                   | ❌❌❌ | **CATASTROPHIC**                 |
 
 ---
 
@@ -163,10 +163,10 @@ Performance comparison between C++ and C# implementations for codebook access op
 
 | Operation                          | Windows C++ | Linux C++ | Status | Notes |
 | :--------------------------------- | :---------- | :-------- | :----: | :---- |
-| **TryParse**                       | 6.32 μs     | _TBD_     |   ✅   |       |
-| **TryParseFullPath**               | 18.4 μs     | _TBD_     |   ✅   |       |
-| **TryParseIndividualized**         | 4.03 μs     | _TBD_     |   ✅   |       |
-| **TryParseFullPathIndividualized** | 18.8 μs     | _TBD_     |   ✅   |       |
+| **TryParse**                       | 6.32 μs     | _TBD_     |        |       |
+| **TryParseFullPath**               | 18.4 μs     | _TBD_     |        |       |
+| **TryParseIndividualized**         | 4.03 μs     | _TBD_     |        |       |
+| **TryParseFullPathIndividualized** | 18.8 μs     | _TBD_     |        |       |
 
 ### GMOD Path Parsing Performance (Windows)
 
@@ -235,21 +235,21 @@ Performance comparison between C++ and C# implementations for GMOD node lookup o
 
 | Operation        | Windows C++ | Linux C++ | Status | Notes |
 | :--------------- | :---------- | :-------- | :----: | :---- |
-| **Convert Path** | 417 μs      | _TBD_     |        |       |
+| **Convert Path** | 227 μs      | _TBD_     |        |       |
 
 ### GMOD Versioning Path Conversion Performance (Windows)
 
 Performance comparison between C++ and C# implementations for GMOD version path conversion operations:
 
-| Operation        | C++ (Google Benchmark) | C# (BenchmarkDotNet) | Performance Ratio |  Status  | Notes            |
-| :--------------- | :--------------------- | :------------------- | :---------------- | :------: | :--------------- |
-| **Convert Path** | 417 μs                 | 1.489 μs             | **280x slower**   | ❌❌❌❌ | **CATASTROPHIC** |
+| Operation        | C++ (Google Benchmark) | C# (BenchmarkDotNet) | Performance Ratio | Status | Notes            |
+| :--------------- | :--------------------- | :------------------- | :---------------- | :----: | :--------------- |
+| **Convert Path** | **227 μs**             | 1.489 μs             | **152x slower**   | ❌❌❌ | **CATASTROPHIC** |
 
 #### Detailed C++ Results (Windows)
 
 | Benchmark       | Time   | CPU    | Iterations | Memory Usage |
 | :-------------- | :----- | :----- | :--------- | :----------- |
-| **convertPath** | 417 μs | 417 μs | 33,433     | 0 KB         |
+| **convertPath** | 227 μs | 226 μs | 62,657     | 0 KB         |
 
 #### Detailed C# Results (Windows)
 
@@ -265,16 +265,16 @@ Performance comparison between C++ and C# implementations for GMOD version path 
 
 | Operation          | Windows C++ | Linux C++ | Status | Notes |
 | :----------------- | :---------- | :-------- | :----: | :---- |
-| **bcl (400)**      | 1.55 ns     | _TBD_     |   ✅   |       |
-| **bcl (H346)**     | 3.76 ns     | _TBD_     |   ✅   |       |
-| **bclOrd (400)**   | 1.79 ns     | _TBD_     |   ✅   |       |
-| **bclOrd (H346)**  | 3.05 ns     | _TBD_     |   ✅   |       |
-| **larsson (400)**  | 1.70 ns     | _TBD_     |   ✅   |       |
-| **larsson (H346)** | 4.61 ns     | _TBD_     |   ✅   |       |
-| **crc32 (400)**    | 1.51 ns     | _TBD_     |   ✅   |       |
-| **crc32 (H346)**   | 4.34 ns     | _TBD_     |   ✅   |       |
-| **fnv (400)**      | 1.65 ns     | _TBD_     |   ✅   |       |
-| **fnv (H346)**     | 3.26 ns     | _TBD_     |   ✅   |       |
+| **bcl (400)**      | 1.55 ns     | _TBD_     |        |       |
+| **bcl (H346)**     | 3.76 ns     | _TBD_     |        |       |
+| **bclOrd (400)**   | 1.79 ns     | _TBD_     |        |       |
+| **bclOrd (H346)**  | 3.05 ns     | _TBD_     |        |       |
+| **larsson (400)**  | 1.70 ns     | _TBD_     |        |       |
+| **larsson (H346)** | 4.61 ns     | _TBD_     |        |       |
+| **crc32 (400)**    | 1.51 ns     | _TBD_     |        |       |
+| **crc32 (H346)**   | 4.34 ns     | _TBD_     |        |       |
+| **fnv (400)**      | 1.65 ns     | _TBD_     |        |       |
+| **fnv (H346)**     | 3.26 ns     | _TBD_     |        |       |
 
 ### Short String Hashing Performance (Windows)
 
@@ -284,21 +284,21 @@ Performance comparison between C++ and C# implementations for hash function oper
 
 | Algorithm          | C++ (Google Benchmark) | C# (BenchmarkDotNet) | Performance Ratio | Status | Notes |
 | :----------------- | :--------------------- | :------------------- | :---------------- | :----: | :---- |
-| **Bcl**            | 1.55 ns                | 1.135 ns             | **1.37x slower**  |   ✅   |       |
-| **BclOrd**         | 1.79 ns                | 1.514 ns             | **1.18x slower**  |   ✅   |       |
-| **Larsson**        | 1.70 ns                | 1.219 ns             | **1.39x slower**  |   ✅   |       |
-| **Crc32Intrinsic** | 1.51 ns                | 1.215 ns             | **1.24x slower**  |   ✅   |       |
-| **Fnv**            | 1.65 ns                | 1.205 ns             | **1.37x slower**  |   ✅   |       |
+| **Bcl**            | 1.55 ns                | 1.135 ns             | **1.37x slower**  |        |       |
+| **BclOrd**         | 1.79 ns                | 1.514 ns             | **1.18x slower**  |        |       |
+| **Larsson**        | 1.70 ns                | 1.219 ns             | **1.39x slower**  |        |       |
+| **Crc32Intrinsic** | 1.51 ns                | 1.215 ns             | **1.24x slower**  |        |       |
+| **Fnv**            | 1.65 ns                | 1.205 ns             | **1.37x slower**  |        |       |
 
 #### String "H346.11112" (10 characters)
 
 | Algorithm          | C++ (Google Benchmark) | C# (BenchmarkDotNet) | Performance Ratio | Status | Notes |
 | :----------------- | :--------------------- | :------------------- | :---------------- | :----: | :---- |
-| **Bcl**            | 3.76 ns                | 4.551 ns             | **1.21x faster**  |   ✅   |       |
-| **BclOrd**         | 3.05 ns                | 3.127 ns             | **1.03x faster**  |   ✅   |       |
-| **Larsson**        | 4.61 ns                | 3.349 ns             | **1.38x slower**  |   ✅   |       |
-| **Crc32Intrinsic** | 4.34 ns                | 3.259 ns             | **1.33x slower**  |   ✅   |       |
-| **Fnv**            | 3.26 ns                | 3.337 ns             | **1.02x faster**  |   ✅   |       |
+| **Bcl**            | 3.76 ns                | 4.551 ns             | **1.21x faster**  |        |       |
+| **BclOrd**         | 3.05 ns                | 3.127 ns             | **1.03x faster**  |        |       |
+| **Larsson**        | 4.61 ns                | 3.349 ns             | **1.38x slower**  |        |       |
+| **Crc32Intrinsic** | 4.34 ns                | 3.259 ns             | **1.33x slower**  |        |       |
+| **Fnv**            | 3.26 ns                | 3.337 ns             | **1.02x faster**  |        |       |
 
 #### Detailed C++ Results (Windows)
 
@@ -336,4 +336,4 @@ Performance comparison between C++ and C# implementations for hash function oper
 
 ---
 
-_Last updated: June 7, 2025_
+_Last updated: June 8, 2025_

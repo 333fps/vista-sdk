@@ -74,58 +74,45 @@ namespace dnv::vista::sdk
 	// Conversion
 	//----------------------------------------------
 
+	//----------------------------
+	// Node
+	//----------------------------
+
 	std::optional<GmodNode> GmodVersioning::convertNode(
 		VisVersion sourceVersion, const GmodNode& sourceNode, VisVersion targetVersion ) const
 	{
 		if ( sourceNode.code().empty() )
-		{
 			return std::nullopt;
-		}
 
 		validateSourceAndTargetVersions( sourceVersion, targetVersion );
 
-		const auto& allVersions = VisVersionExtensions::allVersions();
-		auto it = std::find( allVersions.begin(), allVersions.end(), sourceVersion );
-		if ( it == allVersions.end() )
+		std::optional<GmodNode> node = sourceNode;
+		VisVersion source = sourceVersion;
+
+		while ( static_cast<int>( source ) <= static_cast<int>( targetVersion ) - 100 )
 		{
-			SPDLOG_ERROR( "Source version {} not found in allVersions", static_cast<int>( sourceVersion ) );
-
-			return std::nullopt;
-		}
-
-		std::optional<GmodNode> currentNodeOpt = sourceNode;
-		VisVersion currentVersion = sourceVersion;
-
-		while ( it != allVersions.end() && currentVersion != targetVersion )
-		{
-			++it;
-			if ( it == allVersions.end() )
+			if ( !node.has_value() )
 			{
-				SPDLOG_ERROR( "Target version {} not found in allVersions", static_cast<int>( targetVersion ) );
-
-				return std::nullopt;
+				break;
 			}
 
-			VisVersion nextVersion = *it;
-			currentNodeOpt = convertNodeInternal( currentVersion, *currentNodeOpt, nextVersion );
-			if ( !currentNodeOpt.has_value() )
-			{
-				SPDLOG_ERROR( "Node conversion failed going from version {} to {}", static_cast<int>( currentVersion ), static_cast<int>( nextVersion ) );
+			VisVersion target = static_cast<VisVersion>( static_cast<int>( source ) + 100 );
 
-				return std::nullopt;
-			}
+			node = convertNodeInternal( source, *node, target );
 
-			currentVersion = nextVersion;
+			source = static_cast<VisVersion>( static_cast<int>( source ) + 100 );
 		}
 
-		return currentNodeOpt;
+		return node;
 	}
+
+	//----------------------------
+	// Path
+	//----------------------------
 
 	std::optional<GmodPath> GmodVersioning::convertPath(
 		VisVersion sourceVersion, const GmodPath& sourcePath, VisVersion targetVersion ) const
 	{
-		validateSourceAndTargetVersions( sourceVersion, targetVersion );
-
 		std::optional<GmodNode> targetEndNode = convertNode( sourceVersion, *sourcePath.node(), targetVersion );
 		if ( !targetEndNode.has_value() )
 		{
@@ -473,47 +460,51 @@ namespace dnv::vista::sdk
 		return GmodPath( targetGmod, finalEndNodePtr, finalParentPtrs );
 	}
 
+	//----------------------------
+	// Local Id
+	//----------------------------
+
 	std::optional<LocalIdBuilder> GmodVersioning::convertLocalId(
 		const LocalIdBuilder& sourceLocalId, VisVersion targetVersion ) const
 	{
-		if ( !sourceLocalId.visVersion().has_value() )
+		if ( !sourceLocalId.visVersion().has_value() ) [[unlikely]]
 		{
 			throw std::invalid_argument( "Cannot convert local ID without a specific VIS version" );
 		}
 
-		std::optional<GmodPath> primaryItemPathOpt;
+		LocalIdBuilder targetLocalId = LocalIdBuilder::create( targetVersion );
+
 		if ( sourceLocalId.primaryItem().has_value() )
 		{
-			primaryItemPathOpt = convertPath(
+			auto targetPrimaryItem = convertPath(
 				*sourceLocalId.visVersion(),
 				sourceLocalId.primaryItem().value(),
 				targetVersion );
-			if ( !primaryItemPathOpt.has_value() )
-			{
-				SPDLOG_ERROR( "Failed to convert primary item for LocalIdBuilder" );
 
+			if ( !targetPrimaryItem.has_value() ) [[unlikely]]
+			{
 				return std::nullopt;
 			}
+
+			targetLocalId = targetLocalId.withPrimaryItem( std::move( *targetPrimaryItem ) );
 		}
 
-		std::optional<GmodPath> secondaryItemPathOpt;
 		if ( sourceLocalId.secondaryItem().has_value() )
 		{
-			secondaryItemPathOpt = convertPath(
+			auto targetSecondaryItem = convertPath(
 				*sourceLocalId.visVersion(),
 				sourceLocalId.secondaryItem().value(),
 				targetVersion );
-			if ( !secondaryItemPathOpt.has_value() )
-			{
-				SPDLOG_ERROR( "Failed to convert secondary item for LocalIdBuilder" );
 
+			if ( !targetSecondaryItem.has_value() ) [[unlikely]]
+			{
 				return std::nullopt;
 			}
+
+			targetLocalId = targetLocalId.withSecondaryItem( std::move( *targetSecondaryItem ) );
 		}
 
-		return LocalIdBuilder::create( targetVersion )
-			.tryWithPrimaryItem( std::move( primaryItemPathOpt ) )
-			.tryWithSecondaryItem( std::move( secondaryItemPathOpt ) )
+		return targetLocalId
 			.withVerboseMode( sourceLocalId.isVerboseMode() )
 			.tryWithMetadataTag( sourceLocalId.quantity() )
 			.tryWithMetadataTag( sourceLocalId.content() )
@@ -529,12 +520,10 @@ namespace dnv::vista::sdk
 		const LocalId& sourceLocalId, VisVersion targetVersion ) const
 	{
 		auto builder = convertLocalId( sourceLocalId.builder(), targetVersion );
-		if ( !builder.has_value() )
-		{
-			return std::nullopt;
-		}
 
-		return builder->build();
+		return builder.has_value()
+				   ? std::make_optional( builder->build() )
+				   : std::nullopt;
 	}
 
 	//----------------------------------------------
@@ -591,18 +580,14 @@ namespace dnv::vista::sdk
 		const std::string& code, GmodNodeConversion& nodeChanges ) const
 	{
 		auto it = m_versioningNodeChanges.find( code );
-		if ( it != m_versioningNodeChanges.end() )
+		if ( it != m_versioningNodeChanges.end() ) [[likely]]
 		{
 			nodeChanges = it->second;
 
 			return true;
 		}
-		else
-		{
-			GmodNodeConversion defaultChanges{};
-			nodeChanges = defaultChanges;
-			return false;
-		}
+
+		return false;
 	}
 
 	//----------------------------------------------
@@ -616,36 +601,30 @@ namespace dnv::vista::sdk
 
 		std::string nextCode = sourceNode.code();
 
-		GmodVersioningNode versioningNode;
-		if ( tryGetVersioningNode( targetVersion, versioningNode ) )
+		auto versioningIt = m_versioningsMap.find( targetVersion );
+		if ( versioningIt != m_versioningsMap.end() ) [[likely]]
 		{
-			GmodNodeConversion change;
-			if ( versioningNode.tryGetCodeChanges( sourceNode.code(), change ) && change.target.has_value() )
+			const auto& versioningNode = versioningIt->second;
+
+			GmodNodeConversion change{};
+			if ( versioningNode.tryGetCodeChanges( sourceNode.code(), change ) && change.target.has_value() ) [[likely]]
 			{
 				nextCode = change.target.value();
 			}
 		}
 
-		auto& vis = VIS::instance();
-		const auto& targetGmod = vis.gmod( targetVersion );
+		const auto& targetGmod = VIS::instance().gmod( targetVersion );
 
 		const GmodNode* targetNodePtr = nullptr;
-		if ( !targetGmod.tryGetNode( nextCode, targetNodePtr ) || targetNodePtr == nullptr )
+		if ( !targetGmod.tryGetNode( nextCode, targetNodePtr ) ) [[unlikely]]
 		{
-			SPDLOG_ERROR( "Failed to find target node with code {} in GMOD for VIS version {}",
-				nextCode, VisVersionExtensions::toVersionString( targetVersion ).data() );
-
 			return std::nullopt;
 		}
 
-		GmodNode resultNode = targetNodePtr->tryWithLocation( sourceNode.location() );
-
-		if ( sourceNode.location().has_value() &&
-			 ( !resultNode.location().has_value() || resultNode.location().value() != sourceNode.location().value() ) )
+		auto resultNode = targetNodePtr->tryWithLocation( sourceNode.location() );
+		if ( sourceNode.location().has_value() && resultNode.location() != sourceNode.location() ) [[unlikely]]
 		{
-			throw std::runtime_error( "Failed to set location for node " + sourceNode.code() +
-									  " (source location: " + ( sourceNode.location() ? sourceNode.location()->toString() : "none" ) +
-									  ", result location: " + ( resultNode.location() ? resultNode.location()->toString() : "none" ) + ")" );
+			throw std::runtime_error( "Failed to set location" );
 		}
 
 		return resultNode;
@@ -656,28 +635,14 @@ namespace dnv::vista::sdk
 		GmodVersioningNode& versioningNode ) const
 	{
 		auto it = m_versioningsMap.find( visVersion );
-		if ( it != m_versioningsMap.end() )
+		if ( it != m_versioningsMap.end() ) [[likely]]
 		{
 			versioningNode = it->second;
+
 			return true;
 		}
-		else
-		{
-			GmodVersioningNode defaultNode{};
-			versioningNode = defaultNode;
-			return false;
-		}
-	}
 
-	const GmodVersioning::GmodVersioningNode* GmodVersioning::tryGetVersioningNode( VisVersion visVersion ) const noexcept
-	{
-		auto it = m_versioningsMap.find( visVersion );
-		if ( it != m_versioningsMap.end() )
-		{
-			return &it->second;
-		}
-
-		return nullptr;
+		return false;
 	}
 
 	//----------------------------------------------
@@ -687,22 +652,19 @@ namespace dnv::vista::sdk
 	void GmodVersioning::validateSourceAndTargetVersions(
 		VisVersion sourceVersion, VisVersion targetVersion ) const
 	{
-		if ( !VisVersionExtensions::isValid( sourceVersion ) )
+		if ( sourceVersion == VisVersion::Unknown ) [[unlikely]]
 		{
-			throw std::invalid_argument( "Invalid source VIS Version: " + VisVersionExtensions::toVersionString( sourceVersion ) );
+			throw std::invalid_argument( "Invalid source VIS Version: Unknown" );
 		}
 
-		if ( !VisVersionExtensions::isValid( targetVersion ) )
+		if ( targetVersion == VisVersion::Unknown ) [[unlikely]]
 		{
-			throw std::invalid_argument( "Invalid target VIS Version: " + VisVersionExtensions::toVersionString( targetVersion ) );
+			throw std::invalid_argument( "Invalid target VIS Version: Unknown" );
 		}
 
-		if ( sourceVersion >= targetVersion )
+		if ( sourceVersion >= targetVersion ) [[unlikely]]
 		{
-			throw std::invalid_argument( "Source version " +
-										 VisVersionExtensions::toVersionString( sourceVersion ) +
-										 " must be earlier than target version " +
-										 VisVersionExtensions::toVersionString( targetVersion ) );
+			throw std::invalid_argument( "Source version must be earlier than target version" );
 		}
 	}
 
@@ -714,23 +676,7 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "Source version must be less than target version" );
 		}
 
-		const auto& allVersions = VisVersionExtensions::allVersions();
-		auto itSource = std::find( allVersions.begin(), allVersions.end(), sourceVersion );
-
-		bool isTargetTheExactNextVersion = false;
-		if ( itSource != allVersions.end() )
-		{
-			auto itNext = std::next( itSource );
-			if ( itNext != allVersions.end() )
-			{
-				if ( *itNext == targetVersion )
-				{
-					isTargetTheExactNextVersion = true;
-				}
-			}
-		}
-
-		if ( !isTargetTheExactNextVersion )
+		if ( static_cast<int>( targetVersion ) - static_cast<int>( sourceVersion ) != 100 )
 		{
 			throw std::invalid_argument( "Target version must be exactly one version higher than source version" );
 		}
@@ -742,21 +688,27 @@ namespace dnv::vista::sdk
 
 	GmodVersioning::ConversionType GmodVersioning::parseConversionType( const std::string& type )
 	{
-		static const std::unordered_map<std::string, ConversionType> typeMap = {
-			{ "changeCode", ConversionType::ChangeCode },
-			{ "merge", ConversionType::Merge },
-			{ "move", ConversionType::Move },
-			{ "assignmentChange", ConversionType::AssignmentChange },
-			{ "assignmentDelete", ConversionType::AssignmentDelete } };
+		if ( type == "changeCode" )
+		{
+			return ConversionType::ChangeCode;
+		}
+		if ( type == "merge" )
+		{
+			return ConversionType::Merge;
+		}
+		if ( type == "move" )
+		{
+			return ConversionType::Move;
+		}
+		if ( type == "assignmentChange" )
+		{
+			return ConversionType::AssignmentChange;
+		}
+		if ( type == "assignmentDelete" )
+		{
+			return ConversionType::AssignmentDelete;
+		}
 
-		auto it = typeMap.find( type );
-		if ( it != typeMap.end() )
-		{
-			return it->second;
-		}
-		else
-		{
-			throw std::invalid_argument( "Invalid conversion type: " + type );
-		}
+		throw std::invalid_argument( "Invalid conversion type: " + type );
 	}
 }

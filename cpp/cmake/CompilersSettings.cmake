@@ -38,9 +38,9 @@ if(MSVC)
 	# Architecture optimizations
 	add_compile_options(/arch:AVX)
 	add_compile_options(/arch:AVX2)
-    add_compile_options($<$<CONFIG:Release>:/Qpar>)      # Auto-parallelization
+	add_compile_options($<$<CONFIG:Release>:/Qpar>)      # Auto-parallelization
 
-    # Add linker optimizations for Release
+	# Add linker optimizations for Release
 	add_link_options($<$<CONFIG:Release>:/LTCG>)         # Link Time Code Generation
 	add_link_options($<$<CONFIG:Release>:/OPT:REF>)      # Remove unreferenced functions
 	add_link_options($<$<CONFIG:Release>:/OPT:ICF>)      # Identical COMDAT folding

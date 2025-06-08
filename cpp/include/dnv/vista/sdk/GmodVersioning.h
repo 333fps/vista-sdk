@@ -188,6 +188,7 @@ namespace dnv::vista::sdk
 			//----------------------------------------------
 			// Private member variables
 			//----------------------------------------------
+
 			VisVersion m_visVersion;
 			std::unordered_map<std::string, GmodNodeConversion> m_versioningNodeChanges;
 		};
@@ -212,7 +213,7 @@ namespace dnv::vista::sdk
 		 * @brief Try to get a versioning node for a specific VIS version
 		 */
 		[[nodiscard]] bool tryGetVersioningNode( VisVersion visVersion, GmodVersioningNode& versioningNode ) const;
-		[[nodiscard]] const GmodVersioning::GmodVersioningNode* tryGetVersioningNode( VisVersion visVersion ) const noexcept;
+
 		//----------------------------------------------
 		// Private validation methods
 		//----------------------------------------------
