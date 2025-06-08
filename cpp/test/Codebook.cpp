@@ -15,7 +15,7 @@ namespace dnv::vista::sdk
 {
 	namespace
 	{
-		constexpr const char* TEST_DATA_PATH = "testdata/Codebook.json";
+		constexpr const char* CODEBOOK_TEST_DATA_PATH = "testdata/Codebook.json";
 	}
 
 	namespace CodebookTestFixture
@@ -23,7 +23,10 @@ namespace dnv::vista::sdk
 		class CodebookTest : public ::testing::Test
 		{
 		protected:
-			CodebookTest() : m_jsonData{ loadTestData( TEST_DATA_PATH ) } {}
+			CodebookTest()
+				: m_jsonData( loadTestData( CODEBOOK_TEST_DATA_PATH ) )
+			{
+			}
 
 			const Codebooks& getCodebooks()
 			{
@@ -31,7 +34,7 @@ namespace dnv::vista::sdk
 				return vis.codebooks( VisVersion::v3_4a );
 			}
 
-			const nlohmann::json& m_jsonData;
+			const simdjson::dom::element& m_jsonData;
 		};
 
 		TEST_F( CodebookTest, Test_Standard_Values )
@@ -118,15 +121,27 @@ namespace dnv::vista::sdk
 		static std::vector<PositionValidationParam> positionValidationData()
 		{
 			std::vector<PositionValidationParam> data;
-			const nlohmann::json& jsonDataFromFile = loadTestData( TEST_DATA_PATH );
+			const auto& jsonDataFromFile = loadTestData( CODEBOOK_TEST_DATA_PATH );
 
-			if ( jsonDataFromFile.contains( "ValidPosition" ) && jsonDataFromFile["ValidPosition"].is_array() )
+			const auto& jsonObject = jsonDataFromFile.get_object();
+
+			auto validPositionResult = jsonObject["ValidPosition"];
+			if ( !validPositionResult.error() && validPositionResult.value().is_array() )
 			{
-				for ( const auto& item : jsonDataFromFile["ValidPosition"] )
+				const auto& validPositionArray = validPositionResult.value().get_array();
+
+				for ( const auto& item : validPositionArray )
 				{
-					if ( item.is_array() && item.size() == 2 && item[0].is_string() && item[1].is_string() )
+					if ( item.is_array() )
 					{
-						data.push_back( { item[0].get<std::string>(), item[1].get<std::string>() } );
+						const auto& itemArray = item.get_array();
+
+						if ( itemArray.size() == 2 && itemArray.at( 0 ).is_string() && itemArray.at( 1 ).is_string() )
+						{
+							std::string_view first = itemArray.at( 0 ).get_string().value();
+							std::string_view second = itemArray.at( 1 ).get_string().value();
+							data.push_back( { std::string( first ), std::string( second ) } );
+						}
 					}
 				}
 			}
@@ -181,18 +196,31 @@ namespace dnv::vista::sdk
 		static std::vector<PositionsParam> positionsData()
 		{
 			std::vector<PositionsParam> data;
-			const nlohmann::json& jsonDataFromFile = loadTestData( TEST_DATA_PATH );
+			const auto& jsonDataFromFile = loadTestData( CODEBOOK_TEST_DATA_PATH );
 
-			if ( jsonDataFromFile.contains( "Positions" ) && jsonDataFromFile["Positions"].is_array() )
+			const auto& jsonObject = jsonDataFromFile.get_object();
+
+			auto positionsResult = jsonObject["Positions"];
+			if ( !positionsResult.error() && positionsResult.value().is_array() )
 			{
-				for ( const auto& item : jsonDataFromFile["Positions"] )
+				const auto& positionsArray = positionsResult.value().get_array();
+
+				for ( const auto& item : positionsArray )
 				{
-					if ( item.is_array() && item.size() == 2 && item[0].is_string() && item[1].is_string() )
+					if ( item.is_array() )
 					{
-						data.push_back( { item[0].get<std::string>(), item[1].get<std::string>() } );
+						const auto& itemArray = item.get_array();
+
+						if ( itemArray.size() == 2 && itemArray.at( 0 ).is_string() && itemArray.at( 1 ).is_string() )
+						{
+							std::string_view first = itemArray.at( 0 ).get_string().value();
+							std::string_view second = itemArray.at( 1 ).get_string().value();
+							data.push_back( { std::string( first ), std::string( second ) } );
+						}
 					}
 				}
 			}
+
 			return data;
 		}
 
@@ -228,23 +256,39 @@ namespace dnv::vista::sdk
 		static std::vector<StatesParam> statesData()
 		{
 			std::vector<StatesParam> data;
-			const nlohmann::json& jsonDataFromFile = loadTestData( TEST_DATA_PATH );
+			const auto& jsonDataFromFile = loadTestData( CODEBOOK_TEST_DATA_PATH );
 
-			if ( jsonDataFromFile.contains( "States" ) && jsonDataFromFile["States"].is_array() )
+			const auto& jsonObject = jsonDataFromFile.get_object();
+
+			auto statesResult = jsonObject["States"];
+			if ( !statesResult.error() && statesResult.value().is_array() )
 			{
-				for ( const auto& item : jsonDataFromFile["States"] )
+				const auto& statesArray = statesResult.value().get_array();
+
+				for ( const auto& item : statesArray )
 				{
-					if ( item.is_array() && item.size() == 4 &&
-						 item[0].is_string() && item[1].is_string() &&
-						 item[2].is_string() && item[3].is_string() )
+					if ( item.is_array() )
 					{
-						data.push_back( { item[0].get<std::string>(),
-							item[1].get<std::string>(),
-							item[2].get<std::string>(),
-							item[3].get<std::string>() } );
+						const auto& itemArray = item.get_array();
+
+						if ( itemArray.size() == 4 &&
+							 itemArray.at( 0 ).is_string() && itemArray.at( 1 ).is_string() &&
+							 itemArray.at( 2 ).is_string() && itemArray.at( 3 ).is_string() )
+						{
+							std::string_view first = itemArray.at( 0 ).get_string().value();
+							std::string_view second = itemArray.at( 1 ).get_string().value();
+							std::string_view third = itemArray.at( 2 ).get_string().value();
+							std::string_view fourth = itemArray.at( 3 ).get_string().value();
+
+							data.push_back( { std::string( first ),
+								std::string( second ),
+								std::string( third ),
+								std::string( fourth ) } );
+						}
 					}
 				}
 			}
+
 			return data;
 		}
 
@@ -286,30 +330,45 @@ namespace dnv::vista::sdk
 		static std::vector<TagParam> tagData()
 		{
 			std::vector<TagParam> data;
-			const nlohmann::json& jsonDataFromFile = loadTestData( TEST_DATA_PATH );
+			const auto& jsonDataFromFile = loadTestData( CODEBOOK_TEST_DATA_PATH );
 
-			if ( jsonDataFromFile.contains( "Tag" ) && jsonDataFromFile["Tag"].is_array() )
+			const auto& jsonObject = jsonDataFromFile.get_object();
+
+			auto tagResult = jsonObject["Tag"];
+			if ( !tagResult.error() && tagResult.value().is_array() )
 			{
-				for ( const auto& item : jsonDataFromFile["Tag"] )
+				const auto& tagArray = tagResult.value().get_array();
+
+				for ( const auto& item : tagArray )
 				{
-					if ( item.is_array() && item.size() == 8 &&
-						 item[0].is_string() && item[1].is_string() && item[2].is_string() &&
-						 item[3].is_string() && !item[3].get<std::string>().empty() &&
-						 item[4].is_string() &&
-						 item[5].is_string() && !item[5].get<std::string>().empty() &&
-						 item[6].is_string() && item[7].is_string() )
+					if ( item.is_array() )
 					{
-						data.push_back( { item[0].get<std::string>(),
-							item[1].get<std::string>(),
-							item[2].get<std::string>(),
-							item[3].get<std::string>()[0],
-							item[4].get<std::string>(),
-							item[5].get<std::string>()[0],
-							item[6].get<std::string>(),
-							item[7].get<std::string>() } );
+						const auto& itemArray = item.get_array();
+
+						if ( itemArray.size() == 8 &&
+							 itemArray.at( 0 ).is_string() && itemArray.at( 1 ).is_string() && itemArray.at( 2 ).is_string() &&
+							 itemArray.at( 3 ).is_string() && itemArray.at( 4 ).is_string() &&
+							 itemArray.at( 5 ).is_string() && itemArray.at( 6 ).is_string() && itemArray.at( 7 ).is_string() )
+						{
+							std::string_view str3 = itemArray.at( 3 ).get_string().value();
+							std::string_view str5 = itemArray.at( 5 ).get_string().value();
+
+							if ( !str3.empty() && !str5.empty() )
+							{
+								data.push_back( { std::string( itemArray.at( 0 ).get_string().value() ),
+									std::string( itemArray.at( 1 ).get_string().value() ),
+									std::string( itemArray.at( 2 ).get_string().value() ),
+									str3[0],
+									std::string( itemArray.at( 4 ).get_string().value() ),
+									str5[0],
+									std::string( itemArray.at( 6 ).get_string().value() ),
+									std::string( itemArray.at( 7 ).get_string().value() ) } );
+							}
+						}
 					}
 				}
 			}
+
 			return data;
 		}
 
@@ -365,21 +424,36 @@ namespace dnv::vista::sdk
 		static std::vector<DetailTagParam> detailTagData()
 		{
 			std::vector<DetailTagParam> data;
-			const nlohmann::json& jsonDataFromFile = loadTestData( TEST_DATA_PATH );
+			const auto& jsonDataFromFile = loadTestData( CODEBOOK_TEST_DATA_PATH );
 
-			if ( jsonDataFromFile.contains( "DetailTag" ) && jsonDataFromFile["DetailTag"].is_array() )
+			const auto& jsonObject = jsonDataFromFile.get_object();
+
+			auto detailTagResult = jsonObject["DetailTag"];
+			if ( !detailTagResult.error() && detailTagResult.value().is_array() )
 			{
-				for ( const auto& item : jsonDataFromFile["DetailTag"] )
+				const auto& detailTagArray = detailTagResult.value().get_array();
+
+				for ( const auto& item : detailTagArray )
 				{
-					if ( item.is_array() && item.size() == 3 &&
-						 item[0].is_string() && item[1].is_string() && item[2].is_string() )
+					if ( item.is_array() )
 					{
-						data.push_back( { item[0].get<std::string>(),
-							item[1].get<std::string>(),
-							item[2].get<std::string>() } );
+						const auto& itemArray = item.get_array();
+
+						if ( itemArray.size() == 3 &&
+							 itemArray.at( 0 ).is_string() && itemArray.at( 1 ).is_string() && itemArray.at( 2 ).is_string() )
+						{
+							std::string_view first = itemArray.at( 0 ).get_string().value();
+							std::string_view second = itemArray.at( 1 ).get_string().value();
+							std::string_view third = itemArray.at( 2 ).get_string().value();
+
+							data.push_back( { std::string( first ),
+								std::string( second ),
+								std::string( third ) } );
+						}
 					}
 				}
 			}
+
 			return data;
 		}
 

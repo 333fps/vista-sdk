@@ -43,25 +43,39 @@ namespace dnv::vista::sdk
 				try
 				{
 					auto stream = decompressedStream( resourceName );
-					nlohmann::json gmodJson = nlohmann::json::parse( *stream );
 
-					if ( gmodJson.contains( VIS_RELEASE_KEY ) && gmodJson.at( VIS_RELEASE_KEY ).is_string() )
+					std::ostringstream buffer;
+					buffer << stream->rdbuf();
+					std::string jsonString = buffer.str();
+
+					static thread_local simdjson::dom::parser parser;
+					auto parseResult = parser.parse( jsonString );
+					if ( parseResult.error() )
 					{
-						std::string version = gmodJson.at( VIS_RELEASE_KEY ).get<std::string>();
-						visVersions.push_back( version );
+						SPDLOG_ERROR( "JSON parse error in resource {}: {}", resourceName, simdjson::error_message( parseResult.error() ) );
+						continue;
+					}
+
+					auto gmodDoc = parseResult.value();
+					auto visReleaseElement = gmodDoc[VIS_RELEASE_KEY];
+					if ( !visReleaseElement.error() )
+					{
+						std::string_view visVersionView;
+						auto strError = visReleaseElement.value().get( visVersionView );
+						if ( !strError )
+						{
+							std::string version( visVersionView );
+							visVersions.push_back( version );
+						}
+						else
+						{
+							SPDLOG_WARN( "GMOD resource {} has invalid '{}' field (not a string).", resourceName, VIS_RELEASE_KEY );
+						}
 					}
 					else
 					{
-						SPDLOG_WARN( "GMOD resource {} missing or has invalid '{}' field.", resourceName, VIS_RELEASE_KEY );
+						SPDLOG_WARN( "GMOD resource {} missing '{}' field.", resourceName, VIS_RELEASE_KEY );
 					}
-				}
-				catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
-				{
-					SPDLOG_ERROR( "JSON parse error in resource {}: {}", resourceName, ex.what() );
-				}
-				catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
-				{
-					SPDLOG_ERROR( "JSON error processing resource {}: {}", resourceName, ex.what() );
 				}
 				catch ( [[maybe_unused]] const std::exception& ex )
 				{
@@ -126,7 +140,6 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "GMOD resource not found for version: {}", visVersion );
 			std::lock_guard<std::mutex> lock( gmodCacheMutex );
 			gmodCache.emplace( visVersion, std::nullopt );
-
 			return std::nullopt;
 		}
 
@@ -137,24 +150,24 @@ namespace dnv::vista::sdk
 			auto startTime = std::chrono::high_resolution_clock::now();
 
 			auto stream = decompressedStream( *it );
-			nlohmann::json gmodJson = nlohmann::json::parse( *stream );
 
-			GmodDto loadedDto = GmodDto::fromJson( gmodJson );
+			std::ostringstream buffer;
+			buffer << stream->rdbuf();
+			std::string jsonString = buffer.str();
+
+			static thread_local simdjson::dom::parser parser;
+			GmodDto loadedDto = GmodDto::fromJsonString( jsonString, parser );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
 
-			SPDLOG_DEBUG( "Successfully loaded GMOD DTO for version {} in {} ms", visVersion, duration.count() );
+			SPDLOG_DEBUG( "Successfully loaded GMOD DTO for version {} in {} ms using simdjson", visVersion, duration.count() );
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
+		catch ( const std::invalid_argument& ex )
 		{
-			SPDLOG_ERROR( "JSON parse error in GMOD resource {}: {}", *it, ex.what() );
-		}
-		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
-		{
-			SPDLOG_ERROR( "JSON validation/deserialization error in GMOD resource {}: {}", *it, ex.what() );
+			SPDLOG_ERROR( "GmodDto parsing error in resource {}: {}", *it, ex.what() );
 		}
 		catch ( [[maybe_unused]] const std::exception& ex )
 		{
@@ -206,37 +219,54 @@ namespace dnv::vista::sdk
 				auto processStartTime = std::chrono::high_resolution_clock::now();
 
 				auto stream = decompressedStream( resourceName );
-				nlohmann::json versioningJson = nlohmann::json::parse( *stream );
 
-				if ( versioningJson.contains( VIS_RELEASE_KEY ) && versioningJson.at( VIS_RELEASE_KEY ).is_string() )
+				std::ostringstream buffer;
+				buffer << stream->rdbuf();
+				std::string jsonString = buffer.str();
+
+				static thread_local simdjson::dom::parser parser;
+				auto parseResult = parser.parse( jsonString );
+				if ( parseResult.error() )
 				{
-					std::string visVersion = versioningJson.at( VIS_RELEASE_KEY ).get<std::string>();
-
-					auto dto = GmodVersioningDto::fromJson( versioningJson );
-
-					{
-						std::lock_guard<std::mutex> lock( resultMutex );
-						resultMap.emplace( visVersion, std::move( dto ) );
-						foundAnyResource = true;
-					}
-
-					auto processEndTime = std::chrono::high_resolution_clock::now();
-					auto processDuration = std::chrono::duration_cast<std::chrono::milliseconds>( processEndTime - processStartTime );
-
-					SPDLOG_DEBUG( "Loaded GMOD Versioning DTO for version {} from {} in {} ms", visVersion, resourceName, processDuration.count() );
+					SPDLOG_ERROR( "JSON parse error in GMOD Versioning resource {}: {}", resourceName, simdjson::error_message( parseResult.error() ) );
+					continue;
 				}
-				else
+
+				auto versioningDoc = parseResult.value();
+
+				auto visReleaseElement = versioningDoc[VIS_RELEASE_KEY];
+				if ( visReleaseElement.error() )
 				{
-					SPDLOG_WARN( "GMOD Versioning resource {} missing or has invalid '{}' field.", resourceName, VIS_RELEASE_KEY );
+					SPDLOG_WARN( "GMOD Versioning resource {} missing '{}' field.", resourceName, VIS_RELEASE_KEY );
+					continue;
 				}
+
+				std::string_view visVersionView;
+				auto strError = visReleaseElement.value().get( visVersionView );
+				if ( strError )
+				{
+					SPDLOG_WARN( "GMOD Versioning resource {} has invalid '{}' field (not a string).", resourceName, VIS_RELEASE_KEY );
+					continue;
+				}
+
+				std::string visVersion( visVersionView );
+
+				auto dto = GmodVersioningDto::fromJson( versioningDoc );
+
+				{
+					std::lock_guard<std::mutex> lock( resultMutex );
+					resultMap.emplace( visVersion, std::move( dto ) );
+					foundAnyResource = true;
+				}
+
+				auto processEndTime = std::chrono::high_resolution_clock::now();
+				auto processDuration = std::chrono::duration_cast<std::chrono::milliseconds>( processEndTime - processStartTime );
+
+				SPDLOG_DEBUG( "Loaded GMOD Versioning DTO for version {} from {} in {} ms using simdjson", visVersion, resourceName, processDuration.count() );
 			}
-			catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
+			catch ( const std::invalid_argument& ex )
 			{
-				SPDLOG_ERROR( "JSON parse error in GMOD Versioning resource {}: {}", resourceName, ex.what() );
-			}
-			catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
-			{
-				SPDLOG_ERROR( "JSON validation/deserialization error in GMOD Versioning resource {}: {}", resourceName, ex.what() );
+				SPDLOG_ERROR( "GmodVersioningDto parsing error in resource {}: {}", resourceName, ex.what() );
 			}
 			catch ( [[maybe_unused]] const std::exception& ex )
 			{
@@ -298,22 +328,25 @@ namespace dnv::vista::sdk
 		try
 		{
 			auto stream = decompressedStream( *it );
-			nlohmann::json codebooksJson = nlohmann::json::parse( *stream );
 
-			CodebooksDto loadedDto = CodebooksDto::fromJson( codebooksJson );
+			std::ostringstream buffer;
+			buffer << stream->rdbuf();
+			std::string jsonString = buffer.str();
+
+			static thread_local simdjson::dom::parser parser;
+
+			CodebooksDto loadedDto = CodebooksDto::fromJsonString( jsonString, parser );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
 
+			SPDLOG_DEBUG( "Successfully loaded CodebooksDto for version {} in {} ms using simdjson", visVersion, duration.count() );
+
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
+		catch ( const std::invalid_argument& ex )
 		{
-			SPDLOG_ERROR( "JSON parse error in Codebooks resource {}: {}", *it, ex.what() );
-		}
-		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
-		{
-			SPDLOG_ERROR( "JSON validation/deserialization error in Codebooks resource {}: {}", *it, ex.what() );
+			SPDLOG_ERROR( "CodebooksDto parsing error in resource {}: {}", *it, ex.what() );
 		}
 		catch ( [[maybe_unused]] const std::exception& ex )
 		{
@@ -355,7 +388,6 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "Locations resource not found for version: {}", visVersion );
 			std::lock_guard<std::mutex> lock( locationsCacheMutex );
 			locationsCache.emplace( visVersion, std::nullopt );
-
 			return std::nullopt;
 		}
 
@@ -363,23 +395,23 @@ namespace dnv::vista::sdk
 		try
 		{
 			auto stream = decompressedStream( *it );
-			nlohmann::json locationsJson = nlohmann::json::parse( *stream );
 
-			LocationsDto loadedDto = LocationsDto::fromJson( locationsJson );
+			std::ostringstream buffer;
+			buffer << stream->rdbuf();
+			std::string jsonString = buffer.str();
+
+			static thread_local simdjson::dom::parser parser;
+			LocationsDto loadedDto = LocationsDto::fromJsonString( jsonString, parser );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
-			SPDLOG_DEBUG( "Successfully loaded Locations DTO for version {} in {} ms", visVersion, duration.count() );
+			SPDLOG_DEBUG( "Successfully loaded Locations DTO for version {} in {} ms using simdjson", visVersion, duration.count() );
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
+		catch ( const std::invalid_argument& ex )
 		{
-			SPDLOG_ERROR( "JSON parse error in Locations resource {}: {}", *it, ex.what() );
-		}
-		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
-		{
-			SPDLOG_ERROR( "JSON validation/deserialization error in Locations resource {}: {}", *it, ex.what() );
+			SPDLOG_ERROR( "LocationsDto parsing error in resource {}: {}", *it, ex.what() );
 		}
 		catch ( [[maybe_unused]] const std::exception& ex )
 		{
@@ -422,7 +454,6 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "DataChannelTypeNames resource not found for version: {}", version );
 			std::lock_guard<std::mutex> lock( dataChannelTypeNamesCacheMutex );
 			dataChannelTypeNamesCache.emplace( version, std::nullopt );
-
 			return std::nullopt;
 		}
 
@@ -430,23 +461,23 @@ namespace dnv::vista::sdk
 		try
 		{
 			auto stream = decompressedStream( *it );
-			nlohmann::json dtNamesJson = nlohmann::json::parse( *stream );
 
-			DataChannelTypeNamesDto loadedDto = DataChannelTypeNamesDto::fromJson( dtNamesJson );
+			std::ostringstream buffer;
+			buffer << stream->rdbuf();
+			std::string jsonString = buffer.str();
+
+			static thread_local simdjson::dom::parser parser;
+			DataChannelTypeNamesDto loadedDto = DataChannelTypeNamesDto::fromJsonString( jsonString, parser );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
-			SPDLOG_DEBUG( "Successfully loaded DataChannelTypeNames DTO for version {} in {} ms", version, duration.count() );
+			SPDLOG_DEBUG( "Successfully loaded DataChannelTypeNames DTO for version {} in {} ms using simdjson", version, duration.count() );
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
+		catch ( const std::invalid_argument& ex )
 		{
-			SPDLOG_ERROR( "JSON parse error in DataChannelTypeNames resource {}: {}", *it, ex.what() );
-		}
-		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
-		{
-			SPDLOG_ERROR( "JSON validation/deserialization error in DataChannelTypeNames resource {}: {}", *it, ex.what() );
+			SPDLOG_ERROR( "DataChannelTypeNamesDto parsing error in resource {}: {}", *it, ex.what() );
 		}
 		catch ( [[maybe_unused]] const std::exception& ex )
 		{
@@ -489,7 +520,6 @@ namespace dnv::vista::sdk
 			SPDLOG_ERROR( "FormatDataTypes resource not found for version: {}", version );
 			std::lock_guard<std::mutex> lock( fdTypesCacheMutex );
 			fdTypesCache.emplace( version, std::nullopt );
-
 			return std::nullopt;
 		}
 
@@ -497,23 +527,23 @@ namespace dnv::vista::sdk
 		try
 		{
 			auto stream = decompressedStream( *it );
-			nlohmann::json fdTypesJson = nlohmann::json::parse( *stream );
 
-			FormatDataTypesDto loadedDto = FormatDataTypesDto::fromJson( fdTypesJson );
+			std::ostringstream buffer;
+			buffer << stream->rdbuf();
+			std::string jsonString = buffer.str();
+
+			static thread_local simdjson::dom::parser parser;
+			FormatDataTypesDto loadedDto = FormatDataTypesDto::fromJsonString( jsonString, parser );
 
 			auto endTime = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime );
-			SPDLOG_DEBUG( "Successfully loaded FormatDataTypes DTO for version {} in {} ms", version, duration.count() );
+			SPDLOG_DEBUG( "Successfully loaded FormatDataTypes DTO for version {} in {} ms using simdjson", version, duration.count() );
 
 			resultForCache.emplace( std::move( loadedDto ) );
 		}
-		catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
+		catch ( const std::invalid_argument& ex )
 		{
-			SPDLOG_ERROR( "JSON parse error in FormatDataTypes resource {}: {}", *it, ex.what() );
-		}
-		catch ( [[maybe_unused]] const nlohmann::json::exception& ex )
-		{
-			SPDLOG_ERROR( "JSON validation/deserialization error in FormatDataTypes resource {}: {}", *it, ex.what() );
+			SPDLOG_ERROR( "FormatDataTypesDto parsing error in resource {}: {}", *it, ex.what() );
 		}
 		catch ( [[maybe_unused]] const std::exception& ex )
 		{

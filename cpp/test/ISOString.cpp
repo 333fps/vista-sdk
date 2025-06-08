@@ -55,35 +55,8 @@ namespace dnv::vista::sdk
 
 	TEST( IsISOStringTests, SmokeTest_Parsing )
 	{
-		std::vector<std::string> possiblePaths = {
-			"testdata/LocalIds.txt",
-			"../testdata/LocalIds.txt",
-			"../../testdata/LocalIds.txt",
-			"../../../testdata/LocalIds.txt",
-		};
-
-		std::ifstream file;
-		std::string attemptedPaths;
-		bool fileOpened = false;
-
-		for ( const auto& path : possiblePaths )
-		{
-			file.open( path );
-			if ( file.is_open() )
-			{
-				fileOpened = true;
-				break;
-			}
-
-			attemptedPaths += path + ", ";
-			file.clear();
-		}
-
-		if ( !fileOpened )
-		{
-			ASSERT_TRUE( false ) << "Failed to open LocalIds.txt. Attempted paths: " << attemptedPaths;
-			return;
-		}
+		std::ifstream file( "testdata/LocalIds.txt" );
+		ASSERT_TRUE( file.is_open() ) << "Failed to open testdata/LocalIds.txt";
 
 		SmokeContext context;
 

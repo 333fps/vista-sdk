@@ -5,10 +5,17 @@
 
 #include "pch.h"
 
+#include "TestDataLoader.h"
+
 #include "dnv/vista/sdk/ImoNumber.h"
 
 namespace dnv::vista::sdk
 {
+	namespace
+	{
+		constexpr const char* IMONUMBERS_TEST_DATA_PATH = "testdata/Codebook.json";
+	}
+
 	class ImoNumberTests : public ::testing::Test
 	{
 	protected:
@@ -23,65 +30,42 @@ namespace dnv::vista::sdk
 
 		virtual void SetUp() override
 		{
-			std::vector<std::string> possiblePaths = {
-				"testdata/ImoNumbers.json",
-				"../testdata/ImoNumbers.json",
-				"../../testdata/ImoNumbers.json",
-				"../../../testdata/ImoNumbers.json",
-				"./ImoNumbers.json" };
+			const auto& jsonData = loadTestData( IMONUMBERS_TEST_DATA_PATH );
+			const auto& jsonObject = jsonData.get_object();
 
-			std::ifstream file;
-			std::string attemptedPaths;
-			bool fileOpened = false;
-
-			for ( const auto& path : possiblePaths )
+			auto imoNumbersResult = jsonObject["imoNumbers"];
+			if ( !imoNumbersResult.error() && imoNumbersResult.value().is_array() )
 			{
-				file.open( path );
-				if ( file.is_open() )
+				const auto& imoNumbersArray = imoNumbersResult.value().get_array();
+
+				for ( const auto& item : imoNumbersArray )
 				{
-					fileOpened = true;
-					break;
+					if ( item.is_object() )
+					{
+						const auto& itemObject = item.get_object();
+
+						auto valueResult = itemObject["value"];
+						auto successResult = itemObject["success"];
+						auto outputResult = itemObject["output"];
+
+						if ( !valueResult.error() && valueResult.value().is_string() &&
+							 !successResult.error() && successResult.value().is_bool() &&
+							 !outputResult.error() )
+						{
+							std::string_view valueStr = valueResult.value().get_string().value();
+							bool success = successResult.value().get_bool();
+
+							std::optional<std::string> output;
+							if ( outputResult.value().is_string() )
+							{
+								std::string_view outputStr = outputResult.value().get_string().value();
+								output = std::string( outputStr );
+							}
+
+							testData.push_back( { std::string( valueStr ), success, output } );
+						}
+					}
 				}
-
-				attemptedPaths += path + ", ";
-				file.clear();
-			}
-
-			if ( !fileOpened )
-			{
-				ASSERT_TRUE( false ) << "Failed to open ImoNumbers.json. Attempted paths: " << attemptedPaths;
-				return;
-			}
-
-			nlohmann::json data;
-			try
-			{
-				data = nlohmann::json::parse( file );
-			}
-			catch ( [[maybe_unused]] const nlohmann::json::parse_error& ex )
-			{
-				ASSERT_TRUE( false ) << "Failed to parse ImoNumbers.json: " << ex.what();
-				return;
-			}
-
-			ASSERT_TRUE( data.is_object() || data.is_array() ) << "JSON data is not a valid object or array";
-
-			const nlohmann::json& testCases = data.is_array() ? data : ( data.contains( "imoNumbers" ) ? data.at( "imoNumbers" ) : data );
-
-			ASSERT_TRUE( testCases.is_array() ) << "Test cases must be an array";
-
-			for ( const auto& item : testCases )
-			{
-				ASSERT_TRUE( item.contains( "value" ) && item.at( "value" ).is_string() ) << "Item missing 'value' field or not a string";
-				ASSERT_TRUE( item.contains( "success" ) && item.at( "success" ).is_boolean() ) << "Item missing 'success' field or not a boolean";
-
-				std::optional<std::string> output;
-				if ( item.contains( "output" ) && item.at( "output" ).is_string() )
-				{
-					output = item.at( "output" ).get<std::string>();
-				}
-
-				testData.push_back( { item.at( "value" ).get<std::string>(), item.at( "success" ).get<bool>(), output } );
 			}
 		}
 	};

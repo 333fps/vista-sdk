@@ -80,39 +80,42 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a DataChannelTypeNameDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a DataChannelTypeNameDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<DataChannelTypeNameDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<DataChannelTypeNameDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a DataChannelTypeNameDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a DataChannelTypeNameDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<DataChannelTypeNameDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a DataChannelTypeNameDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return The deserialized DataChannelTypeNameDto
 		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static DataChannelTypeNameDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static DataChannelTypeNameDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this DataChannelTypeNameDto to an nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a DataChannelTypeNameDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized DataChannelTypeNameDto
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
 		 */
-		[[nodiscard]] nlohmann::json toJson() const;
+		[[nodiscard]] static DataChannelTypeNameDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//----------------------------------------------
-		// Private serialization methods
-		//----------------------------------------------
-
-		/*
-		 * Friend declarations for nlohmann::json serialization/deserialization.
-		 * These enable Argument-Dependent Lookup (ADL) so nlohmann::json can find
-		 * these functions and allow them to access private members.
+		/**
+		 * @brief Serialize this DataChannelTypeNameDto to a JSON string
+		 * @return The serialized JSON string
 		 */
-		friend void from_json( const nlohmann::json& j, DataChannelTypeNameDto& dto );
-		friend void to_json( nlohmann::json& j, const DataChannelTypeNameDto& dto );
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------
@@ -188,39 +191,42 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a DataChannelTypeNamesDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a DataChannelTypeNamesDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<DataChannelTypeNamesDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<DataChannelTypeNamesDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a DataChannelTypeNamesDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a DataChannelTypeNamesDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<DataChannelTypeNamesDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a DataChannelTypeNamesDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return The deserialized DataChannelTypeNamesDto
 		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static DataChannelTypeNamesDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static DataChannelTypeNamesDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this DataChannelTypeNamesDto to an nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a DataChannelTypeNamesDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized DataChannelTypeNamesDto
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
 		 */
-		[[nodiscard]] nlohmann::json toJson() const;
+		[[nodiscard]] static DataChannelTypeNamesDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//----------------------------------------------
-		// Private serialization methods
-		//----------------------------------------------
-
-		/*
-		 * Friend declarations for nlohmann::json serialization/deserialization.
-		 * These enable Argument-Dependent Lookup (ADL) so nlohmann::json can find
-		 * these functions and allow them to access private members.
+		/**
+		 * @brief Serialize this DataChannelTypeNamesDto to a JSON string
+		 * @return The serialized JSON string
 		 */
-		friend void from_json( const nlohmann::json& j, DataChannelTypeNamesDto& dto );
-		friend void to_json( nlohmann::json& j, const DataChannelTypeNamesDto& dto );
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------
@@ -299,39 +305,42 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a FormatDataTypeDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a FormatDataTypeDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<FormatDataTypeDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<FormatDataTypeDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a FormatDataTypeDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a FormatDataTypeDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<FormatDataTypeDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a FormatDataTypeDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return The deserialized FormatDataTypeDto
 		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static FormatDataTypeDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static FormatDataTypeDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this FormatDataTypeDto to an nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a FormatDataTypeDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized FormatDataTypeDto
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
 		 */
-		[[nodiscard]] nlohmann::json toJson() const;
+		[[nodiscard]] static FormatDataTypeDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//----------------------------------------------
-		// Private serialization methods
-		//----------------------------------------------
-
-		/*
-		 * Friend declarations for nlohmann::json serialization/deserialization.
-		 * These enable Argument-Dependent Lookup (ADL) so nlohmann::json can find
-		 * these functions and allow them to access private members.
+		/**
+		 * @brief Serialize this FormatDataTypeDto to a JSON string
+		 * @return The serialized JSON string
 		 */
-		friend void from_json( const nlohmann::json& j, FormatDataTypeDto& dto );
-		friend void to_json( nlohmann::json& j, const FormatDataTypeDto& dto );
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------
@@ -346,7 +355,7 @@ namespace dnv::vista::sdk
 	};
 
 	//=====================================================================
-	// Collection of  Format Data Type Data Transfer Objects
+	// Collection of Format Data Type Data Transfer Objects
 	//=====================================================================
 
 	/**
@@ -407,39 +416,42 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a FormatDataTypesDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a FormatDataTypesDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<FormatDataTypesDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<FormatDataTypesDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a FormatDataTypesDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a FormatDataTypesDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<FormatDataTypesDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a FormatDataTypesDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return The deserialized FormatDataTypesDto
 		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static FormatDataTypesDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static FormatDataTypesDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this FormatDataTypesDto to an nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a FormatDataTypesDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized FormatDataTypesDto
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
 		 */
-		[[nodiscard]] nlohmann::json toJson() const;
+		[[nodiscard]] static FormatDataTypesDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//----------------------------------------------
-		// Private serialization methods
-		//----------------------------------------------
-
-		/*
-		 * Friend declarations for nlohmann::json serialization/deserialization.
-		 * These enable Argument-Dependent Lookup (ADL) so nlohmann::json can find
-		 * these functions and allow them to access private members.
+		/**
+		 * @brief Serialize this FormatDataTypesDto to a JSON string
+		 * @return The serialized JSON string
 		 */
-		friend void from_json( const nlohmann::json& j, FormatDataTypesDto& dto );
-		friend void to_json( nlohmann::json& j, const FormatDataTypesDto& dto );
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------

@@ -10,11 +10,12 @@
 
 /* STL */
 #include <array>
+#include <optional>
 #include <mutex>
 #include <shared_mutex>
 #include <unordered_set>
 
 /* Libs */
 #include <fmt/format.h>
-#include <nlohmann/json.hpp>
+#include <simdjson.h>
 #include <benchmark/benchmark.h>

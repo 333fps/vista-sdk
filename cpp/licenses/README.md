@@ -8,15 +8,15 @@ The Vista SDK C++ library depends on several high-quality open source libraries.
 
 ## Libraries Used
 
-| Library         | Version | License Type | Usage                      | License File                                               |
-| --------------- | ------- | ------------ | -------------------------- | ---------------------------------------------------------- |
-| spdlog          | 1.15.3  | MIT          | Logging framework          | [LICENSE-spdlog.txt](LICENSE-spdlog.txt)                   |
-| nlohmann/json   | 3.12.0  | MIT          | JSON serialization/parsing | [LICENSE-nlohmann-json.txt](LICENSE-nlohmann-json.txt)     |
-| fmt             | 11.2.0  | MIT          | String formatting          | [LICENSE-fmt.txt](LICENSE-fmt.txt)                         |
-| zlib            | 1.3.1   | zlib License | Compression utilities      | [LICENSE-zlib.txt](LICENSE-zlib.txt)                       |
-| libcpuid        | 0.8.0   | Custom       | CPU identification         | [LICENSE-libcpuid.txt](LICENSE-libcpuid.txt)               |
-| GoogleTest      | 1.17.0  | BSD 3-Clause | Unit testing framework     | [LICENSE-googletest.txt](LICENSE-googletest.txt)           |
-| GoogleBenchmark | 1.9.4   | Apache 2.0   | Performance benchmarking   | [LICENSE-googlebenchmark.txt](LICENSE-googlebenchmark.txt) |
+| Library         | Version | License Type     | Usage                         | License File                                                                                                      |
+| --------------- | ------- | ---------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| spdlog          | 1.15.3  | MIT              | Logging framework             | [LICENSE-spdlog.txt](LICENSE-spdlog.txt)                                                                          |
+| simdjson        | 3.13.0  | MIT / Apache 2.0 | High-performance JSON parsing | [LICENSE-simdjson-MIT.txt](LICENSE-simdjson-MIT.txt) / [LICENSE-simdjson-APACHE.txt](LICENSE-simdjson-APACHE.txt) |
+| fmt             | 11.2.0  | MIT              | String formatting             | [LICENSE-fmt.txt](LICENSE-fmt.txt)                                                                                |
+| zlib            | 1.3.1   | zlib License     | Compression utilities         | [LICENSE-zlib.txt](LICENSE-zlib.txt)                                                                              |
+| libcpuid        | 0.8.0   | Custom           | CPU identification            | [LICENSE-libcpuid.txt](LICENSE-libcpuid.txt)                                                                      |
+| GoogleTest      | 1.17.0  | BSD 3-Clause     | Unit testing framework        | [LICENSE-googletest.txt](LICENSE-googletest.txt)                                                                  |
+| GoogleBenchmark | 1.9.4   | Apache 2.0       | Performance benchmarking      | [LICENSE-googlebenchmark.txt](LICENSE-googlebenchmark.txt)                                                        |
 
 ## License Compliance
 
@@ -25,7 +25,7 @@ The Vista SDK C++ library depends on several high-quality open source libraries.
 The following libraries are required for Vista SDK runtime operation:
 
 -   **spdlog** + **fmt**: Logging and string formatting
--   **nlohmann/json**: JSON parsing and serialization
+-   **simdjson**: High-performance JSON parsing
 -   **zlib**: Data compression utilities
 -   **libcpuid**: CPU feature detection
 

@@ -9,6 +9,13 @@
 
 #pragma once
 
+#include <simdjson.h>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <unordered_map>
+#include <optional>
+
 namespace dnv::vista::sdk
 {
 	//=====================================================================
@@ -76,52 +83,55 @@ namespace dnv::vista::sdk
 		 * @brief Get the name of this codebook
 		 * @return The codebook name
 		 */
-		[[nodiscard]] std::string_view name() const;
+		[[nodiscard]] std::string_view name() const noexcept;
 
 		/**
 		 * @brief Get the values map of this codebook
 		 * @return The map of group names to their corresponding values
 		 */
-		[[nodiscard]] const ValuesMap& values() const;
+		[[nodiscard]] const ValuesMap& values() const noexcept;
 
 		//----------------------------------------------
 		// Serialization
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a CodebookDto from a nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a CodebookDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<CodebookDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<CodebookDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a CodebookDto from a nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a CodebookDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<CodebookDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a CodebookDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return The deserialized CodebookDto
 		 * @throws std::invalid_argument If required fields are missing or invalid
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static CodebookDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static CodebookDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this CodebookDto to a nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a CodebookDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized CodebookDto
+		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
-		[[nodiscard]] nlohmann::json toJson() const;
+		[[nodiscard]] static CodebookDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//-------------------------------------------------------------------
-		// Private serialization methods
-		//-------------------------------------------------------------------
-
-		/*
-		 * Friend declarations for nlohmann::json serialization/deserialization.
-		 * These enable Argument-Dependent Lookup (ADL) so nlohmann::json can find
-		 * these functions and allow them to access private members.
+		/**
+		 * @brief Serialize this CodebookDto to a JSON string
+		 * @return The serialized JSON string
 		 */
-		friend void to_json( nlohmann::json& j, const CodebookDto& dto );
-		friend void from_json( const nlohmann::json& j, CodebookDto& dto );
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------
@@ -197,39 +207,55 @@ namespace dnv::vista::sdk
 		 * @brief Get the VIS version string
 		 * @return The VIS version string
 		 */
-		[[nodiscard]] const std::string& visVersion() const;
+		[[nodiscard]] const std::string& visVersion() const noexcept;
 
 		/**
 		 * @brief Get the collection of codebooks
 		 * @return The vector of codebook DTOs
 		 */
-		[[nodiscard]] const Items& items() const;
+		[[nodiscard]] const Items& items() const noexcept;
 
 		//----------------------------------------------
 		// Serialization
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a CodebooksDto from a nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a CodebooksDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<CodebooksDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<CodebooksDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a CodebooksDto from a nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a CodebooksDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<CodebooksDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a CodebooksDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return The deserialized CodebooksDto
 		 * @throws std::invalid_argument If required fields are missing or invalid
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static CodebooksDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static CodebooksDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this CodebooksDto to a nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a CodebooksDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized CodebooksDto
+		 * @throws std::invalid_argument If required fields are missing or invalid
 		 */
-		[[nodiscard]] nlohmann::json toJson() const;
+		[[nodiscard]] static CodebooksDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
+
+		/**
+		 * @brief Serialize this CodebooksDto to a JSON string
+		 * @return The serialized JSON string
+		 */
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------

@@ -101,7 +101,7 @@ target_include_directories(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
 	spdlog::spdlog
-	nlohmann_json::nlohmann_json
+	simdjson::simdjson
 	zlibstatic
 	cpuid
 	fmt::fmt
@@ -117,10 +117,15 @@ if(VISTA_SDK_CPP_BUILD_SAMPLES)
 endif()
 
 # --- Tests subdirectory ---
-add_subdirectory(${VISTA_SDK_CPP_TEST_DIR} test)
+if(VISTA_SDK_CPP_BUILD_TESTS)
+	add_subdirectory(${VISTA_SDK_CPP_TEST_DIR} test)
+endif()
 
 # --- Benchmark subdirectory ---
-add_subdirectory(${VISTA_SDK_CPP_BENCHMARK_DIR} benchmark)
+if(VISTA_SDK_CPP_BUILD_BENCHMARKS)
+	add_subdirectory(${VISTA_SDK_CPP_BENCHMARK_DIR} benchmark)
+endif()
+
 
 # --- Doxygen documentation subdirectory ---
 if(VISTA_SDK_CPP_BUILD_DOCUMENTATION)
@@ -197,8 +202,26 @@ if(TARGET spdlog::spdlog)
 	get_target_property(SPDLOG_VERSION spdlog::spdlog VERSION)
 endif()
 
-if(TARGET nlohmann_json::nlohmann_json)
-	string(REPLACE "v" "" NLOHMANN_VERSION "${NLOHMANN_JSON_VERSION}")
+if(TARGET simdjson::simdjson)
+	set(SIMDJSON_VERSION "")
+	if(NOT SIMDJSON_VERSION AND simdjson_SOURCE_DIR AND EXISTS "${simdjson_SOURCE_DIR}/include/simdjson/version.h")
+		file(STRINGS "${simdjson_SOURCE_DIR}/include/simdjson/version.h" SIMDJSON_VER_LINES
+			REGEX "^#define[ \t]+SIMDJSON_VERSION_MAJOR")
+		file(STRINGS "${simdjson_SOURCE_DIR}/include/simdjson/version.h" SIMDJSON_VER_MINOR_LINES
+			REGEX "^#define[ \t]+SIMDJSON_VERSION_MINOR")
+		file(STRINGS "${simdjson_SOURCE_DIR}/include/simdjson/version.h" SIMDJSON_VER_PATCH_LINES
+			REGEX "^#define[ \t]+SIMDJSON_VERSION_REVISION")
+
+		if(SIMDJSON_VER_LINES AND SIMDJSON_VER_MINOR_LINES AND SIMDJSON_VER_PATCH_LINES)
+			string(REGEX REPLACE "^#define[ \t]+SIMDJSON_VERSION_MAJOR[ \t]+([0-9]+).*" "\\1"
+				SIMDJSON_MAJOR "${SIMDJSON_VER_LINES}")
+			string(REGEX REPLACE "^#define[ \t]+SIMDJSON_VERSION_MINOR[ \t]+([0-9]+).*" "\\1"
+				SIMDJSON_MINOR "${SIMDJSON_VER_MINOR_LINES}")
+			string(REGEX REPLACE "^#define[ \t]+SIMDJSON_VERSION_REVISION[ \t]+([0-9]+).*" "\\1"
+				SIMDJSON_PATCH "${SIMDJSON_VER_PATCH_LINES}")
+			set(SIMDJSON_VERSION "${SIMDJSON_MAJOR}.${SIMDJSON_MINOR}.${SIMDJSON_PATCH}")
+		endif()
+	endif()
 endif()
 
 if(TARGET fmt::fmt)
@@ -243,7 +266,7 @@ if(TARGET benchmark::benchmark)
 endif()
 
 message(STATUS "spdlog version          : ${SPDLOG_VERSION}")
-message(STATUS "nlohmann/json version   : ${NLOHMANN_VERSION}")
+message(STATUS "simdjson version        : ${SIMDJSON_VERSION}")
 message(STATUS "{fmt} version           : ${FMT_VERSION}")
 message(STATUS "zlib version            : ${ZLIB_VERSION}")
 message(STATUS "libcpuid version        : ${CPUID_VERSION}")

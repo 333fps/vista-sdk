@@ -7,5 +7,5 @@
 
 namespace dnv::vista::sdk
 {
-	const nlohmann::json& loadTestData( const char* testDataPath );
+	const simdjson::dom::element& loadTestData( const char* testDataPath );
 }

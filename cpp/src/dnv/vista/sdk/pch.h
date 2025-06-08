@@ -19,6 +19,7 @@
 #include <iterator>
 #include <limits>
 #include <list>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -43,7 +44,7 @@
 
 /* Libs */
 #include <spdlog/spdlog.h>
-#include <nlohmann/json.hpp>
+#include <simdjson.h>
 #include <fmt/format.h>
 #include <zlib.h>
 #if defined( _MSC_VER )

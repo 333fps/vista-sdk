@@ -42,22 +42,36 @@ namespace dnv::vista::sdk::tests
 		static std::vector<GmodPathParseValidParam> loadValidGmodPathData()
 		{
 			std::vector<GmodPathParseValidParam> params;
-			const nlohmann::json& jsonData = loadTestData( GMOD_PATH_TEST_DATA_PATH );
+			const auto& jsonData = loadTestData( GMOD_PATH_TEST_DATA_PATH );
 			const std::string dataKey = "Valid";
 
-			if ( jsonData.contains( dataKey ) && jsonData[dataKey].is_array() )
+			const auto& jsonObject = jsonData.get_object();
+
+			auto validResult = jsonObject[dataKey];
+			if ( !validResult.error() && validResult.value().is_array() )
 			{
-				for ( const auto& item : jsonData[dataKey] )
+				const auto& validArray = validResult.value().get_array();
+
+				for ( const auto& item : validArray )
 				{
-					if ( item.is_object() && item.contains( "visVersion" ) && item["visVersion"].is_string() &&
-						 item.contains( "path" ) && item["path"].is_string() )
+					if ( item.is_object() )
 					{
-						std::string visVersionStr = item["visVersion"].get<std::string>();
-						std::string pathStr = item["path"].get<std::string>();
-						params.push_back( { visVersionStr, pathStr } );
+						const auto& itemObject = item.get_object();
+
+						auto visVersionResult = itemObject["visVersion"];
+						auto pathResult = itemObject["path"];
+
+						if ( !visVersionResult.error() && visVersionResult.value().is_string() &&
+							 !pathResult.error() && pathResult.value().is_string() )
+						{
+							std::string_view visVersionStr = visVersionResult.value().get_string().value();
+							std::string_view pathStr = pathResult.value().get_string().value();
+							params.push_back( { std::string( visVersionStr ), std::string( pathStr ) } );
+						}
 					}
 				}
 			}
+
 			return params;
 		}
 
@@ -74,22 +88,36 @@ namespace dnv::vista::sdk::tests
 		static std::vector<GmodPathParseInvalidParam> loadInvalidGmodPathData()
 		{
 			std::vector<GmodPathParseInvalidParam> params;
-			const nlohmann::json& jsonData = loadTestData( GMOD_PATH_TEST_DATA_PATH );
+			const auto& jsonData = loadTestData( GMOD_PATH_TEST_DATA_PATH );
 			const std::string dataKey = "Invalid";
 
-			if ( jsonData.contains( dataKey ) && jsonData[dataKey].is_array() )
+			const auto& jsonObject = jsonData.get_object();
+
+			auto invalidResult = jsonObject[dataKey];
+			if ( !invalidResult.error() && invalidResult.value().is_array() )
 			{
-				for ( const auto& item : jsonData[dataKey] )
+				const auto& invalidArray = invalidResult.value().get_array();
+
+				for ( const auto& item : invalidArray )
 				{
-					if ( item.is_object() && item.contains( "visVersion" ) && item["visVersion"].is_string() &&
-						 item.contains( "path" ) && item["path"].is_string() )
+					if ( item.is_object() )
 					{
-						std::string visVersionStr = item["visVersion"].get<std::string>();
-						std::string pathStr = item["path"].get<std::string>();
-						params.push_back( { visVersionStr, pathStr } );
+						const auto& itemObject = item.get_object();
+
+						auto visVersionResult = itemObject["visVersion"];
+						auto pathResult = itemObject["path"];
+
+						if ( !visVersionResult.error() && visVersionResult.value().is_string() &&
+							 !pathResult.error() && pathResult.value().is_string() )
+						{
+							std::string_view visVersionStr = visVersionResult.value().get_string().value();
+							std::string_view pathStr = pathResult.value().get_string().value();
+							params.push_back( { std::string( visVersionStr ), std::string( pathStr ) } );
+						}
 					}
 				}
 			}
+
 			return params;
 		}
 
@@ -108,52 +136,69 @@ namespace dnv::vista::sdk::tests
 		static std::vector<IndividualizableSetsTestData> LoadIndividualizableSetsData()
 		{
 			std::vector<IndividualizableSetsTestData> params;
-			const nlohmann::json& jsonData = loadTestData( INDIVIDUALIZABLE_SETS_TEST_DATA_PATH );
+			const auto& jsonData = loadTestData( INDIVIDUALIZABLE_SETS_TEST_DATA_PATH );
 
 			if ( jsonData.is_array() )
 			{
-				for ( const auto& item : jsonData )
-				{
-					if ( item.is_object() &&
-						 item.contains( "isFullPath" ) && item["isFullPath"].is_boolean() &&
-						 item.contains( "visVersion" ) && item["visVersion"].is_string() &&
-						 item.contains( "path" ) && item["path"].is_string() &&
-						 item.contains( "expected" ) )
-					{
-						bool isFullPath = item["isFullPath"].get<bool>();
-						std::string visVersionStr = item["visVersion"].get<std::string>();
-						std::string pathStr = item["path"].get<std::string>();
-						std::optional<std::vector<std::vector<std::string>>> expectedSetsOpt;
+				const auto& jsonArray = jsonData.get_array();
 
-						const auto& expectedJson = item["expected"];
-						if ( expectedJson.is_null() )
+				for ( const auto& item : jsonArray )
+				{
+					if ( item.is_object() )
+					{
+						const auto& itemObject = item.get_object();
+
+						auto isFullPathResult = itemObject["isFullPath"];
+						auto visVersionResult = itemObject["visVersion"];
+						auto pathResult = itemObject["path"];
+						auto expectedResult = itemObject["expected"];
+
+						if ( !isFullPathResult.error() && isFullPathResult.value().is_bool() &&
+							 !visVersionResult.error() && visVersionResult.value().is_string() &&
+							 !pathResult.error() && pathResult.value().is_string() &&
+							 !expectedResult.error() )
 						{
-							expectedSetsOpt = std::nullopt;
-						}
-						else if ( expectedJson.is_array() )
-						{
-							std::vector<std::vector<std::string>> outerVector;
-							for ( const auto& innerJsonArray : expectedJson )
+							bool isFullPath = isFullPathResult.value().get_bool();
+							std::string_view visVersionStr = visVersionResult.value().get_string().value();
+							std::string_view pathStr = pathResult.value().get_string().value();
+							std::optional<std::vector<std::vector<std::string>>> expectedSetsOpt;
+
+							const auto& expectedJson = expectedResult.value();
+							if ( expectedJson.is_null() )
 							{
-								if ( innerJsonArray.is_array() )
-								{
-									std::vector<std::string> innerVector;
-									for ( const auto& elementJson : innerJsonArray )
-									{
-										if ( elementJson.is_string() )
-										{
-											innerVector.push_back( elementJson.get<std::string>() );
-										}
-									}
-									outerVector.push_back( innerVector );
-								}
+								expectedSetsOpt = std::nullopt;
 							}
-							expectedSetsOpt = outerVector;
+							else if ( expectedJson.is_array() )
+							{
+								const auto& expectedArray = expectedJson.get_array();
+								std::vector<std::vector<std::string>> outerVector;
+
+								for ( const auto& innerJsonArray : expectedArray )
+								{
+									if ( innerJsonArray.is_array() )
+									{
+										const auto& innerArray = innerJsonArray.get_array();
+										std::vector<std::string> innerVector;
+
+										for ( const auto& elementJson : innerArray )
+										{
+											if ( elementJson.is_string() )
+											{
+												std::string_view elementStr = elementJson.get_string().value();
+												innerVector.push_back( std::string( elementStr ) );
+											}
+										}
+										outerVector.push_back( innerVector );
+									}
+								}
+								expectedSetsOpt = outerVector;
+							}
+							params.push_back( { isFullPath, std::string( visVersionStr ), std::string( pathStr ), expectedSetsOpt } );
 						}
-						params.push_back( { isFullPath, visVersionStr, pathStr, expectedSetsOpt } );
 					}
 				}
 			}
+
 			return params;
 		}
 

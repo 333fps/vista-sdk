@@ -2,32 +2,6 @@
 # VISTA-SDK-CPP - C++ Library Dependencies
 # ==============================================================================
 
-# --- Header-only dependencies ---
-set(NLOHMANN_JSON_VERSION "v3.12.0")
-set(NLOHMANN_JSON_URL "https://github.com/nlohmann/json/releases/download/${NLOHMANN_JSON_VERSION}/json.hpp")
-set(NLOHMANN_JSON_INCLUDE_DIR "${CMAKE_BINARY_DIR}/_deps/nlohmann_json-include")
-set(NLOHMANN_JSON_HEADER "${NLOHMANN_JSON_INCLUDE_DIR}/nlohmann/json.hpp")
-
-if(NOT EXISTS ${NLOHMANN_JSON_HEADER})
-	message(STATUS "Downloading nlohmann/json header (${NLOHMANN_JSON_VERSION})...")
-	file(DOWNLOAD ${NLOHMANN_JSON_URL} ${NLOHMANN_JSON_HEADER}
-		 SHOW_PROGRESS
-		 STATUS download_status
-		 LOG download_log)
-	list(GET download_status 0 download_code)
-	if(NOT download_code EQUAL 0)
-		message(FATAL_ERROR "Failed to download nlohmann/json header. Error: ${download_log}")
-	else()
-		message(STATUS "Downloaded nlohmann/json header to ${NLOHMANN_JSON_HEADER}")
-	endif()
-else()
-	message(STATUS "Found existing nlohmann/json header: ${NLOHMANN_JSON_HEADER}")
-endif()
-
-add_library(nlohmann_json INTERFACE)
-target_include_directories(nlohmann_json INTERFACE ${NLOHMANN_JSON_INCLUDE_DIR})
-add_library(nlohmann_json::nlohmann_json ALIAS nlohmann_json)
-
 # --- FetchContent dependencies ---
 include(FetchContent)
 
@@ -117,4 +91,18 @@ FetchContent_Declare(
 	-DBENCHMARK_DOWNLOAD_DEPENDENCIES=OFF
 )
 
-FetchContent_MakeAvailable(fmt spdlog zlib cpuid googletest googlebenchmark)
+FetchContent_Declare(
+  simdjson
+  GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+  GIT_TAG        v3.13.0
+  GIT_SHALLOW    TRUE
+  CMAKE_ARGS
+	-DBUILD_SHARED_LIBS=OFF
+	-DSIMDJSON_ENABLE_THREADS=ON
+	-DSIMDJSON_SANITIZE=OFF
+	-DSIMDJSON_BUILD_STATIC_LIB=ON
+	-DSIMDJSON_DISABLE_DEPRECATED_API=ON
+	-DSIMDJSON_DEVELOPMENT_CHECKS=OFF
+)
+
+FetchContent_MakeAvailable(fmt spdlog zlib cpuid simdjson googletest googlebenchmark)

@@ -4,43 +4,55 @@
  */
 
 #include "pch.h"
+
 #include "TestDataLoader.h"
 
 namespace dnv::vista::sdk
 {
-	static std::unordered_map<std::string, nlohmann::json> g_testDataCache;
-
-	const nlohmann::json& loadTestData( const char* testDataPath )
+	struct ParsedJsonData
 	{
-		const std::string_view pathView{ testDataPath };
+		std::shared_ptr<simdjson::dom::parser> parser;
+		simdjson::dom::element root_element;
 
-		if ( auto it = g_testDataCache.find( std::string{ pathView } ); it != g_testDataCache.end() )
+		ParsedJsonData( std::shared_ptr<simdjson::dom::parser> p, simdjson::dom::element elem )
+			: parser( p ), root_element( elem ) {}
+	};
+
+	static std::unordered_map<std::string, std::shared_ptr<ParsedJsonData>> g_testDataCache;
+
+	const simdjson::dom::element& loadTestData( const char* testDataPath )
+	{
+		const std::string filename{ testDataPath };
+
+		auto it = g_testDataCache.find( filename );
+		if ( it != g_testDataCache.end() )
 		{
-			return it->second;
+			return it->second->root_element;
 		}
 
 		std::ifstream jsonFile( testDataPath );
 		if ( !jsonFile.is_open() )
 		{
-			throw std::runtime_error( std::string{ "Failed to open test data file: " } + testDataPath );
+			throw std::runtime_error( std::string( "Failed to open test data file: " ) + testDataPath );
 		}
 
-		try
+		std::string jsonData( ( std::istreambuf_iterator<char>( jsonFile ) ),
+			std::istreambuf_iterator<char>() );
+
+		auto parser = std::make_shared<simdjson::dom::parser>();
+
+		auto result = parser->parse( jsonData );
+
+		if ( result.error() )
 		{
-			nlohmann::json data;
-			jsonFile >> data;
-
-			auto [inserted_it, success] = g_testDataCache.emplace( std::string{ pathView }, std::move( data ) );
-
-			return inserted_it->second;
+			throw std::runtime_error( "JSON parse error in '" + std::string( testDataPath ) + "'. Error: " + std::string( simdjson::error_message( result.error() ) ) );
 		}
-		catch ( const nlohmann::json::parse_error& ex )
-		{
-			throw std::runtime_error(
-				std::string{ "JSON parse error in '" } + testDataPath +
-				"'. Type: " + std::to_string( ex.id ) +
-				", Byte: " + std::to_string( ex.byte ) +
-				". Original what() likely too long." );
-		}
+
+		auto element = result.value();
+
+		auto parsed_data = std::make_shared<ParsedJsonData>( parser, element );
+		g_testDataCache.emplace( filename, parsed_data );
+
+		return parsed_data->root_element;
 	}
 }

@@ -38,25 +38,31 @@ namespace dnv::vista::sdk::tests
 	static std::vector<LocationParseValidParam> loadValidLocationData()
 	{
 		std::vector<LocationParseValidParam> params;
-		const nlohmann::json& jsonData = loadTestData( LOCATIONS_TEST_DATA_PATH );
-		const std::string dataKey = "locations";
+		const auto& jsonData = loadTestData( LOCATIONS_TEST_DATA_PATH );
 
-		if ( jsonData.contains( dataKey ) && jsonData[dataKey].is_array() )
+		const auto& jsonObject = jsonData.get_object();
+		const auto& locationsElement = jsonObject["locations"];
+		const auto& locationsArray = locationsElement.get_array();
+
+		for ( auto item : locationsArray )
 		{
-			for ( const auto& item : jsonData[dataKey] )
+			const auto& itemObj = item.get_object();
+			const auto& success = itemObj["success"];
+
+			if ( success.get_bool() )
 			{
-				if ( item.is_object() &&
-					 item.contains( "success" ) && item["success"].is_boolean() &&
-					 item["success"].get<bool>() == true &&
-					 item.contains( "value" ) && item["value"].is_string() &&
-					 item.contains( "output" ) && item["output"].is_string() )
+				const auto& value = itemObj["value"];
+				const auto& output = itemObj["output"];
+
+				if ( !value.is_null() && !output.is_null() )
 				{
-					std::string value = item["value"].get<std::string>();
-					std::string output = item["output"].get<std::string>();
-					params.push_back( { value, output } );
+					std::string_view valueStr = value.get_string().value();
+					std::string_view outputStr = output.get_string().value();
+					params.push_back( { std::string( valueStr ), std::string( outputStr ) } );
 				}
 			}
 		}
+
 		return params;
 	}
 
@@ -73,44 +79,42 @@ namespace dnv::vista::sdk::tests
 	static std::vector<LocationParseInvalidParam> loadInvalidLocationData()
 	{
 		std::vector<LocationParseInvalidParam> params;
-		const nlohmann::json& jsonData = loadTestData( LOCATIONS_TEST_DATA_PATH );
-		const std::string dataKey = "locations";
+		const auto& jsonData = loadTestData( LOCATIONS_TEST_DATA_PATH );
 
-		if ( jsonData.contains( dataKey ) && jsonData[dataKey].is_array() )
+		const auto& jsonObject = jsonData.get_object();
+		const auto& locationsElement = jsonObject["locations"];
+		const auto& locationsArray = locationsElement.get_array();
+
+		for ( auto item : locationsArray )
 		{
-			for ( const auto& item : jsonData[dataKey] )
-			{
-				if ( item.is_object() &&
-					 item.contains( "success" ) && item["success"].is_boolean() &&
-					 item["success"].get<bool>() == false &&
-					 item.contains( "value" ) )
-				{
-					std::string value;
-					if ( item["value"].is_string() )
-					{
-						value = item["value"].get<std::string>();
-					}
-					else if ( item["value"].is_null() )
-					{
-						continue;
-					}
+			const auto& itemObj = item.get_object();
+			const auto& success = itemObj["success"];
 
+			if ( !success.get_bool() )
+			{
+				const auto& value = itemObj["value"];
+				const auto& expectedErrorMessages = itemObj["expectedErrorMessages"];
+
+				if ( !value.is_null() )
+				{
 					std::vector<std::string> errorMessages;
-					if ( item.contains( "expectedErrorMessages" ) && item["expectedErrorMessages"].is_array() )
+					const auto& errorArray = expectedErrorMessages.get_array();
+
+					for ( auto errorMessage : errorArray )
 					{
-						for ( const auto& errorMsg : item["expectedErrorMessages"] )
+						if ( !errorMessage.is_null() )
 						{
-							if ( errorMsg.is_string() )
-							{
-								errorMessages.push_back( errorMsg.get<std::string>() );
-							}
+							std::string_view errorStr = errorMessage.get_string().value();
+							errorMessages.push_back( std::string( errorStr ) );
 						}
 					}
 
-					params.push_back( { value, errorMessages } );
+					std::string_view valueStr = value.get_string().value();
+					params.push_back( { std::string( valueStr ), errorMessages } );
 				}
 			}
 		}
+
 		return params;
 	}
 
@@ -208,6 +212,7 @@ namespace dnv::vista::sdk::tests
 	static std::vector<LocationTestParam> getLocationTestData()
 	{
 		std::vector<LocationTestParam> params;
+
 		auto validData = loadValidLocationData();
 		auto invalidData = loadInvalidLocationData();
 

@@ -43,7 +43,7 @@ foreach(benchmark_source ${BENCHMARK_SOURCES})
 			vista-sdk-cpp
 			benchmark::benchmark
 			fmt::fmt
-			nlohmann_json::nlohmann_json
+			simdjson::simdjson
 		)
 
 		target_compile_definitions(${benchmark_target_name} PRIVATE

@@ -387,27 +387,42 @@ namespace dnv::vista::sdk::tests
 	static std::vector<std::pair<std::string, std::vector<std::string>>> invalidLocalIdsData()
 	{
 		std::vector<std::pair<std::string, std::vector<std::string>>> data;
-		const nlohmann::json& jsonDataFromFile = loadTestData( INVALID_LOCAL_IDS_TEST_DATA_PATH );
+		const auto& jsonDataFromFile = loadTestData( INVALID_LOCAL_IDS_TEST_DATA_PATH );
 
-		if ( jsonDataFromFile.contains( "InvalidLocalIds" ) && jsonDataFromFile["InvalidLocalIds"].is_array() )
+		const auto& jsonObject = jsonDataFromFile.get_object();
+
+		auto invalidLocalIdsResult = jsonObject["InvalidLocalIds"];
+		if ( !invalidLocalIdsResult.error() && invalidLocalIdsResult.value().is_array() )
 		{
-			for ( const auto& item : jsonDataFromFile["InvalidLocalIds"] )
+			const auto& invalidLocalIdsArray = invalidLocalIdsResult.value().get_array();
+
+			for ( const auto& item : invalidLocalIdsArray )
 			{
-				if ( item.contains( "input" ) && item.contains( "expectedErrorMessages" ) &&
-					 item["input"].is_string() && item["expectedErrorMessages"].is_array() )
+				if ( item.is_object() )
 				{
-					std::string input = item["input"].get<std::string>();
-					std::vector<std::string> expectedMessages;
+					const auto& itemObject = item.get_object();
 
-					for ( const auto& msg : item["expectedErrorMessages"] )
+					auto inputResult = itemObject["input"];
+					auto expectedErrorMessagesResult = itemObject["expectedErrorMessages"];
+
+					if ( !inputResult.error() && inputResult.value().is_string() &&
+						 !expectedErrorMessagesResult.error() && expectedErrorMessagesResult.value().is_array() )
 					{
-						if ( msg.is_string() )
-						{
-							expectedMessages.push_back( msg.get<std::string>() );
-						}
-					}
+						std::string_view input = inputResult.value().get_string().value();
+						std::vector<std::string> expectedMessages;
 
-					data.push_back( { input, expectedMessages } );
+						const auto& messagesArray = expectedErrorMessagesResult.value().get_array();
+						for ( const auto& msg : messagesArray )
+						{
+							if ( msg.is_string() )
+							{
+								std::string_view msgStr = msg.get_string().value();
+								expectedMessages.push_back( std::string( msgStr ) );
+							}
+						}
+
+						data.push_back( { std::string( input ), expectedMessages } );
+					}
 				}
 			}
 		}

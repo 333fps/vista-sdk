@@ -145,39 +145,42 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a GmodNodeDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a GmodNodeDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<GmodNodeDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<GmodNodeDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a GmodNodeDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a GmodNodeDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<GmodNodeDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a GmodNodeDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return The deserialized GmodNodeDto
 		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static GmodNodeDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static GmodNodeDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this GmodNodeDto to an nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a GmodNodeDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized GmodNodeDto
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
 		 */
-		[[nodiscard]] nlohmann::json toJson() const;
+		[[nodiscard]] static GmodNodeDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//----------------------------------------------
-		// Private serialization methods
-		//----------------------------------------------
-
-		/*
-		 * Friend declarations for nlohmann::json serialization/deserialization.
-		 * These enable Argument-Dependent Lookup (ADL) so nlohmann::json can find
-		 * these functions and allow them to access private members.
+		/**
+		 * @brief Serialize this GmodNodeDto to a JSON string
+		 * @return The serialized JSON string
 		 */
-		friend void to_json( nlohmann::json& j, const GmodNodeDto& dto );
-		friend void from_json( const nlohmann::json& j, GmodNodeDto& dto );
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------
@@ -303,39 +306,42 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a GmodDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a GmodDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return Optional containing the deserialized object if successful, empty optional otherwise
 		 */
-		static std::optional<GmodDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<GmodDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a GmodDto from an nlohmann::json object
-		 * @param json The nlohmann::json object to deserialize
+		 * @brief Try to deserialize a GmodDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<GmodDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a GmodDto from a simdjson element
+		 * @param element The simdjson element to deserialize
 		 * @return The deserialized GmodDto
 		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static GmodDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static GmodDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this GmodDto to an nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a GmodDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized GmodDto
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
 		 */
-		[[nodiscard]] nlohmann::json toJson() const;
+		[[nodiscard]] static GmodDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//-------------------------------------------------------------------
-		// Private serialization methods
-		//-------------------------------------------------------------------
-
-		/*
-		 * Friend declarations for nlohmann::json serialization/deserialization.
-		 * These enable Argument-Dependent Lookup (ADL) so nlohmann::json can find
-		 * these functions and allow them to access private members.
+		/**
+		 * @brief Serialize this GmodDto to a JSON string
+		 * @return The serialized JSON string
 		 */
-		friend void to_json( nlohmann::json& j, const GmodDto& dto );
-		friend void from_json( const nlohmann::json& j, GmodDto& dto );
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------

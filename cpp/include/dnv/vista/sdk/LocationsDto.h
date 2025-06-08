@@ -82,37 +82,45 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a RelativeLocationsDto from an nlohmann::json object.
+		 * @brief Try to deserialize a RelativeLocationsDto from a simdjson element
 		 *
-		 * @param json The nlohmann::json object to deserialize.
+		 * @param element The simdjson element to deserialize
 		 * @return An optional containing the deserialized DTO if successful, or std::nullopt if parsing failed
 		 */
-		static std::optional<RelativeLocationsDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<RelativeLocationsDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a RelativeLocationsDto from an nlohmann::json object.
+		 * @brief Try to deserialize a RelativeLocationsDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<RelativeLocationsDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a RelativeLocationsDto from a simdjson element
 		 *
-		 * @param json The nlohmann::json object to deserialize.
-		 * @return The deserialized RelativeLocationsDto.
+		 * @param element The simdjson element to deserialize
+		 * @return The deserialized RelativeLocationsDto
 		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static RelativeLocationsDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static RelativeLocationsDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this RelativeLocationsDto to an nlohmann::json object
-		 *
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a RelativeLocationsDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized RelativeLocationsDto
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
 		 */
-		nlohmann::json toJson() const;
+		[[nodiscard]] static RelativeLocationsDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//----------------------------------------------
-		// Private serialization methods
-		//---------------------------------------------
-
-		friend void from_json( const nlohmann::json& j, RelativeLocationsDto& dto );
-		friend void to_json( nlohmann::json& j, const RelativeLocationsDto& dto );
+		/**
+		 * @brief Serialize this RelativeLocationsDto to a JSON string
+		 *
+		 * @return The serialized JSON string
+		 */
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------
@@ -197,36 +205,44 @@ namespace dnv::vista::sdk
 		//----------------------------------------------
 
 		/**
-		 * @brief Try to deserialize a LocationsDto from an nlohmann::json object.
+		 * @brief Try to deserialize a LocationsDto from a simdjson element
 		 *
-		 * @param json The nlohmann::json object to deserialize.
+		 * @param element The simdjson element to deserialize
 		 * @return An optional containing the deserialized DTO if successful, or std::nullopt if parsing failed
 		 */
-		static std::optional<LocationsDto> tryFromJson( const nlohmann::json& json );
+		[[nodiscard]] static std::optional<LocationsDto> tryFromJson( simdjson::dom::element element ) noexcept;
 
 		/**
-		 * @brief Deserialize a LocationsDto from an nlohmann::json object.
+		 * @brief Try to deserialize a LocationsDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return Optional containing the deserialized object if successful, empty optional otherwise
+		 */
+		[[nodiscard]] static std::optional<LocationsDto> tryFromJsonString( std::string_view jsonString, simdjson::dom::parser& parser ) noexcept;
+
+		/**
+		 * @brief Deserialize a LocationsDto from a simdjson element
 		 *
-		 * @param json The nlohmann::json object to deserialize.
-		 * @return The deserialized LocationsDto.
+		 * @param element The simdjson element to deserialize
+		 * @return The deserialized LocationsDto
 		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
-		 * @throws nlohmann::json::exception If JSON parsing/access errors occur
 		 */
-		static LocationsDto fromJson( const nlohmann::json& json );
+		[[nodiscard]] static LocationsDto fromJson( simdjson::dom::element element );
 
 		/**
-		 * @brief Serialize this LocationsDto to an nlohmann::json object
-		 * @return The serialized nlohmann::json object
+		 * @brief Deserialize a LocationsDto from a JSON string
+		 * @param jsonString The JSON string to parse
+		 * @param parser Pre-allocated parser for reuse
+		 * @return The deserialized LocationsDto
+		 * @throws std::invalid_argument If deserialization fails (e.g., missing fields, type errors)
 		 */
-		nlohmann::json toJson() const;
+		[[nodiscard]] static LocationsDto fromJsonString( std::string_view jsonString, simdjson::dom::parser& parser );
 
-	private:
-		//----------------------------------------------
-		// Private serialization methods
-		//----------------------------------------------
-
-		friend void from_json( const nlohmann::json& j, LocationsDto& dto );
-		friend void to_json( nlohmann::json& j, const LocationsDto& dto );
+		/**
+		 * @brief Serialize this LocationsDto to a JSON string
+		 * @return The serialized JSON string
+		 */
+		[[nodiscard]] std::string toJsonString() const;
 
 	private:
 		//----------------------------------------------

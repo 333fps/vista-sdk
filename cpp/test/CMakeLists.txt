@@ -26,6 +26,7 @@ set(TEST_SOURCES
 	UniversalId.cpp
 )
 
+
 # --- Set executables prefix ---
 set(TEST_PREFIX "TEST_")
 
@@ -68,7 +69,7 @@ foreach(test_source ${TEST_SOURCES})
 			GTest::gtest_main
 			spdlog::spdlog
 			fmt::fmt
-			nlohmann_json::nlohmann_json
+			simdjson::simdjson
 			zlibstatic
 		)
 
