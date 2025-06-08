@@ -29,29 +29,25 @@ namespace dnv::vista::sdk::benchmarks
 	{
 		initializeData();
 
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_start;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_start, sizeof( pmc_start ) );
-		size_t initialMemory = pmc_start.WorkingSetSize;
-#endif
+		struct BenchmarkState
+		{
+			int nodeCount = 0;
+		};
 
 		for ( auto _ : state )
 		{
-			bool result = dnv::vista::sdk::GmodTraversal::traverse(
-				*g_gmod,
-				[]( const std::vector<const GmodNode*>&, const GmodNode& ) -> TraversalHandlerResult {
-					return TraversalHandlerResult::Continue;
-				} );
+			BenchmarkState benchState;
 
+			TraverseHandlerWithState<BenchmarkState> handler =
+				[]( BenchmarkState& state, const std::vector<const GmodNode*>&, const GmodNode& ) -> TraversalHandlerResult {
+				++state.nodeCount;
+				return TraversalHandlerResult::Continue;
+			};
+
+			bool result = dnv::vista::sdk::GmodTraversal::traverse( *g_gmod, benchState, handler );
 			benchmark::DoNotOptimize( result );
+			benchmark::DoNotOptimize( benchState.nodeCount );
 		}
-
-#ifdef _WIN32
-		PROCESS_MEMORY_COUNTERS_EX pmc_end;
-		GetProcessMemoryInfo( GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc_end, sizeof( pmc_end ) );
-		auto memoryDelta = static_cast<double>( pmc_end.WorkingSetSize - initialMemory );
-		state.counters["MemoryDeltaKB"] = benchmark::Counter( memoryDelta / 1024.0 );
-#endif
 	}
 
 	BENCHMARK( BM_fullTraversal )

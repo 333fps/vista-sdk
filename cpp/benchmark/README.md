@@ -43,17 +43,17 @@ cmake --build build --target BM_CodebooksLookup
 
 ## Summary
 
-| Operation Category          | C++ vs C# Performance            | Status | Key Findings                     |
-| :-------------------------- | :------------------------------- | :----: | :------------------------------- |
-| **Hash Table Operations**   | **1.14-2.61x faster**            |   ✅   | Superior low-level performance   |
-| **Codebook Access**         | **2.44x faster**                 |   ✅   | Hash maps dominate dictionaries  |
-| **High-Level APIs**         | **5.13x slower**                 |   ❌   | **Major optimization needed**    |
-| **String Hashing**          | **1.02x faster to 1.39x slower** |   ✅   | Average parity                   |
-| **GMOD Loading**            | **1.15x faster**                 |   ✅   | Competitive with 68x less memory |
-| **GMOD Lookup**             | **1.06-2.35x faster**            |   ✅   | Hash table advantage maintained  |
-| **GMOD Traversal**          | **1.7x slower**                  |   ❌   | **Major optimization needed**    |
-| **Path Parsing**            | **1.88-32.2x slower**            |  ❌❌  | **Critical optimization needed** |
-| **Version Path Conversion** | **152 slower**                   | ❌❌❌ | **CATASTROPHIC**                 |
+| Operation Category          | C++ vs C# Performance                            | Status | Key Findings                          |
+| :-------------------------- | :----------------------------------------------- | :----: | :------------------------------------ |
+| **Hash Table Operations**   | **1.06-2.35x faster**                            |   ✅   | Superior low-level performance        |
+| **Codebook Access**         | **2.44x faster**                                 |   ✅   | Hash maps dominate dictionaries       |
+| **High-Level APIs**         | **5.13x slower**                                 |   ❌   | **Major optimization needed**         |
+| **String Hashing**          | **1.02x faster to 1.39x slower**                 |   ✅   | Average parity                        |
+| **GMOD Loading**            | **1.29x faster**                                 |   ✅   | Competitive with 99.4% less memory    |
+| **GMOD Lookup**             | **1.06-2.35x faster (hash), 3.91x slower (API)** |   ❌   | **CHD implementation critical issue** |
+| **GMOD Traversal**          | **1.7x slower**                                  |   ❌   | **Major optimization needed**         |
+| **Path Parsing**            | **1.88-32.2x slower**                            |  ❌❌  | **Critical optimization needed**      |
+| **Version Path Conversion** | **147x slower**                                  | ❌❌❌ | **CATASTROPHIC**                      |
 
 ---
 
@@ -101,19 +101,19 @@ Performance comparison between C++ and C# implementations for codebook access op
 
 | Operation     | Windows C++ | vs Baseline | Linux C++ | vs Baseline | Notes                     |
 | :------------ | :---------- | :---------: | :-------- | :---------: | :------------------------ |
-| **GMOD Load** | 26.5 ms     |  **1.00x**  | _TBD_     |    _TBD_    | ⚡ Full GMOD construction |
+| **GMOD Load** | 23.5 ms     |  **1.00x**  | _TBD_     |    _TBD_    | ⚡ Full GMOD construction |
 
 ### GMOD Load Performance (Windows)
 
 | C++ Method   | C++ Time | C++ Implementation                  | C# Method | C# Time | C# Implementation               | Performance Ratio   |
 | :----------- | :------- | :---------------------------------- | :-------- | :------ | :------------------------------ | :------------------ |
-| **gmodLoad** | 26.5 ms  | `VIS::loadGmodDto()` + construction | **Load**  | 30.4 ms | `Gmod.Load()` with full parsing | ✅ **1.15x faster** |
+| **gmodLoad** | 23.5 ms  | `VIS::loadGmodDto()` + construction | **Load**  | 30.4 ms | `Gmod.Load()` with full parsing | ✅ **1.29x faster** |
 
 #### Detailed C++ Results (Windows)
 
 | Benchmark    | Time    | CPU     | Iterations | Memory Usage |
 | :----------- | :------ | :------ | :--------- | :----------- |
-| **gmodLoad** | 26.5 ms | 26.4 ms | 484        | 224 KB       |
+| **gmodLoad** | 23.5 ms | 23.5 ms | 490        | 1.316 KB     |
 
 #### Detailed C# Results (Windows)
 
@@ -129,7 +129,7 @@ Performance comparison between C++ and C# implementations for codebook access op
 | :-------------------- | :---------- | :---------: | :-------- | :---------: | :----------------------- |
 | **Frozen Dictionary** | 14.3 ns     |  **1.00x**  | _TBD_     |    _TBD_    | ⚡ Fastest lookup method |
 | **Hash Table Lookup** | 16.3 ns     |  **1.14x**  | _TBD_     |    _TBD_    | 🔥 Slightly slower       |
-| **GMOD API Lookup**   | 80.2 ns     |  **5.61x**  | _TBD_     |    _TBD_    | 🐌 Needs optimization    |
+| **GMOD API Lookup**   | 61.0.ns     |  **4.27x**  | _TBD_     |    _TBD_    | 🐌 Needs optimization    |
 
 ### GMOD Lookup Performance (Windows)
 
@@ -137,7 +137,7 @@ Performance comparison between C++ and C# implementations for codebook access op
 | :------------- | :------- | :---------------------------- | :------------- | :------- | :------------------------------- | :------------------ |
 | **frozenDict** | 14.3 ns  | `std::unordered_map` (frozen) | **FrozenDict** | 15.21 ns | `FrozenDictionary.TryGetValue()` | ✅ **1.06x faster** |
 | **dict**       | 16.3 ns  | `std::unordered_map::find()`  | **Dict**       | 38.34 ns | `Dictionary.TryGetValue()`       | ✅ **2.35x faster** |
-| **gmod**       | 80.2 ns  | CHD implementation lookup     | **Gmod**       | 15.62 ns | Native GMOD API access           | ❌ **5.13x slower** |
+| **gmod**       | 61.0 ns  | CHD implementation lookup     | **Gmod**       | 15.62 ns | Native GMOD API access           | ❌ **3.91x slower** |
 
 #### Detailed C++ Results (Windows)
 
@@ -145,7 +145,7 @@ Performance comparison between C++ and C# implementations for codebook access op
 | :------------- | :------ | :------ | :--------- | :----------- |
 | **Dict**       | 16.3 ns | 16.3 ns | 887M       | 0 KB         |
 | **FrozenDict** | 14.3 ns | 14.3 ns | 974M       | 18.0 KB      |
-| **Gmod**       | 80.2 ns | 80.2 ns | 173M       | 0 KB         |
+| **Gmod**       | 61.0 ns | 60.3 ns | 235M       | 0 KB         |
 
 #### Detailed C# Results (Windows)
 
@@ -235,7 +235,7 @@ Performance comparison between C++ and C# implementations for GMOD node lookup o
 
 | Operation        | Windows C++ | Linux C++ | Status | Notes |
 | :--------------- | :---------- | :-------- | :----: | :---- |
-| **Convert Path** | 227 μs      | _TBD_     |        |       |
+| **Convert Path** | 219 μs      | _TBD_     |        |       |
 
 ### GMOD Versioning Path Conversion Performance (Windows)
 
@@ -243,13 +243,13 @@ Performance comparison between C++ and C# implementations for GMOD version path 
 
 | Operation        | C++ (Google Benchmark) | C# (BenchmarkDotNet) | Performance Ratio | Status | Notes            |
 | :--------------- | :--------------------- | :------------------- | :---------------- | :----: | :--------------- |
-| **Convert Path** | **227 μs**             | 1.489 μs             | **152x slower**   | ❌❌❌ | **CATASTROPHIC** |
+| **Convert Path** | 219 μs                 | 1.489 μs             | **147x slower**   | ❌❌❌ | **CATASTROPHIC** |
 
 #### Detailed C++ Results (Windows)
 
 | Benchmark       | Time   | CPU    | Iterations | Memory Usage |
 | :-------------- | :----- | :----- | :--------- | :----------- |
-| **convertPath** | 227 μs | 226 μs | 62,657     | 0 KB         |
+| **convertPath** | 219 μs | 219 μs | 64,000     | 0 KB         |
 
 #### Detailed C# Results (Windows)
 

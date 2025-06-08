@@ -96,30 +96,37 @@ namespace dnv::vista::sdk::tests
 		ASSERT_TRUE( m_setupSuccess ) << "Test setup failed";
 
 		const auto& gmod = m_vis->gmod( VisVersion::v3_4a );
-		std::string targetPathStr = "1012.22/S201.1/C151.2/S110.2/C101.61/S203.2/S101";
 
-		bool traversalCompleted = GmodTraversal::traverse( gmod, [&]( const std::vector<const GmodNode*>& parents, const GmodNode& node ) {
+		struct PathState
+		{
+			const Gmod& gmod;
+			const std::string targetPath = "1012.22/S201.1/C151.2/S110.2/C101.61/S203.2/S101";
+
+			PathState( const Gmod& g ) : gmod( g ) {}
+		};
+
+		PathState state( gmod );
+
+		TraverseHandlerWithState<PathState> handler =
+			[]( PathState& state, const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> TraversalHandlerResult {
 			if ( parents.empty() )
-			{
 				return TraversalHandlerResult::Continue;
-			}
 
 			std::vector<GmodNode*> nonConstParents;
 			nonConstParents.reserve( parents.size() );
 			for ( const GmodNode* p : parents )
-			{
 				nonConstParents.push_back( const_cast<GmodNode*>( p ) );
-			}
-			GmodPath currentPath( gmod, const_cast<GmodNode*>( &node ), nonConstParents );
-			if ( currentPath.toString() == targetPathStr )
-			{
+
+			GmodPath path( state.gmod, const_cast<GmodNode*>( &node ), nonConstParents );
+			if ( path.toString() == state.targetPath )
 				return TraversalHandlerResult::Stop;
-			}
 
 			return TraversalHandlerResult::Continue;
-		} );
+		};
 
-		ASSERT_FALSE( traversalCompleted );
+		auto completed = GmodTraversal::traverse( gmod, state, handler );
+
+		ASSERT_FALSE( completed );
 	}
 
 	//----------------------------------------------

@@ -159,50 +159,60 @@ namespace dnv::vista::sdk::tests
 			auto visVersionForPath = VisVersion::v3_4a;
 			auto [vis, gmod] = visAndGmod( visVersionForPath );
 
-			std::vector<GmodPath> paths;
+			struct FullTraversalState
+			{
+				std::vector<GmodPath> paths;
+				int maxOccurrence = 0;
+				const Gmod& gmodRef;
+
+				FullTraversalState( const Gmod& gmod ) : gmodRef( gmod ) {}
+			};
+
+			FullTraversalState traversalState( gmod );
 			int maxExpected = TraversalOptions::DEFAULT_MAX_TRAVERSAL_OCCURRENCE;
-			int maxOccurrence = 0;
 
-			bool completed = GmodTraversal::traverse( gmod,
-				[&paths, &maxOccurrence, &gmod]( const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> TraversalHandlerResult {
-					EXPECT_TRUE( parents.empty() || parents[0]->isRoot() );
+			TraverseHandlerWithState<FullTraversalState> handler =
+				[]( FullTraversalState& state, const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> TraversalHandlerResult {
+				EXPECT_TRUE( parents.empty() || parents[0]->isRoot() );
 
-					bool isHG3Related = ( node.code() == "HG3" ) ||
-										std::any_of( parents.begin(), parents.end(), []( const GmodNode* p ) {
-											return p != nullptr && p->code() == "HG3";
-										} );
+				bool isHG3Related = ( node.code() == "HG3" ) ||
+									std::any_of( parents.begin(), parents.end(), []( const GmodNode* p ) {
+										return p != nullptr && p->code() == "HG3";
+									} );
 
-					if ( isHG3Related )
+				if ( isHG3Related )
+				{
+					std::vector<GmodNode*> nonConstParents;
+					nonConstParents.reserve( parents.size() );
+					for ( const GmodNode* p_const : parents )
 					{
-						std::vector<GmodNode*> nonConstParents;
-						nonConstParents.reserve( parents.size() );
-						for ( const GmodNode* p_const : parents )
-						{
-							nonConstParents.push_back( const_cast<GmodNode*>( p_const ) );
-						}
-						GmodNode* nonConstNode = const_cast<GmodNode*>( &node );
-
-						paths.emplace_back( gmod, nonConstNode, std::move( nonConstParents ) );
+						nonConstParents.push_back( const_cast<GmodNode*>( p_const ) );
 					}
+					GmodNode* nonConstNode = const_cast<GmodNode*>( &node );
 
-					const GmodNode* lastParent = parents.empty() ? nullptr : parents.back();
+					state.paths.emplace_back( state.gmodRef, nonConstNode, std::move( nonConstParents ) );
+				}
 
-					bool skipOccurenceCheck = Gmod::isProductSelectionAssignment( lastParent, &node );
-					if ( skipOccurenceCheck )
-					{
-						return TraversalHandlerResult::Continue;
-					}
+				const GmodNode* lastParent = parents.empty() ? nullptr : parents.back();
 
-					int occ = static_cast<int>( occurrences( parents, node ) );
-					if ( occ > maxOccurrence )
-					{
-						maxOccurrence = occ;
-					}
-
+				bool skipOccurenceCheck = Gmod::isProductSelectionAssignment( lastParent, &node );
+				if ( skipOccurenceCheck )
+				{
 					return TraversalHandlerResult::Continue;
-				} );
+				}
 
-			EXPECT_EQ( maxExpected, maxOccurrence );
+				int occ = static_cast<int>( occurrences( parents, node ) );
+				if ( occ > state.maxOccurrence )
+				{
+					state.maxOccurrence = occ;
+				}
+
+				return TraversalHandlerResult::Continue;
+			};
+
+			bool completed = GmodTraversal::traverse( gmod, traversalState, handler );
+
+			EXPECT_EQ( maxExpected, traversalState.maxOccurrence );
 			EXPECT_TRUE( completed );
 		}
 
@@ -215,12 +225,18 @@ namespace dnv::vista::sdk::tests
 			auto visVersionForPath = VisVersion::v3_4a;
 			auto [vis, gmod] = visAndGmod( visVersionForPath );
 
-			int maxExpected = 2;
-			int maxOccurrence = 0;
+			struct MaxOccurrenceState
+			{
+				int maxOccurrence = 0;
+			};
+
+			MaxOccurrenceState state;
+			size_t maxExpected = 2;
 			TraversalOptions options;
 			options.maxTraversalOccurrence = maxExpected;
 
-			bool completed = GmodTraversal::traverse( gmod, [&maxOccurrence]( const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> TraversalHandlerResult {
+			TraverseHandlerWithState<MaxOccurrenceState> handler =
+				[]( MaxOccurrenceState& state, const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> TraversalHandlerResult {
 				const GmodNode* lastParent = parents.empty() ? nullptr : parents.back();
 				bool skipOccurenceCheck = Gmod::isProductSelectionAssignment( lastParent, &node );
 				if ( skipOccurenceCheck )
@@ -229,14 +245,17 @@ namespace dnv::vista::sdk::tests
 				}
 
 				int occ = static_cast<int>( occurrences( parents, node ) );
-				if ( occ > maxOccurrence )
+				if ( occ > state.maxOccurrence )
 				{
-					maxOccurrence = occ;
+					state.maxOccurrence = occ;
 				}
 
-				return TraversalHandlerResult::Continue; }, options );
+				return TraversalHandlerResult::Continue;
+			};
 
-			EXPECT_EQ( maxExpected, maxOccurrence );
+			bool completed = GmodTraversal::traverse( gmod, state, handler, options );
+
+			EXPECT_EQ( maxExpected, state.maxOccurrence );
 			EXPECT_TRUE( completed );
 		}
 

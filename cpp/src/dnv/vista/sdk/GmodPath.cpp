@@ -1288,8 +1288,11 @@ namespace dnv::vista::sdk
 
 		internal::ParseContext context( std::move( parts ), gmod, toFind );
 
-		std::function<TraversalHandlerResult( internal::ParseContext&, const std::vector<const GmodNode*>&, const GmodNode& )> handler =
-			internal::parseInternalTraversalHandler;
+		TraverseHandlerWithState<internal::ParseContext> handler =
+			[]( internal::ParseContext& state, const std::vector<const GmodNode*>& parents, const GmodNode& node ) -> TraversalHandlerResult {
+			return internal::parseInternalTraversalHandler( state, parents, node );
+		};
+
 		GmodTraversal::traverse( context, *baseNode, handler );
 
 		if ( context.resultingPath.has_value() )
