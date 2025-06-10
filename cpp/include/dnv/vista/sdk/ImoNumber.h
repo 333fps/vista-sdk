@@ -7,6 +7,10 @@
 
 namespace dnv::vista::sdk
 {
+	//=====================================================================
+	// ImoNumber class
+	//=====================================================================
+
 	/**
 	 * @brief Represents an International Maritime Organization (IMO) number.
 	 *
@@ -18,9 +22,9 @@ namespace dnv::vista::sdk
 	class ImoNumber final
 	{
 	public:
-		//=====================================================================
-		// Construction / destruction
-		//=====================================================================
+		//----------------------------------------------
+		// Construction
+		//----------------------------------------------
 
 		/**
 		 * @brief Constructs an ImoNumber from an integer value.
@@ -60,12 +64,16 @@ namespace dnv::vista::sdk
 		/** @brief Move constructor */
 		ImoNumber( ImoNumber&& ) noexcept;
 
+		//----------------------------------------------
+		// Destruction
+		//----------------------------------------------
+
 		/** @brief Destructor */
 		~ImoNumber() = default;
 
-		//=====================================================================
+		//----------------------------------------------
 		// Assignment operators
-		//=====================================================================
+		//----------------------------------------------
 
 		/** @brief Copy assignment operator */
 		ImoNumber& operator=( const ImoNumber& ) = default;
@@ -73,37 +81,42 @@ namespace dnv::vista::sdk
 		/** @brief Move assignment operator */
 		ImoNumber& operator=( ImoNumber&& ) noexcept = default;
 
-		//=====================================================================
-		// Comparison Operators
-		//=====================================================================
+		//----------------------------------------------
+		// Operators
+		//----------------------------------------------
 
 		/**
 		 * @brief Equality comparison operator.
 		 * @param other The ImoNumber object to compare with this object.
 		 * @return True if both ImoNumber objects represent the same IMO number, false otherwise.
 		 */
-		bool operator==( const ImoNumber& other ) const;
+		inline bool operator==( const ImoNumber& other ) const noexcept;
 
 		/**
 		 * @brief Inequality comparison operator.
 		 * @param other The ImoNumber object to compare with this object.
 		 * @return True if the ImoNumber objects represent different IMO numbers, false otherwise.
 		 */
-		bool operator!=( const ImoNumber& other ) const;
-
-		//=====================================================================
-		// Conversion Operator
-		//=====================================================================
+		inline bool operator!=( const ImoNumber& other ) const noexcept;
 
 		/**
 		 * @brief Explicit conversion to an integer.
 		 * @return The underlying 7-digit integer value of the IMO number.
 		 */
-		[[nodiscard]] explicit operator int() const;
+		[[nodiscard]] inline explicit operator int() const noexcept;
 
-		//=====================================================================
-		// Public Member Methods
-		//=====================================================================
+		//----------------------------------------------
+		// Accessors
+		//----------------------------------------------
+
+		/**
+		 * @brief Hash function for ImoNumber
+		 */
+		[[nodiscard]] inline size_t hashCode() const noexcept;
+
+		//----------------------------------------------
+		// String conversion
+		//----------------------------------------------
 
 		/**
 		 * @brief Get the string representation of this IMO number
@@ -111,14 +124,9 @@ namespace dnv::vista::sdk
 		 */
 		[[nodiscard]] std::string toString() const;
 
-		/**
-		 * @brief Hash function for ImoNumber
-		 */
-		[[nodiscard]] size_t hashCode() const noexcept;
-
-		//=====================================================================
-		// Static Public methods
-		//=====================================================================
+		//----------------------------------------------
+		// State inspection
+		//----------------------------------------------
 
 		/**
 		 * @brief Checks if an integer value represents a valid IMO number.
@@ -128,6 +136,10 @@ namespace dnv::vista::sdk
 		 * @return True if the integer is a valid IMO number, false otherwise.
 		 */
 		[[nodiscard]] static bool isValid( int imoNumber );
+
+		//----------------------------------------------
+		// Parsing
+		//----------------------------------------------
 
 		/**
 		 * @brief Parses a string representation into an ImoNumber object.
@@ -164,3 +176,5 @@ namespace dnv::vista::sdk
 		int m_value;
 	};
 }
+
+#include "ImoNumber.inl"

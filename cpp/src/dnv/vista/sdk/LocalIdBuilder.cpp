@@ -44,17 +44,24 @@ namespace dnv::vista::sdk
 					size_t endOfSecIndex = ( secIndex != std::string_view::npos ) ? ( secIndex + 4 + 1 ) : std::string_view::npos;
 
 					if ( secIndex != std::string_view::npos )
+					{
 						return { secIndex, endOfSecIndex };
+					}
 
 					if ( isVerbose && customIndex != std::string_view::npos )
+					{
 						return { customIndex, endOfCustomIndex };
+					}
 
 					return { metaIndex, endOfMetaIndex };
 				}
 
 				case LocalIdParsingState::SecondaryItem:
 					if ( isVerbose && customIndex != std::string_view::npos )
+					{
 						return { customIndex, endOfCustomIndex };
+					}
+
 					return { metaIndex, endOfMetaIndex };
 
 				case LocalIdParsingState::NamingRule:
@@ -132,272 +139,12 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	//----------------------------------------------
-	// Assignment operators
-	//----------------------------------------------
-
-	LocalIdBuilder& LocalIdBuilder::operator=( LocalIdBuilder&& other ) noexcept
-	{
-		if ( this != &other )
-		{
-			m_visVersion = std::move( other.m_visVersion );
-			m_verboseMode = other.m_verboseMode;
-			m_items = std::move( other.m_items );
-			m_quantity = std::move( other.m_quantity );
-			m_content = std::move( other.m_content );
-			m_calculation = std::move( other.m_calculation );
-			m_state = std::move( other.m_state );
-			m_command = std::move( other.m_command );
-			m_type = std::move( other.m_type );
-			m_position = std::move( other.m_position );
-			m_detail = std::move( other.m_detail );
-		}
-		return *this;
-	}
-
-	//----------------------------------------------
-	// Operators
-	//----------------------------------------------
-
-	bool LocalIdBuilder::operator==( const LocalIdBuilder& other ) const
-	{
-		return equals( other );
-	}
-
-	bool LocalIdBuilder::operator!=( const LocalIdBuilder& other ) const
-	{
-		return !equals( other );
-	}
-
-	bool LocalIdBuilder::equals( const LocalIdBuilder& other ) const
-	{
-		if ( m_visVersion != other.m_visVersion )
-			throw std::invalid_argument( "Cant compare local IDs from different VIS versions" );
-
-		return m_items.primaryItem() == other.m_items.primaryItem() &&
-			   m_items.secondaryItem() == other.m_items.secondaryItem() &&
-			   m_quantity == other.m_quantity &&
-			   m_calculation == other.m_calculation &&
-			   m_content == other.m_content &&
-			   m_position == other.m_position &&
-			   m_state == other.m_state &&
-			   m_command == other.m_command &&
-			   m_type == other.m_type &&
-			   m_detail == other.m_detail;
-	}
-
-	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	std::optional<VisVersion> LocalIdBuilder::visVersion() const noexcept
-	{
-		return m_visVersion;
-	}
-
-	const std::optional<GmodPath>& LocalIdBuilder::primaryItem() const noexcept
-	{
-		return m_items.primaryItem();
-	}
-
-	const std::optional<GmodPath>& LocalIdBuilder::secondaryItem() const noexcept
-	{
-		return m_items.secondaryItem();
-	}
-
-	std::vector<MetadataTag> LocalIdBuilder::metadataTags() const noexcept
-	{
-		std::vector<MetadataTag> tags;
-		tags.reserve( 8 );
-
-		if ( m_quantity.has_value() )
-			tags.push_back( *m_quantity );
-		if ( m_calculation.has_value() )
-			tags.push_back( *m_calculation );
-		if ( m_content.has_value() )
-			tags.push_back( *m_content );
-		if ( m_position.has_value() )
-			tags.push_back( *m_position );
-		if ( m_state.has_value() )
-			tags.push_back( *m_state );
-		if ( m_command.has_value() )
-			tags.push_back( *m_command );
-		if ( m_type.has_value() )
-			tags.push_back( *m_type );
-		if ( m_detail.has_value() )
-			tags.push_back( *m_detail );
-
-		return tags;
-	}
-
-	size_t LocalIdBuilder::hashCode() const noexcept
-	{
-		size_t hash = 0;
-
-		if ( m_items.primaryItem().has_value() )
-			hash ^= m_items.primaryItem()->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_items.secondaryItem().has_value() )
-			hash ^= m_items.secondaryItem()->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_quantity.has_value() )
-			hash ^= m_quantity->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_calculation.has_value() )
-			hash ^= m_calculation->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_content.has_value() )
-			hash ^= m_content->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_position.has_value() )
-			hash ^= m_position->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_state.has_value() )
-			hash ^= m_state->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_command.has_value() )
-			hash ^= m_command->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_type.has_value() )
-			hash ^= m_type->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_detail.has_value() )
-			hash ^= m_detail->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		return hash;
-	}
-
-	//----------------------------------------------
-	// State inspection methods
-	//----------------------------------------------
-
-	bool LocalIdBuilder::isValid() const noexcept
-	{
-		if ( !m_visVersion.has_value() )
-		{
-			return false;
-		}
-
-		if ( !m_items.primaryItem().has_value() )
-		{
-			return false;
-		}
-
-		if ( !m_quantity.has_value() &&
-			 !m_calculation.has_value() &&
-			 !m_content.has_value() &&
-			 !m_position.has_value() &&
-			 !m_state.has_value() &&
-			 !m_command.has_value() &&
-			 !m_type.has_value() &&
-			 !m_detail.has_value() )
-		{
-			return false;
-		}
-
-		return true;
-	}
-
-	bool LocalIdBuilder::isEmpty() const noexcept
-	{
-		bool itemsEmpty = !m_items.primaryItem().has_value() &&
-						  !m_items.secondaryItem().has_value();
-
-		bool metadataEmpty = !m_quantity.has_value() &&
-							 !m_content.has_value() &&
-							 !m_calculation.has_value() &&
-							 !m_state.has_value() &&
-							 !m_command.has_value() &&
-							 !m_type.has_value() &&
-							 !m_position.has_value() &&
-							 !m_detail.has_value();
-
-		return itemsEmpty && metadataEmpty;
-	}
-
-	bool LocalIdBuilder::isVerboseMode() const noexcept
-	{
-		return m_verboseMode;
-	}
-
-	//----------------------------------------------
-	// Metadata inspection methods
-	//----------------------------------------------
-
-	bool LocalIdBuilder::hasCustomTag() const noexcept
-	{
-		return ( m_quantity.has_value() && m_quantity->isCustom() ) ||
-			   ( m_content.has_value() && m_content->isCustom() ) ||
-			   ( m_calculation.has_value() && m_calculation->isCustom() ) ||
-			   ( m_state.has_value() && m_state->isCustom() ) ||
-			   ( m_command.has_value() && m_command->isCustom() ) ||
-			   ( m_type.has_value() && m_type->isCustom() ) ||
-			   ( m_position.has_value() && m_position->isCustom() ) ||
-			   ( m_detail.has_value() && m_detail->isCustom() );
-	}
-
-	bool LocalIdBuilder::isEmptyMetadata() const noexcept
-	{
-		return !m_quantity.has_value() &&
-			   !m_content.has_value() &&
-			   !m_calculation.has_value() &&
-			   !m_state.has_value() &&
-			   !m_command.has_value() &&
-			   !m_type.has_value() &&
-			   !m_position.has_value() &&
-			   !m_detail.has_value();
-	}
-
-	const LocalIdItems& LocalIdBuilder::items() const noexcept
-	{
-		return m_items;
-	}
-
-	const std::optional<MetadataTag>& LocalIdBuilder::quantity() const noexcept
-	{
-		return m_quantity;
-	}
-
-	const std::optional<MetadataTag>& LocalIdBuilder::content() const noexcept
-	{
-		return m_content;
-	}
-
-	const std::optional<MetadataTag>& LocalIdBuilder::calculation() const noexcept
-	{
-		return m_calculation;
-	}
-
-	const std::optional<MetadataTag>& LocalIdBuilder::state() const noexcept
-	{
-		return m_state;
-	}
-
-	const std::optional<MetadataTag>& LocalIdBuilder::command() const noexcept
-	{
-		return m_command;
-	}
-
-	const std::optional<MetadataTag>& LocalIdBuilder::type() const noexcept
-	{
-		return m_type;
-	}
-
-	const std::optional<MetadataTag>& LocalIdBuilder::position() const noexcept
-	{
-		return m_position;
-	}
-
-	const std::optional<MetadataTag>& LocalIdBuilder::detail() const noexcept
-	{
-		return m_detail;
-	}
-
-	//----------------------------------------------
 	// String conversion
 	//----------------------------------------------
 
 	std::string LocalIdBuilder::toString() const
 	{
+		/* LocalId format: /dnv-v2/vis-{version}/{primary-item}[/sec/{secondary-item}][~{description}]/meta/{metadata-tags} */
 		std::stringstream ss;
 		toString( ss );
 
@@ -411,13 +158,29 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "No VisVersion configured on LocalId" );
 		}
 
+		/* Naming rule prefix: "/dnv-v2" */
 		builder << "/" << namingRule << "/";
-		builder << VisVersionExtensions::toVersionString( *m_visVersion );
-		builder << '/';
 
+		/* VIS version: "vis-{major}-{minor}{patch}" */
+		builder << VisVersionExtensions::toVersionString( *m_visVersion ) << '/';
+
+		/* Items section: primary item [+ secondary item] [+ description]
+			Format: {gmod-path}[/sec/{gmod-path}][~{custom-description}]
+			Examples:
+			- "411.1-11" (primary only)
+			- "411.1-11/sec/411.11-12" (primary + secondary)
+			- "411.1-11~engine-temperature" (primary + description)
+		*/
 		m_items.append( builder, m_verboseMode );
+
+		/* Metadata section prefix: "/meta" */
 		builder << "meta/";
 
+		/* Metadata tags: {prefix}{separator}{value}
+			Format: {codebook-prefix}{-|~}{value}/
+			Separator: '-' for standard values, '~' for custom values
+			Order: quantity, content, calculation, state, command, type, position, detail
+		*/
 		auto appendMeta = [&builder]( const std::optional<MetadataTag>& tag ) {
 			if ( !tag.has_value() )
 			{
@@ -436,6 +199,7 @@ namespace dnv::vista::sdk
 		appendMeta( m_position );
 		appendMeta( m_detail );
 
+		/* Cleanup trailing slash */
 		std::string result = builder.str();
 		if ( !result.empty() && result.back() == '/' )
 		{
@@ -521,6 +285,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::tryWithVisVersion( const std::optional<VisVersion>& version )
 	{
 		bool succeeded;
+
 		return tryWithVisVersion( version, succeeded );
 	}
 
@@ -541,11 +306,13 @@ namespace dnv::vista::sdk
 			if ( VisVersionExtensions::tryParse( *visVersionStr, v ) )
 			{
 				auto localIdBuilder = tryWithVisVersion( v, succeeded );
+
 				return localIdBuilder;
 			}
 		}
 
 		succeeded = false;
+
 		return std::move( *this );
 	}
 
@@ -577,6 +344,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( GmodPath&& item )
 	{
 		bool succeeded;
+
 		return tryWithPrimaryItem( std::move( item ), succeeded );
 	}
 
@@ -585,6 +353,7 @@ namespace dnv::vista::sdk
 		if ( item.length() == 0 )
 		{
 			succeeded = false;
+
 			return std::move( *this );
 		}
 
@@ -598,6 +367,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::tryWithPrimaryItem( std::optional<GmodPath>&& item )
 	{
 		bool succeeded;
+
 		return tryWithPrimaryItem( std::move( item ), succeeded );
 	}
 
@@ -606,6 +376,7 @@ namespace dnv::vista::sdk
 		if ( !item.has_value() )
 		{
 			succeeded = false;
+
 			return std::move( *this );
 		}
 
@@ -644,6 +415,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( GmodPath&& item )
 	{
 		bool succeeded;
+
 		return tryWithSecondaryItem( std::move( item ), succeeded );
 	}
 
@@ -652,6 +424,7 @@ namespace dnv::vista::sdk
 		if ( item.length() == 0 )
 		{
 			succeeded = false;
+
 			return std::move( *this );
 		}
 
@@ -665,6 +438,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::tryWithSecondaryItem( std::optional<GmodPath>&& item )
 	{
 		bool succeeded;
+
 		return tryWithSecondaryItem( std::move( item ), succeeded );
 	}
 
@@ -673,6 +447,7 @@ namespace dnv::vista::sdk
 		if ( !item.has_value() )
 		{
 			succeeded = false;
+
 			return std::move( *this );
 		}
 
@@ -688,6 +463,7 @@ namespace dnv::vista::sdk
 		LocalIdBuilder result( std::move( *this ) );
 
 		result.m_items = LocalIdItems( std::move( result.m_items ), std::nullopt );
+
 		return result;
 	}
 
@@ -711,6 +487,7 @@ namespace dnv::vista::sdk
 	LocalIdBuilder LocalIdBuilder::tryWithMetadataTag( const std::optional<MetadataTag>& metadataTag )
 	{
 		bool succeeded;
+
 		return tryWithMetadataTag( metadataTag, succeeded );
 	}
 
@@ -719,6 +496,7 @@ namespace dnv::vista::sdk
 		if ( !metadataTag.has_value() )
 		{
 			succeeded = false;
+
 			return std::move( *this );
 		}
 
@@ -797,6 +575,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_quantity = quantity;
+
 		return result;
 	}
 
@@ -804,6 +583,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_quantity = std::nullopt;
+
 		return result;
 	}
 
@@ -815,6 +595,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_content = content;
+
 		return result;
 	}
 
@@ -822,6 +603,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_content = std::nullopt;
+
 		return result;
 	}
 
@@ -833,6 +615,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_calculation = calculation;
+
 		return result;
 	}
 
@@ -840,6 +623,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_calculation = std::nullopt;
+
 		return result;
 	}
 
@@ -851,6 +635,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_state = state;
+
 		return result;
 	}
 
@@ -858,6 +643,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_state = std::nullopt;
+
 		return result;
 	}
 
@@ -869,6 +655,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_command = command;
+
 		return result;
 	}
 
@@ -876,6 +663,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_command = std::nullopt;
+
 		return result;
 	}
 
@@ -887,6 +675,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_type = type;
+
 		return result;
 	}
 
@@ -894,6 +683,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_type = std::nullopt;
+
 		return result;
 	}
 
@@ -905,6 +695,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_position = position;
+
 		return result;
 	}
 
@@ -912,6 +703,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_position = std::nullopt;
+
 		return result;
 	}
 
@@ -923,6 +715,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_detail = detail;
+
 		return result;
 	}
 
@@ -930,6 +723,7 @@ namespace dnv::vista::sdk
 	{
 		LocalIdBuilder result = std::move( *this );
 		result.m_detail = std::nullopt;
+
 		return result;
 	}
 
@@ -971,6 +765,7 @@ namespace dnv::vista::sdk
 		}
 
 		errors = errorBuilder.build();
+
 		return success;
 	}
 
@@ -992,6 +787,7 @@ namespace dnv::vista::sdk
 		if ( localIdStr[0] != '/' )
 		{
 			errorBuilder.addError( LocalIdParsingState::Formatting, "Invalid format: missing '/' as first character" );
+
 			return false;
 		}
 
@@ -1044,6 +840,7 @@ namespace dnv::vista::sdk
 					if ( segment != namingRule )
 					{
 						errorBuilder.addError( LocalIdParsingState::NamingRule, predefinedMessage );
+
 						return false;
 					}
 					advanceParser( i, segment, state );
@@ -1062,6 +859,7 @@ namespace dnv::vista::sdk
 					if ( !segment.starts_with( "vis-" ) )
 					{
 						errorBuilder.addError( LocalIdParsingState::VisVersion, predefinedMessage );
+
 						return false;
 					}
 
@@ -1069,6 +867,7 @@ namespace dnv::vista::sdk
 					if ( !VisVersionExtensions::tryParse( versionStr, visVersion ) )
 					{
 						errorBuilder.addError( LocalIdParsingState::VisVersion, predefinedMessage );
+
 						return false;
 					}
 
@@ -1125,7 +924,9 @@ namespace dnv::vista::sdk
 					std::string_view code = ( dashIndex == std::string_view::npos ) ? segment : segment.substr( 0, dashIndex );
 
 					if ( !gmod )
+					{
 						return false;
+					}
 
 					if ( primaryItemStart == std::numeric_limits<size_t>::max() )
 					{
@@ -1143,11 +944,17 @@ namespace dnv::vista::sdk
 						LocalIdParsingState nextState = state;
 
 						if ( segment.starts_with( "sec" ) )
+						{
 							nextState = LocalIdParsingState::SecondaryItem;
+						}
 						else if ( segment.starts_with( "meta" ) )
+						{
 							nextState = LocalIdParsingState::MetaQuantity;
+						}
 						else if ( !segment.empty() && segment[0] == '~' )
+						{
 							nextState = LocalIdParsingState::ItemDescription;
+						}
 
 						if ( nextState != state )
 						{
@@ -1191,17 +998,24 @@ namespace dnv::vista::sdk
 							{
 								errorBuilder.addError( LocalIdParsingState::PrimaryItem,
 									"Invalid or missing '/meta' prefix after Primary item" );
+
 								return false;
 							}
 
 							std::string_view nextSegment = span.substr( nextStateIndex + 1 );
 
 							if ( nextSegment.starts_with( "sec" ) )
+							{
 								nextState = LocalIdParsingState::SecondaryItem;
+							}
 							else if ( nextSegment.starts_with( "meta" ) )
+							{
 								nextState = LocalIdParsingState::MetaQuantity;
+							}
 							else if ( !nextSegment.empty() && nextSegment[0] == '~' )
+							{
 								nextState = LocalIdParsingState::ItemDescription;
+							}
 
 							std::string_view invalidPrimaryItemPath = span.substr( i, nextStateIndex - i );
 							errorBuilder.addError( LocalIdParsingState::PrimaryItem,
@@ -1229,7 +1043,9 @@ namespace dnv::vista::sdk
 					std::string_view code = ( dashIndex == std::string_view::npos ) ? segment : segment.substr( 0, dashIndex );
 
 					if ( !gmod )
+					{
 						return false;
+					}
 
 					if ( secondaryItemStart == std::numeric_limits<size_t>::max() )
 					{
@@ -1295,6 +1111,7 @@ namespace dnv::vista::sdk
 							{
 								errorBuilder.addError( LocalIdParsingState::SecondaryItem,
 									"Invalid or missing '/meta' prefix after Secondary item" );
+
 								return false;
 							}
 
@@ -1332,6 +1149,7 @@ namespace dnv::vista::sdk
 					if ( metaIndex == std::string_view::npos )
 					{
 						errorBuilder.addError( LocalIdParsingState::ItemDescription, predefinedMessage );
+
 						return false;
 					}
 
@@ -1351,7 +1169,10 @@ namespace dnv::vista::sdk
 
 					bool result = parseMetaTag( CodebookName::Quantity, state, i, segment, qty, codebooks, errorBuilder );
 					if ( !result )
+					{
 						return false;
+					}
+
 					break;
 				}
 
@@ -1365,7 +1186,9 @@ namespace dnv::vista::sdk
 
 					bool result = parseMetaTag( CodebookName::Content, state, i, segment, cnt, codebooks, errorBuilder );
 					if ( !result )
+					{
 						return false;
+					}
 					break;
 				}
 
@@ -1379,7 +1202,9 @@ namespace dnv::vista::sdk
 
 					bool result = parseMetaTag( CodebookName::Calculation, state, i, segment, calc, codebooks, errorBuilder );
 					if ( !result )
+					{
 						return false;
+					}
 					break;
 				}
 
@@ -1393,7 +1218,9 @@ namespace dnv::vista::sdk
 
 					bool result = parseMetaTag( CodebookName::State, state, i, segment, stateTag, codebooks, errorBuilder );
 					if ( !result )
+					{
 						return false;
+					}
 					break;
 				}
 
@@ -1407,7 +1234,9 @@ namespace dnv::vista::sdk
 
 					bool result = parseMetaTag( CodebookName::Command, state, i, segment, cmd, codebooks, errorBuilder );
 					if ( !result )
+					{
 						return false;
+					}
 					break;
 				}
 
@@ -1421,7 +1250,9 @@ namespace dnv::vista::sdk
 
 					bool result = parseMetaTag( CodebookName::Type, state, i, segment, type, codebooks, errorBuilder );
 					if ( !result )
+					{
 						return false;
+					}
 					break;
 				}
 
@@ -1435,7 +1266,9 @@ namespace dnv::vista::sdk
 
 					bool result = parseMetaTag( CodebookName::Position, state, i, segment, pos, codebooks, errorBuilder );
 					if ( !result )
+					{
 						return false;
+					}
 					break;
 				}
 
@@ -1449,7 +1282,9 @@ namespace dnv::vista::sdk
 
 					bool result = parseMetaTag( CodebookName::Detail, state, i, segment, detail, codebooks, errorBuilder );
 					if ( !result )
+					{
 						return false;
+					}
 					break;
 				}
 				case LocalIdParsingState::EmptyState:
@@ -1466,38 +1301,49 @@ namespace dnv::vista::sdk
 		LocalIdBuilder builder = LocalIdBuilder::create( visVersion );
 
 		if ( primaryItem.has_value() )
+		{
 			builder = builder.tryWithPrimaryItem( primaryItem.value() );
-
+		}
 		if ( secondaryItem.has_value() )
+		{
 			builder = builder.tryWithSecondaryItem( secondaryItem.value() );
-
+		}
 		if ( verbose )
+		{
 			builder = builder.withVerboseMode( verbose );
-
+		}
 		if ( qty.has_value() )
+		{
 			builder = builder.tryWithMetadataTag( qty.value() );
-
+		}
 		if ( cnt.has_value() )
+		{
 			builder = builder.tryWithMetadataTag( cnt.value() );
-
+		}
 		if ( calc.has_value() )
+		{
 			builder = builder.tryWithMetadataTag( calc.value() );
-
+		}
 		if ( stateTag.has_value() )
+		{
 			builder = builder.tryWithMetadataTag( stateTag.value() );
-
+		}
 		if ( cmd.has_value() )
+		{
 			builder = builder.tryWithMetadataTag( cmd.value() );
-
+		}
 		if ( type.has_value() )
+		{
 			builder = builder.tryWithMetadataTag( type.value() );
-
+		}
 		if ( pos.has_value() )
+		{
 			builder = builder.tryWithMetadataTag( pos.value() );
-
+		}
 		if ( detail.has_value() )
+		{
 			builder = builder.tryWithMetadataTag( detail.value() );
-
+		}
 		if ( !qty.has_value() && !cnt.has_value() && !calc.has_value() &&
 			 !stateTag.has_value() && !cmd.has_value() && !type.has_value() &&
 			 !pos.has_value() && !detail.has_value() )
@@ -1507,6 +1353,7 @@ namespace dnv::vista::sdk
 		}
 
 		localIdBuilder = std::move( builder );
+
 		return ( !errorBuilder.hasError() && !invalidSecondaryItem );
 	}
 
@@ -1535,21 +1382,37 @@ namespace dnv::vista::sdk
 	std::optional<LocalIdParsingState> LocalIdBuilder::metaPrefixToState( std::string_view prefix )
 	{
 		if ( prefix == "q" || prefix == "qty" )
+		{
 			return LocalIdParsingState::MetaQuantity;
+		}
 		if ( prefix == "c" || prefix == "cnt" )
+		{
 			return LocalIdParsingState::MetaContent;
+		}
 		if ( prefix == "cal" || prefix == "calc" )
+		{
 			return LocalIdParsingState::MetaCalculation;
+		}
 		if ( prefix == "s" || prefix == "state" )
+		{
 			return LocalIdParsingState::MetaState;
+		}
 		if ( prefix == "cmd" )
+		{
 			return LocalIdParsingState::MetaCommand;
+		}
 		if ( prefix == "t" || prefix == "type" )
+		{
 			return LocalIdParsingState::MetaType;
+		}
 		if ( prefix == "pos" )
+		{
 			return LocalIdParsingState::MetaPosition;
+		}
 		if ( prefix == "d" || prefix == "detail" )
+		{
 			return LocalIdParsingState::MetaDetail;
+		}
 
 		return std::nullopt;
 	}
@@ -1596,7 +1459,9 @@ namespace dnv::vista::sdk
 		LocalIdParsingErrorBuilder& errorBuilder )
 	{
 		if ( !codebooks )
+		{
 			return false;
+		}
 
 		auto dashIndex = segment.find( '-' );
 		auto tildeIndex = segment.find( '~' );
@@ -1607,6 +1472,7 @@ namespace dnv::vista::sdk
 			errorBuilder.addError( state,
 				"Invalid metadata tag: missing prefix '-' or '~' in " + std::string( segment ) );
 			advanceParser( i, segment, state );
+
 			return true;
 		}
 
@@ -1617,12 +1483,14 @@ namespace dnv::vista::sdk
 		{
 			errorBuilder.addError( state,
 				"Invalid metadata tag: unknown prefix " + std::string( actualPrefix ) );
+
 			return false;
 		}
 
 		if ( actualState.value() > state )
 		{
 			advanceParser( state, actualState.value() );
+
 			return true;
 		}
 
@@ -1634,6 +1502,7 @@ namespace dnv::vista::sdk
 			auto codebookStr = codebookNametoString( codebookName );
 			errorBuilder.addError( state,
 				"Invalid " + codebookStr + " metadata tag: missing value" );
+
 			return false;
 		}
 
@@ -1654,6 +1523,7 @@ namespace dnv::vista::sdk
 			}
 
 			advanceParser( i, segment, state );
+
 			return true;
 		}
 
@@ -1665,9 +1535,13 @@ namespace dnv::vista::sdk
 		}
 
 		if ( !nextState.has_value() )
+		{
 			advanceParser( i, segment, state );
+		}
 		else
+		{
 			advanceParser( i, segment, state, nextState.value() );
+		}
 
 		return true;
 	}

@@ -10,8 +10,12 @@
 namespace dnv::vista::sdk
 {
 	//=====================================================================
-	// Construction / destruction
+	// ImoNumber class
 	//=====================================================================
+
+	//----------------------------------------------
+	// Construction
+	//----------------------------------------------
 
 	ImoNumber::ImoNumber( int value )
 	{
@@ -43,47 +47,20 @@ namespace dnv::vista::sdk
 
 	ImoNumber::ImoNumber( ImoNumber&& ) noexcept = default; /* TODO - transfer in .h file later */
 
-	//=====================================================================
-	// Comparison Operators
-	//=====================================================================
-
-	bool ImoNumber::operator==( const ImoNumber& other ) const
-	{
-		return m_value == other.m_value;
-	}
-
-	bool ImoNumber::operator!=( const ImoNumber& other ) const
-	{
-		return !( *this == other );
-	}
-
-	//=====================================================================
-	// Conversion Operator
-	//=====================================================================
-
-	ImoNumber::operator int() const
-	{
-		return m_value;
-	}
-
-	//=====================================================================
-	// Public Member Methods
-	//=====================================================================
+	//----------------------------------------------
+	// String conversion
+	//----------------------------------------------
 
 	std::string ImoNumber::toString() const
 	{
-		return "IMO" + std::to_string( m_value );
+		char buffer[12];
+		const int written = std::snprintf( buffer, sizeof( buffer ), "IMO%d", m_value );
+		return std::string( buffer, written );
 	}
 
-	size_t ImoNumber::hashCode() const noexcept
-	{
-		std::size_t hash = std::hash<int>{}( m_value );
-		return hash;
-	}
-
-	//=====================================================================
-	// Static Public methods
-	//=====================================================================
+	//----------------------------------------------
+	// State inspection
+	//----------------------------------------------
 
 	/*
 		IMO number validation according to the standard:
@@ -127,6 +104,10 @@ namespace dnv::vista::sdk
 
 		return isValid;
 	}
+
+	//----------------------------------------------
+	// Parsing
+	//----------------------------------------------
 
 	ImoNumber ImoNumber::parse( const char* value )
 	{

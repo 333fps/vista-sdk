@@ -103,45 +103,45 @@ if(MSVC)
 #	add_compile_options(/wd6326)                                        # potential comparison of a constant with another constant
 #	add_compile_options(/wd6387)                                        # this does not adhere to the specification for the function
 else() # GCC / Clang
-    # ============================================================================
-    # GCC/Clang settings
-    # ============================================================================
-    add_compile_options(-std=c++20)                                     # C++20 standard
-    add_compile_options(-Wall)                                          # All warnings
-    add_compile_options(-Wextra)                                        # Extra warnings
-    add_compile_options(-Wpedantic)                                     # Pedantic warnings
-    add_compile_options(-msse4.2)                                       # SSE4.2 support
+	# ============================================================================
+	# GCC/Clang settings
+	# ============================================================================
+	add_compile_options(-std=c++20)                                     # C++20 standard
+	add_compile_options(-Wall)                                          # All warnings
+	add_compile_options(-Wextra)                                        # Extra warnings
+	add_compile_options(-Wpedantic)                                     # Pedantic warnings
+	add_compile_options(-msse4.2)                                       # SSE4.2 support
 
-    # 🔥 MAXIMUM PERFORMANCE FOR GCC/CLANG
-    add_compile_options($<$<CONFIG:Release>:-O3>)                       # Maximum optimization
-    add_compile_options($<$<CONFIG:Release>:-march=native>)             # Use all available CPU features
-    add_compile_options($<$<CONFIG:Release>:-mtune=native>)             # Tune for current CPU
-    add_compile_options($<$<CONFIG:Release>:-ffast-math>)               # Fast math operations
-    add_compile_options($<$<CONFIG:Release>:-funroll-loops>)            # Unroll loops
-    add_compile_options($<$<CONFIG:Release>:-DNDEBUG>)                  # Disable assertions
+	# 🔥 MAXIMUM PERFORMANCE FOR GCC/CLANG
+	add_compile_options($<$<CONFIG:Release>:-O3>)                       # Maximum optimization
+	add_compile_options($<$<CONFIG:Release>:-march=native>)             # Use all available CPU features
+	add_compile_options($<$<CONFIG:Release>:-mtune=native>)             # Tune for current CPU
+	add_compile_options($<$<CONFIG:Release>:-ffast-math>)               # Fast math operations
+	add_compile_options($<$<CONFIG:Release>:-funroll-loops>)            # Unroll loops
+	add_compile_options($<$<CONFIG:Release>:-DNDEBUG>)                  # Disable assertions
 
-    # SIMD optimizations
-    add_compile_options(-mavx -mavx2)                                   # AVX/AVX2 support
-    add_compile_options(-mfma)                                          # Fused multiply-add
+	# SIMD optimizations
+	add_compile_options(-mavx -mavx2)                                   # AVX/AVX2 support
+	add_compile_options(-mfma)                                          # Fused multiply-add
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        add_compile_options(-fdiagnostics-color=always)                 # Colored diagnostics
-        add_link_options(-static-libgcc)
-        add_link_options(-static-libstdc++)
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		add_compile_options(-fdiagnostics-color=always)                 # Colored diagnostics
+		add_link_options(-static-libgcc)
+		add_link_options(-static-libstdc++)
 
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(-fno-pie)                                   # Position independent code
-        add_compile_options(-fPIC)                                      # Position independent code
-        add_compile_options(-Wno-pre-c++17-compat)                      # Disable pre-C++17 warnings
-        add_compile_options(-Wno-c++98-compat)                          # Disable C++98 compatibility warnings
-        add_compile_options(-fcolor-diagnostics)                        # Colored diagnostics
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		add_compile_options(-fno-pie)                                   # Position independent code
+		add_compile_options(-fPIC)                                      # Position independent code
+		add_compile_options(-Wno-pre-c++17-compat)                      # Disable pre-C++17 warnings
+		add_compile_options(-Wno-c++98-compat)                          # Disable C++98 compatibility warnings
+		add_compile_options(-fcolor-diagnostics)                        # Colored diagnostics
 
-        # Clang-specific optimizations
-        add_compile_options($<$<CONFIG:Release>:-fvectorize>)           # Enable vectorization
-        add_compile_options($<$<CONFIG:Release>:-fslp-vectorize>)       # SLP vectorization
-        add_compile_options($<$<CONFIG:Release>:-ffp-contract=fast>)    # Fast FP contraction
-    endif()
+		# Clang-specific optimizations
+		add_compile_options($<$<CONFIG:Release>:-fvectorize>)           # Enable vectorization
+		add_compile_options($<$<CONFIG:Release>:-fslp-vectorize>)       # SLP vectorization
+		add_compile_options($<$<CONFIG:Release>:-ffp-contract=fast>)    # Fast FP contraction
+	endif()
 
-    add_link_options($<$<CONFIG:Release>:-s>)                           # Strip symbols
-    add_link_options($<$<CONFIG:Release>:-Wl,--gc-sections>)            # Remove unused sections
+	add_link_options($<$<CONFIG:Release>:-s>)                           # Strip symbols
+	add_link_options($<$<CONFIG:Release>:-Wl,--gc-sections>)            # Remove unused sections
 endif()

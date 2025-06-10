@@ -82,7 +82,7 @@ namespace dnv::vista::sdk
 		LocalIdBuilder& operator=( const LocalIdBuilder& ) = delete;
 
 		/** @brief Move assignment operator */
-		LocalIdBuilder& operator=( LocalIdBuilder&& ) noexcept;
+		inline LocalIdBuilder& operator=( LocalIdBuilder&& ) noexcept;
 
 		//----------------------------------------------
 		// Operators
@@ -95,7 +95,7 @@ namespace dnv::vista::sdk
 		 * @return True if the builders represent the same state, false otherwise.
 		 * @see equals
 		 */
-		bool operator==( const LocalIdBuilder& other ) const;
+		inline bool operator==( const LocalIdBuilder& other ) const;
 
 		/**
 		 * @brief Inequality comparison operator.
@@ -104,7 +104,7 @@ namespace dnv::vista::sdk
 		 * @return True if the builders represent different states, false otherwise.
 		 * @see equals
 		 */
-		bool operator!=( const LocalIdBuilder& other ) const;
+		inline bool operator!=( const LocalIdBuilder& other ) const;
 
 		/**
 		 * @brief Checks for logical equality between this builder's state and another's.
@@ -113,7 +113,7 @@ namespace dnv::vista::sdk
 		 * @param[in] other The other `LocalIdBuilder` instance to compare against.
 		 * @return True if the builders represent the same logical state, false otherwise.
 		 */
-		bool equals( const LocalIdBuilder& other ) const;
+		inline bool equals( const LocalIdBuilder& other ) const;
 
 		//----------------------------------------------
 		// Accessors
@@ -124,7 +124,7 @@ namespace dnv::vista::sdk
 		 * @return An `std::optional<VisVersion>` containing the VIS version if set,
 		 *         or `std::nullopt` if no version is set.
 		 */
-		[[nodiscard]] std::optional<VisVersion> visVersion() const noexcept;
+		[[nodiscard]] inline std::optional<VisVersion> visVersion() const noexcept;
 
 		/**
 		 * @brief Gets the primary item path.
@@ -133,14 +133,14 @@ namespace dnv::vista::sdk
 		 * @return A const reference to the primary item's `GmodPath`.
 		 * @warning Behavior is undefined if called when no primary item is set (`isValid()` is false).
 		 */
-		[[nodiscard]] const std::optional<GmodPath>& primaryItem() const noexcept;
+		[[nodiscard]] inline const std::optional<GmodPath>& primaryItem() const noexcept;
 
 		/**
 		 * @brief Gets the secondary item path, if one is set.
 		 * @return A const reference to an `std::optional<GmodPath>` containing the
 		 *         secondary item path if set, or `std::nullopt` otherwise.
 		 */
-		[[nodiscard]] const std::optional<GmodPath>& secondaryItem() const noexcept;
+		[[nodiscard]] inline const std::optional<GmodPath>& secondaryItem() const noexcept;
 
 		/**
 		 * @brief Gets all metadata tags currently set in the builder.
@@ -148,7 +148,7 @@ namespace dnv::vista::sdk
 		 *          The order within the vector corresponds to the standard Local ID format.
 		 * @return A vector containing copies of the MetadataTag objects currently set.
 		 */
-		[[nodiscard]] std::vector<MetadataTag> metadataTags() const noexcept;
+		[[nodiscard]] inline std::vector<MetadataTag> metadataTags() const noexcept;
 
 		/**
 		 * @brief Calculate hash code based on builder content.
@@ -158,7 +158,7 @@ namespace dnv::vista::sdk
 		 * @return A `size_t` hash code.
 		 * @see equals
 		 */
-		[[nodiscard]] size_t hashCode() const noexcept;
+		[[nodiscard]] inline size_t hashCode() const noexcept;
 
 		//----------------------------------------------
 		// State inspection methods
@@ -170,21 +170,21 @@ namespace dnv::vista::sdk
 		 *          Specific rules depend on the `LocalId` definition.
 		 * @return True if the current state allows for a successful `build()`, false otherwise.
 		 */
-		[[nodiscard]] bool isValid() const noexcept;
+		[[nodiscard]] inline bool isValid() const noexcept;
 
 		/**
 		 * @brief Checks if the builder is in its initial, empty state.
 		 * @details An empty builder has no VIS version, no items, and no metadata tags set.
 		 * @return True if the builder holds no configuration data, false otherwise.
 		 */
-		[[nodiscard]] bool isEmpty() const noexcept;
+		[[nodiscard]] inline bool isEmpty() const noexcept;
 
 		/**
 		 * @brief Checks if verbose mode is enabled for the `toString()` representation.
 		 * @details Verbose mode typically includes descriptive text alongside codes in the string output.
 		 * @return True if verbose mode is enabled, false otherwise.
 		 */
-		[[nodiscard]] bool isVerboseMode() const noexcept;
+		[[nodiscard]] inline bool isVerboseMode() const noexcept;
 
 		//----------------------------------------------
 		// Metadata inspection methods
@@ -194,67 +194,67 @@ namespace dnv::vista::sdk
 		 * @brief Checks if the builder has any custom (non-standard) metadata tags.
 		 * @return True if the builder contains custom tags, false otherwise.
 		 */
-		[[nodiscard]] bool hasCustomTag() const noexcept;
+		[[nodiscard]] inline bool hasCustomTag() const noexcept;
 
 		/**
 		 * @brief Checks if the builder has no metadata tags set.
 		 * @return True if no metadata tags (quantity, content, etc.) are present, false otherwise.
 		 */
-		[[nodiscard]] bool isEmptyMetadata() const noexcept;
+		[[nodiscard]] inline bool isEmptyMetadata() const noexcept;
 
 		/**
 		 * @brief Gets the internal `LocalIdItems` object containing primary and secondary items.
 		 * @return A const reference to the `LocalIdItems` member.
 		 */
-		[[nodiscard]] const LocalIdItems& items() const noexcept;
+		[[nodiscard]] inline const LocalIdItems& items() const noexcept;
 
 		/**
 		 * @brief Gets the quantity metadata tag, if present.
 		 * @return A const reference to an `std::optional<MetadataTag>` for quantity.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& quantity() const noexcept;
+		[[nodiscard]] inline const std::optional<MetadataTag>& quantity() const noexcept;
 
 		/**
 		 * @brief Gets the content metadata tag, if present.
 		 * @return A const reference to an `std::optional<MetadataTag>` for content.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& content() const noexcept;
+		[[nodiscard]] inline const std::optional<MetadataTag>& content() const noexcept;
 
 		/**
 		 * @brief Gets the calculation metadata tag, if present.
 		 * @return A const reference to an `std::optional<MetadataTag>` for calculation.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& calculation() const noexcept;
+		[[nodiscard]] inline const std::optional<MetadataTag>& calculation() const noexcept;
 
 		/**
 		 * @brief Gets the state metadata tag, if present.
 		 * @return A const reference to an `std::optional<MetadataTag>` for state.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& state() const noexcept;
+		[[nodiscard]] inline const std::optional<MetadataTag>& state() const noexcept;
 
 		/**
 		 * @brief Gets the command metadata tag, if present.
 		 * @return A const reference to an `std::optional<MetadataTag>` for command.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& command() const noexcept;
+		[[nodiscard]] inline const std::optional<MetadataTag>& command() const noexcept;
 
 		/**
 		 * @brief Gets the type metadata tag, if present.
 		 * @return A const reference to an `std::optional<MetadataTag>` for type.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& type() const noexcept;
+		[[nodiscard]] inline const std::optional<MetadataTag>& type() const noexcept;
 
 		/**
 		 * @brief Gets the position metadata tag, if present.
 		 * @return A const reference to an `std::optional<MetadataTag>` for position.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& position() const noexcept;
+		[[nodiscard]] inline const std::optional<MetadataTag>& position() const noexcept;
 
 		/**
 		 * @brief Gets the detail metadata tag, if present.
 		 * @return A const reference to an `std::optional<MetadataTag>` for detail.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& detail() const noexcept;
+		[[nodiscard]] inline const std::optional<MetadataTag>& detail() const noexcept;
 
 		//----------------------------------------------
 		// String conversion
@@ -824,3 +824,5 @@ namespace dnv::vista::sdk
 		std::optional<MetadataTag> m_detail;
 	};
 }
+
+#include "LocalIdBuilder.inl"

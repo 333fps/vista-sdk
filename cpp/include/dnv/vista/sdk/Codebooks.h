@@ -11,6 +11,7 @@
 
 #include "Codebook.h"
 #include "CodebookName.h"
+#include "MetadataTag.h"
 
 namespace dnv::vista::sdk
 {
@@ -18,7 +19,6 @@ namespace dnv::vista::sdk
 	// Forward declarations
 	//=====================================================================
 
-	class MetadataTag;
 	class CodebooksDto;
 	enum class VisVersion;
 
@@ -97,6 +97,26 @@ namespace dnv::vista::sdk
 		[[nodiscard]] inline const Codebook& operator[]( CodebookName name ) const noexcept;
 
 		//----------------------------------------------
+		// Accessors
+		//----------------------------------------------
+
+		/**
+		 * @brief Get the VIS version associated with these codebooks.
+		 * @return The `VisVersion` enum value.
+		 */
+		[[nodiscard]] inline VisVersion visVersion() const noexcept;
+
+		/**
+		 * @brief Safe access to codebook by name (with bounds checking)
+		 * @param name The codebook name
+		 * @return Reference to the requested codebook
+		 * @throws std::invalid_argument If name is invalid
+		 * @note This method always validates the input. Use operator[] for maximum performance
+		 *       when you know the input is valid.
+		 */
+		[[nodiscard]] inline const Codebook& codebook( CodebookName name ) const;
+
+		//----------------------------------------------
 		// Range-based iterator
 		//----------------------------------------------
 
@@ -108,34 +128,14 @@ namespace dnv::vista::sdk
 		 * @return Iterator to the beginning of the codebook container
 		 * @note Zero-overhead pointer-based iteration
 		 */
-		[[nodiscard]] Iterator begin() const noexcept;
+		[[nodiscard]] inline Iterator begin() const noexcept;
 
 		/**
 		 * @brief Returns iterator to one past the last codebook.
 		 * @return Iterator to the end of the codebook container
 		 * @note Zero-overhead pointer-based iteration
 		 */
-		[[nodiscard]] Iterator end() const noexcept;
-
-		//----------------------------------------------
-		// Accessors
-		//----------------------------------------------
-
-		/**
-		 * @brief Get the VIS version associated with these codebooks.
-		 * @return The `VisVersion` enum value.
-		 */
-		[[nodiscard]] VisVersion visVersion() const noexcept;
-
-		/**
-		 * @brief Safe access to codebook by name (with bounds checking)
-		 * @param name The codebook name
-		 * @return Reference to the requested codebook
-		 * @throws std::invalid_argument If name is invalid
-		 * @note This method always validates the input. Use operator[] for maximum performance
-		 *       when you know the input is valid.
-		 */
-		[[nodiscard]] inline const Codebook& codebook( CodebookName name ) const;
+		[[nodiscard]] inline Iterator end() const noexcept;
 
 		//----------------------------------------------
 		// Tag creation
@@ -151,7 +151,7 @@ namespace dnv::vista::sdk
 		 *         (or if the codebook allows any value, like 'detail'), otherwise `std::nullopt`.
 		 * @throws std::invalid_argument If the `name` enum value is invalid (propagated from `operator[]`).
 		 */
-		[[nodiscard]] std::optional<MetadataTag> tryCreateTag( CodebookName name, const std::string_view value ) const;
+		[[nodiscard]] inline std::optional<MetadataTag> tryCreateTag( CodebookName name, const std::string_view value ) const;
 
 		/**
 		 * @brief Create a metadata tag using the appropriate codebook, throwing on failure.
@@ -164,7 +164,7 @@ namespace dnv::vista::sdk
 		 * @throws std::invalid_argument If the `value` is invalid for the specified codebook,
 		 *         or if the `name` enum value is invalid.
 		 */
-		[[nodiscard]] MetadataTag createTag( CodebookName name, const std::string& value ) const;
+		[[nodiscard]] inline MetadataTag createTag( CodebookName name, const std::string& value ) const;
 
 	private:
 		//----------------------------------------------

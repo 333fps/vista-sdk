@@ -75,21 +75,21 @@ namespace dnv::vista::sdk
 		 * @param[in] other The other UniversalId to compare.
 		 * @return True if equal, false otherwise.
 		 */
-		bool operator==( const UniversalId& other ) const;
+		inline bool operator==( const UniversalId& other ) const noexcept;
 
 		/**
 		 * @brief Inequality operator.
 		 * @param[in] other The other UniversalId to compare.
 		 * @return True if not equal, false otherwise.
 		 */
-		bool operator!=( const UniversalId& other ) const;
+		inline bool operator!=( const UniversalId& other ) const noexcept;
 
 		/**
 		 * @brief Deep equality comparison.
 		 * @param[in] other The other UniversalId to compare.
 		 * @return True if all components are equal.
 		 */
-		bool equals( const UniversalId& other ) const;
+		inline bool equals( const UniversalId& other ) const noexcept;
 
 		//----------------------------------------------
 		// Accessors
@@ -100,21 +100,21 @@ namespace dnv::vista::sdk
 		 * @return Constant reference to the IMO number.
 		 * @note Guaranteed to be valid for successfully constructed UniversalId.
 		 */
-		[[nodiscard]] const ImoNumber& imoNumber() const;
+		[[nodiscard]] inline const ImoNumber& imoNumber() const noexcept;
 
 		/**
 		 * @brief Gets the Local ID component.
 		 * @return Constant reference to the Local ID.
 		 * @note Guaranteed to be valid for successfully constructed UniversalId.
 		 */
-		[[nodiscard]] const LocalId& localId() const noexcept;
+		[[nodiscard]] inline const LocalId& localId() const noexcept;
 
 		/**
 		 * @brief Computes hash code for container usage.
 		 * @return Hash value suitable for std::unordered_set/map.
 		 * @note This method is guaranteed not to throw (noexcept).
 		 */
-		[[nodiscard]] size_t hashCode() const noexcept;
+		[[nodiscard]] inline size_t hashCode() const noexcept;
 
 		//----------------------------------------------
 		// String conversion
@@ -156,3 +156,5 @@ namespace dnv::vista::sdk
 		LocalId m_localId;
 	};
 }
+
+#include "UniversalId.inl"

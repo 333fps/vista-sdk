@@ -396,35 +396,35 @@ namespace dnv::vista::sdk
 		 * @param builder The std::stringstream whose content is to be validated.
 		 * @return True if the content matches the ISO Local ID format, false otherwise.
 		 */
-		[[nodiscard]] static bool matchISOLocalIdString( const std::stringstream& builder ) noexcept;
+		[[nodiscard]] inline static bool matchISOLocalIdString( const std::stringstream& builder ) noexcept;
 
 		/**
 		 * @brief Checks if a string_view matches the expected format for an ISO Local ID string.
 		 * @param value The std::string_view to validate.
 		 * @return True if the string_view matches the ISO Local ID format, false otherwise.
 		 */
-		[[nodiscard]] static bool matchISOLocalIdString( std::string_view value ) noexcept;
+		[[nodiscard]] inline static bool matchISOLocalIdString( std::string_view value ) noexcept;
 
 		/**
 		 * @brief Checks if all characters in a string_view are valid ISO characters.
 		 * @param value The std::string_view to validate.
 		 * @return True if all characters are valid ISO characters, false otherwise.
 		 */
-		[[nodiscard]] static bool isISOString( std::string_view value ) noexcept;
+		[[nodiscard]] inline static bool isISOString( std::string_view value ) noexcept;
 
 		/**
 		 * @brief Checks if all characters in a std::string are valid ISO characters.
 		 * @param value The std::string to validate.
 		 * @return True if all characters are valid ISO characters, false otherwise.
 		 */
-		[[nodiscard]] static bool isISOString( const std::string& value ) noexcept;
+		[[nodiscard]] inline static bool isISOString( const std::string& value ) noexcept;
 
 		/**
 		 * @brief Checks if all characters in the content of a std::stringstream are valid ISO characters.
 		 * @param builder The std::stringstream whose content is to be validated.
 		 * @return True if all characters in the content are valid ISO characters, false otherwise.
 		 */
-		[[nodiscard]] static bool isISOString( const std::stringstream& builder ) noexcept;
+		[[nodiscard]] inline static bool isISOString( const std::stringstream& builder ) noexcept;
 
 		/**
 		 * @brief A comprehensive check if a string is a valid ISO Local ID string.
@@ -432,21 +432,21 @@ namespace dnv::vista::sdk
 		 * @param value The std::string to validate.
 		 * @return True if the string is a valid ISO Local ID string, false otherwise.
 		 */
-		[[nodiscard]] static bool isISOLocalIdString( const std::string& value ) noexcept;
+		[[nodiscard]] inline static bool isISOLocalIdString( const std::string& value ) noexcept;
 
 		/**
 		 * @brief Checks if a character is a valid character within an ISO-compliant string.
 		 * @param c The character to check.
 		 * @return True if the character is valid for ISO strings, false otherwise.
 		 */
-		[[nodiscard]] static bool isISOString( char c ) noexcept;
+		[[nodiscard]] inline static bool isISOString( char c ) noexcept;
 
 		/**
 		 * @brief Checks if an ASCII decimal code corresponds to a valid ISO character.
 		 * @param code The integer ASCII code to check.
 		 * @return True if the code represents a valid ISO character, false otherwise.
 		 */
-		[[nodiscard]] static bool matchAsciiDecimal( int code ) noexcept;
+		[[nodiscard]] inline static bool matchAsciiDecimal( int code ) noexcept;
 
 	private:
 		//----------------------------------------------
@@ -464,3 +464,5 @@ namespace dnv::vista::sdk
 		mutable std::unordered_map<std::string, std::unordered_map<std::string, GmodVersioningDto>> m_gmodVersioningDtoCache;
 	};
 }
+
+#include "VIS.inl"

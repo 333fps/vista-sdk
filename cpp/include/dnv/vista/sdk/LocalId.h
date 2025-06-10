@@ -77,13 +77,10 @@ namespace dnv::vista::sdk
 		 * @param[in] other LocalId to compare against.
 		 * @return true if semantically equal.
 		 */
-		[[nodiscard]] bool equals( const LocalId& other ) const
-		{
-			return m_builder == other.m_builder;
-		}
+		[[nodiscard]] inline bool equals( const LocalId& other ) const noexcept;
 
 		//----------------------------------------------
-		// Core property accessors
+		// Accessors
 		//----------------------------------------------
 
 		/**
@@ -91,58 +88,40 @@ namespace dnv::vista::sdk
 		 * @return Const reference to internal builder.
 		 * @note Zero-overhead access via direct reference.
 		 */
-		[[nodiscard]] const LocalIdBuilder& builder() const noexcept
-		{
-			return m_builder;
-		}
+		[[nodiscard]] inline const LocalIdBuilder& builder() const noexcept;
 
 		/**
 		 * @brief Gets VIS version of this Local ID.
 		 * @return VIS version enum value.
 		 * @note Guaranteed to contain value for valid LocalId.
 		 */
-		[[nodiscard]] VisVersion visVersion() const noexcept
-		{
-			return m_builder.visVersion().value();
-		}
+		[[nodiscard]] inline VisVersion visVersion() const noexcept;
 
 		/**
 		 * @brief Gets primary GMOD path item.
 		 * @return Const reference to optional containing primary item.
 		 * @note Zero-copy access. Guaranteed to contain value for valid LocalId.
 		 */
-		[[nodiscard]] const std::optional<GmodPath>& primaryItem() const noexcept
-		{
-			return m_builder.primaryItem();
-		}
+		[[nodiscard]] inline const std::optional<GmodPath>& primaryItem() const noexcept;
 
 		/**
 		 * @brief Gets optional secondary GMOD path item.
 		 * @return Const reference to optional containing secondary item.
 		 * @note Zero-copy access. May be empty if no secondary item specified.
 		 */
-		[[nodiscard]] const std::optional<GmodPath>& secondaryItem() const noexcept
-		{
-			return m_builder.secondaryItem();
-		}
+		[[nodiscard]] inline const std::optional<GmodPath>& secondaryItem() const noexcept;
 
 		/**
 		 * @brief Gets all metadata tags as collection.
 		 * @return Vector containing copies of all present metadata tags.
 		 */
-		[[nodiscard]] std::vector<MetadataTag> metadataTags() const noexcept
-		{
-			return m_builder.metadataTags();
-		}
+		[[nodiscard]] inline std::vector<MetadataTag> metadataTags() const noexcept;
 
 		/**
 		 * @brief Calculates hash code for container use.
 		 * @return Hash value suitable for std::unordered_set/map.
 		 */
-		[[nodiscard]] size_t hashCode() const noexcept
-		{
-			return m_builder.hashCode();
-		}
+		[[nodiscard]] inline size_t hashCode() const noexcept;
 
 		//----------------------------------------------
 		// Metadata accessors
@@ -152,73 +131,49 @@ namespace dnv::vista::sdk
 		 * @brief Gets quantity metadata tag.
 		 * @return Const reference to optional quantity metadata.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& quantity() const noexcept
-		{
-			return m_builder.quantity();
-		}
+		[[nodiscard]] inline const std::optional<MetadataTag>& quantity() const noexcept;
 
 		/**
 		 * @brief Gets content metadata tag.
 		 * @return Const reference to optional content metadata.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& content() const noexcept
-		{
-			return m_builder.content();
-		}
+		[[nodiscard]] inline const std::optional<MetadataTag>& content() const noexcept;
 
 		/**
 		 * @brief Gets calculation metadata tag.
 		 * @return Const reference to optional calculation metadata.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& calculation() const noexcept
-		{
-			return m_builder.calculation();
-		}
+		[[nodiscard]] inline const std::optional<MetadataTag>& calculation() const noexcept;
 
 		/**
 		 * @brief Gets state metadata tag.
 		 * @return Const reference to optional state metadata.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& state() const noexcept
-		{
-			return m_builder.state();
-		}
+		[[nodiscard]] inline const std::optional<MetadataTag>& state() const noexcept;
 
 		/**
 		 * @brief Gets command metadata tag.
 		 * @return Const reference to optional command metadata.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& command() const noexcept
-		{
-			return m_builder.command();
-		}
+		[[nodiscard]] inline const std::optional<MetadataTag>& command() const noexcept;
 
 		/**
 		 * @brief Gets type metadata tag.
 		 * @return Const reference to optional type metadata.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& type() const noexcept
-		{
-			return m_builder.type();
-		}
+		[[nodiscard]] inline const std::optional<MetadataTag>& type() const noexcept;
 
 		/**
 		 * @brief Gets position metadata tag.
 		 * @return Const reference to optional position metadata.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& position() const noexcept
-		{
-			return m_builder.position();
-		}
+		[[nodiscard]] inline const std::optional<MetadataTag>& position() const noexcept;
 
 		/**
 		 * @brief Gets detail metadata tag.
 		 * @return Const reference to optional detail metadata.
 		 */
-		[[nodiscard]] const std::optional<MetadataTag>& detail() const noexcept
-		{
-			return m_builder.detail();
-		}
+		[[nodiscard]] inline const std::optional<MetadataTag>& detail() const noexcept;
 
 		//----------------------------------------------
 		// State inspection
@@ -228,19 +183,13 @@ namespace dnv::vista::sdk
 		 * @brief Checks if Local ID is in verbose mode.
 		 * @return true if verbose mode enabled.
 		 */
-		[[nodiscard]] bool isVerboseMode() const noexcept
-		{
-			return m_builder.isVerboseMode();
-		}
+		[[nodiscard]] inline bool isVerboseMode() const noexcept;
 
 		/**
 		 * @brief Checks if Local ID contains custom metadata tags.
 		 * @return true if any custom tags present.
 		 */
-		[[nodiscard]] bool hasCustomTag() const noexcept
-		{
-			return m_builder.hasCustomTag();
-		}
+		[[nodiscard]] inline bool hasCustomTag() const noexcept;
 
 		//----------------------------------------------
 		// String conversion
@@ -251,10 +200,7 @@ namespace dnv::vista::sdk
 		 * @return VIS-compliant Local ID string.
 		 * @throws std::invalid_argument If conversion fails.
 		 */
-		[[nodiscard]] std::string toString() const
-		{
-			return m_builder.toString();
-		}
+		[[nodiscard]] inline std::string toString() const;
 
 		//----------------------------------------------
 		// Static parsing methods
@@ -266,10 +212,7 @@ namespace dnv::vista::sdk
 		 * @return Parsed LocalId object.
 		 * @throws std::invalid_argument If parsing fails.
 		 */
-		[[nodiscard]] static LocalId parse( std::string_view localIdStr )
-		{
-			return LocalId( LocalIdBuilder::parse( localIdStr ) );
-		}
+		[[nodiscard]] static LocalId parse( std::string_view localIdStr );
 
 		/**
 		 * @brief Attempts to parse Local ID string with error reporting.
@@ -278,16 +221,7 @@ namespace dnv::vista::sdk
 		 * @param[out] localId Parsed result on success.
 		 * @return true if parsing succeeded.
 		 */
-		[[nodiscard]] static bool tryParse( std::string_view localIdStr, ParsingErrors& errors, std::optional<LocalId>& localId )
-		{
-			std::optional<LocalIdBuilder> builder;
-			bool success = LocalIdBuilder::tryParse( localIdStr, errors, builder );
-			if ( success && builder.has_value() )
-			{
-				localId = LocalId( std::move( builder.value() ) );
-			}
-			return success;
-		}
+		[[nodiscard]] static bool tryParse( std::string_view localIdStr, ParsingErrors& errors, std::optional<LocalId>& localId );
 
 		/**
 		 * @brief Attempts to parse Local ID string.
@@ -295,16 +229,7 @@ namespace dnv::vista::sdk
 		 * @param[out] localId Parsed result on success.
 		 * @return true if parsing succeeded.
 		 */
-		[[nodiscard]] static bool tryParse( std::string_view localIdStr, std::optional<LocalId>& localId )
-		{
-			std::optional<LocalIdBuilder> builder;
-			bool success = LocalIdBuilder::tryParse( localIdStr, builder );
-			if ( success && builder.has_value() )
-			{
-				localId = LocalId( std::move( builder.value() ) );
-			}
-			return success;
-		}
+		[[nodiscard]] static bool tryParse( std::string_view localIdStr, std::optional<LocalId>& localId );
 
 	private:
 		//----------------------------------------------
@@ -319,3 +244,5 @@ namespace dnv::vista::sdk
 		LocalIdBuilder m_builder;
 	};
 }
+
+#include "LocalId.inl"

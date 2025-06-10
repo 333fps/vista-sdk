@@ -11,6 +11,7 @@
 #pragma once
 
 #include "CodebooksDto.h"
+#include "CodebookName.h"
 
 namespace dnv::vista::sdk
 {
@@ -19,7 +20,6 @@ namespace dnv::vista::sdk
 	//=====================================================================
 
 	class MetadataTag;
-	enum class CodebookName;
 
 	//=====================================================================
 	// Heterogeneous lookup
@@ -176,7 +176,7 @@ namespace dnv::vista::sdk
 		 * @brief Get the number of standard values
 		 * @return The count of standard values
 		 */
-		[[nodiscard]] size_t count() const noexcept;
+		[[nodiscard]] inline size_t count() const noexcept;
 
 		/**
 		 * @brief Check if a value is contained in standard values (string_view overload)
@@ -193,13 +193,13 @@ namespace dnv::vista::sdk
 		 * @brief Get iterator to the beginning
 		 * @return Iterator to the first standard value
 		 */
-		[[nodiscard]] Iterator begin() const noexcept;
+		[[nodiscard]] inline Iterator begin() const noexcept;
 
 		/**
 		 * @brief Get iterator to the end
 		 * @return Iterator past the last standard value
 		 */
-		[[nodiscard]] Iterator end() const noexcept;
+		[[nodiscard]] inline Iterator end() const noexcept;
 
 	private:
 		//----------------------------------------------
@@ -274,14 +274,14 @@ namespace dnv::vista::sdk
 		 * @brief Get the number of groups
 		 * @return The count of groups
 		 */
-		[[nodiscard]] size_t count() const noexcept;
+		[[nodiscard]] inline size_t count() const noexcept;
 
 		/**
 		 * @brief Check if a group is contained (string_view overload)
 		 * @param group The group to check (as a `std::string_view`)
 		 * @return True if the group exists
 		 */
-		bool contains( std::string_view group ) const noexcept;
+		inline bool contains( std::string_view group ) const noexcept;
 
 		//----------------------------------------------
 		// Iteration
@@ -291,13 +291,13 @@ namespace dnv::vista::sdk
 		 * @brief Get iterator to the beginning
 		 * @return Iterator to the first group
 		 */
-		[[nodiscard]] Iterator begin() const noexcept;
+		[[nodiscard]] inline Iterator begin() const noexcept;
 
 		/**
 		 * @brief Get iterator to the end
 		 * @return Iterator past the last group
 		 */
-		[[nodiscard]] Iterator end() const noexcept;
+		[[nodiscard]] inline Iterator end() const noexcept;
 
 	private:
 		//----------------------------------------------
@@ -372,19 +372,19 @@ namespace dnv::vista::sdk
 		 * @brief Get the groups
 		 * @return Reference to the groups container
 		 */
-		[[nodiscard]] const CodebookGroups& groups() const noexcept;
+		[[nodiscard]] inline const CodebookGroups& groups() const noexcept;
 
 		/**
 		 * @brief Get the standard values
 		 * @return Reference to the standard values container
 		 */
-		[[nodiscard]] const CodebookStandardValues& standardValues() const noexcept;
+		[[nodiscard]] inline const CodebookStandardValues& standardValues() const noexcept;
 
 		/**
 		 * @brief Get the raw data
 		 * @return Map of groups to their values
 		 */
-		[[nodiscard]] const std::unordered_map<std::string, std::vector<std::string>>& rawData() const noexcept;
+		[[nodiscard]] inline const std::unordered_map<std::string, std::vector<std::string>>& rawData() const noexcept;
 
 		//----------------------------------------------
 		// State inspection methods
@@ -395,14 +395,14 @@ namespace dnv::vista::sdk
 		 * @param group The group to check
 		 * @return True if the group exists
 		 */
-		[[nodiscard]] bool hasGroup( std::string_view group ) const noexcept;
+		[[nodiscard]] inline bool hasGroup( std::string_view group ) const noexcept;
 
 		/**
 		 * @brief Check if a value is a standard value
 		 * @param value The value to check
 		 * @return True if the value is standard
 		 */
-		[[nodiscard]] bool hasStandardValue( std::string_view value ) const noexcept;
+		[[nodiscard]] inline bool hasStandardValue( std::string_view value ) const noexcept;
 
 		//----------------------------------------------
 		// Metadata tag creation

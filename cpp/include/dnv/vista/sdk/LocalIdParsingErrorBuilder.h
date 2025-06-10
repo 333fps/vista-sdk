@@ -100,7 +100,7 @@ namespace dnv::vista::sdk
 		 * @brief Checks if any errors have been added to the builder.
 		 * @return `true` if at least one error has been added, `false` otherwise.
 		 */
-		[[nodiscard]] bool hasError() const;
+		[[nodiscard]] inline bool hasError() const;
 
 		//----------------------------------------------
 		// Static factory method
@@ -159,3 +159,5 @@ namespace dnv::vista::sdk
 		std::vector<std::pair<LocalIdParsingState, std::string>> m_errors;
 	};
 }
+
+#include "LocalIdParsingErrorBuilder.inl"

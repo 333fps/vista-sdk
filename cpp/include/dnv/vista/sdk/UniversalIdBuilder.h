@@ -86,21 +86,21 @@ namespace dnv::vista::sdk
 		 * @param[in] other The other builder to compare.
 		 * @return True if equal, false otherwise.
 		 */
-		bool operator==( const UniversalIdBuilder& other ) const;
+		inline bool operator==( const UniversalIdBuilder& other ) const;
 
 		/**
 		 * @brief Inequality operator.
 		 * @param[in] other The other builder to compare.
 		 * @return True if not equal, false otherwise.
 		 */
-		bool operator!=( const UniversalIdBuilder& other ) const;
+		inline bool operator!=( const UniversalIdBuilder& other ) const;
 
 		/**
 		 * @brief Deep equality comparison with another builder.
 		 * @param[in] other The other builder to compare.
 		 * @return True if all components are equal.
 		 */
-		bool equals( const UniversalIdBuilder& other ) const;
+		inline bool equals( const UniversalIdBuilder& other ) const;
 
 		//----------------------------------------------
 		// Accessors
@@ -111,21 +111,21 @@ namespace dnv::vista::sdk
 		 * @return Constant reference to optional IMO number.
 		 * @note Zero-copy access via const reference.
 		 */
-		[[nodiscard]] const std::optional<ImoNumber>& imoNumber() const noexcept;
+		[[nodiscard]] inline const std::optional<ImoNumber>& imoNumber() const noexcept;
 
 		/**
 		 * @brief Gets the Local ID builder currently set.
 		 * @return Constant reference to optional LocalIdBuilder.
 		 * @note Zero-copy access via const reference.
 		 */
-		[[nodiscard]] const std::optional<LocalIdBuilder>& localId() const noexcept;
+		[[nodiscard]] inline const std::optional<LocalIdBuilder>& localId() const noexcept;
 
 		/**
 		 * @brief Computes hash code for container usage.
 		 * @return Hash value combining IMO number and Local ID builder.
 		 * @note This method is guaranteed not to throw (noexcept).
 		 */
-		[[nodiscard]] size_t hashCode() const noexcept;
+		[[nodiscard]] inline size_t hashCode() const noexcept;
 
 		//----------------------------------------------
 		// State inspection methods
@@ -137,7 +137,7 @@ namespace dnv::vista::sdk
 		 * @return True if build() will succeed.
 		 * @note This method is guaranteed not to throw (noexcept).
 		 */
-		[[nodiscard]] bool isValid() const noexcept;
+		[[nodiscard]] inline bool isValid() const noexcept;
 
 		//----------------------------------------------
 		// String conversion
@@ -276,3 +276,5 @@ namespace dnv::vista::sdk
 		std::optional<ImoNumber> m_imoNumber;
 	};
 }
+
+#include "UniversalIdBuilder.inl"

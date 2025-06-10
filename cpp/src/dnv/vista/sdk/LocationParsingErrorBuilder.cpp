@@ -75,15 +75,6 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// State inspection methods
-	//----------------------------------------------
-
-	bool LocationParsingErrorBuilder::hasError() const
-	{
-		return !m_errors.empty();
-	}
-
-	//----------------------------------------------
 	// Static factory method
 	//----------------------------------------------
 

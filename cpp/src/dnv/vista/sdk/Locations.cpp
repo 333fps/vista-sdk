@@ -39,40 +39,12 @@ namespace dnv::vista::sdk
 	// Location Class
 	//=====================================================================
 
+	//----------------------------------------------
+	// Construction
+	//----------------------------------------------
+
 	Location::Location( std::string_view value ) : m_value{ value }
 	{
-	}
-
-	//----------------------------------------------
-	// Comparison Operators
-	//----------------------------------------------
-
-	bool Location::operator==( const Location& other ) const
-	{
-		return m_value == other.m_value;
-	}
-
-	bool Location::operator!=( const Location& other ) const
-	{
-		return !( m_value == other.m_value );
-	}
-
-	//----------------------------------------------
-	// Conversion Operators
-	//----------------------------------------------
-
-	Location::operator std::string() const noexcept
-	{
-		return m_value;
-	}
-
-	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	const std::string& Location::value() const noexcept
-	{
-		return m_value;
 	}
 
 	//----------------------------------------------
@@ -96,53 +68,6 @@ namespace dnv::vista::sdk
 		  m_location{ location },
 		  m_definition{ definition }
 	{
-	}
-
-	//----------------------------------------------
-	// Comparison Operators
-	//----------------------------------------------
-
-	bool RelativeLocation::operator==( const RelativeLocation& other ) const
-	{
-		return m_code == other.m_code;
-	}
-
-	bool RelativeLocation::operator!=( const RelativeLocation& other ) const
-	{
-		return !( m_code == other.m_code );
-	}
-
-	//----------------------------------------------
-	// Public methods
-	//----------------------------------------------
-
-	size_t RelativeLocation::hashCode() const noexcept
-	{
-		return std::hash<char>{}( m_code );
-	}
-
-	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	char RelativeLocation::code() const noexcept
-	{
-		return m_code;
-	}
-
-	const std::string& RelativeLocation::name() const noexcept
-	{
-		return m_name;
-	}
-
-	const std::optional<std::string>& RelativeLocation::definition() const noexcept
-	{
-		return m_definition;
-	}
-
-	const Location& RelativeLocation::location() const noexcept
-	{
-		return m_location;
 	}
 
 	//=====================================================================

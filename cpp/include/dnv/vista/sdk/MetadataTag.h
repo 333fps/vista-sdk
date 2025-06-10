@@ -74,7 +74,7 @@ namespace dnv::vista::sdk
 		 * @return True if the tags are equal, false otherwise.
 		 * @throws std::invalid_argument If the CodebookName of the tags are different.
 		 */
-		bool operator==( const MetadataTag& other ) const;
+		inline bool operator==( const MetadataTag& other ) const;
 
 		/**
 		 * @brief Inequality operator.
@@ -82,14 +82,14 @@ namespace dnv::vista::sdk
 		 * @return True if the tags are not equal, false otherwise.
 		 * @throws std::invalid_argument If the CodebookName of the tags are different (propagated from operator==).
 		 */
-		bool operator!=( const MetadataTag& other ) const;
+		inline bool operator!=( const MetadataTag& other ) const;
 
 		/**
 		 * @brief Implicit conversion to a std::string.
 		 * Returns the 'Value' part of the metadata tag.
 		 * @return The 'Value' of the metadata tag as a string.
 		 */
-		[[nodiscard]] operator std::string() const;
+		[[nodiscard]] inline operator std::string() const;
 
 		//-------------------------------------------------------------------------
 		// Accessors
@@ -99,26 +99,26 @@ namespace dnv::vista::sdk
 		 * @brief Gets the name of the metadata tag.
 		 * @return The CodebookName representing the name of the metadata tag.
 		 */
-		[[nodiscard]] CodebookName name() const noexcept;
+		[[nodiscard]] inline CodebookName name() const noexcept;
 
 		/**
 		 * @brief Gets the value of the metadata tag.
 		 * @return A constant reference to the string value of the metadata tag.
 		 */
-		[[nodiscard]] std::string_view value() const noexcept;
+		[[nodiscard]] inline std::string_view value() const noexcept;
 
 		/**
 		 * @brief Gets the prefix character used for string representation of the metadata tag.
 		 * @return '~' if the tag is custom, '-' otherwise.
 		 */
-		[[nodiscard]] char prefix() const noexcept;
+		[[nodiscard]] inline char prefix() const noexcept;
 
 		/**
 		 * @brief Gets the hash code of the metadata tag.
 		 * The hash code is based solely on the tag's value.
 		 * @return The hash code of the tag's value.
 		 */
-		[[nodiscard]] size_t hashCode() const noexcept;
+		[[nodiscard]] inline size_t hashCode() const noexcept;
 
 		//-------------------------------------------------------------------------
 		// State inspection methods
@@ -128,7 +128,7 @@ namespace dnv::vista::sdk
 		 * @brief Checks if the metadata tag is custom.
 		 * @return True if the tag is custom, false otherwise.
 		 */
-		[[nodiscard]] bool isCustom() const noexcept;
+		[[nodiscard]] inline bool isCustom() const noexcept;
 
 		//-------------------------------------------------------------------------
 		// String conversion methods
@@ -174,3 +174,5 @@ namespace dnv::vista::sdk
 		std::string m_value;
 	};
 }
+
+#include "MetadataTag.inl"

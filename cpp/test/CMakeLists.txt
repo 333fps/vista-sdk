@@ -64,6 +64,7 @@ foreach(test_source ${TEST_SOURCES})
 
 		target_link_libraries(${test_target_name} PRIVATE
 			vista-sdk-cpp
+			spdlog::spdlog
 			GTest::gtest_main
 			spdlog::spdlog
 			fmt::fmt

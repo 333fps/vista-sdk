@@ -8,7 +8,6 @@
 #include "dnv/vista/sdk/Codebooks.h"
 
 #include "dnv/vista/sdk/CodebooksDto.h"
-#include "dnv/vista/sdk/MetadataTag.h"
 #include "dnv/vista/sdk/VISVersion.h"
 
 namespace dnv::vista::sdk
@@ -39,48 +38,5 @@ namespace dnv::vista::sdk
 		const CodebookDto s_detailDto( "detail", CodebookDto::ValuesMap{} );
 		constexpr auto detailIndex = static_cast<size_t>( CodebookName::Detail ) - 1;
 		m_codebooks[detailIndex] = Codebook( s_detailDto );
-	}
-
-	//----------------------------------------------
-	// Lookup operators
-	//----------------------------------------------
-
-	//	const Codebook& Codebooks::operator[]( CodebookName name ) const noexcept
-
-	//----------------------------------------------
-	// Range-based iterator
-	//----------------------------------------------
-
-	Codebooks::Iterator Codebooks::begin() const noexcept
-	{
-		return m_codebooks.data();
-	}
-
-	Codebooks::Iterator Codebooks::end() const noexcept
-	{
-		return m_codebooks.data() + NUM_CODEBOOKS;
-	}
-
-	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	VisVersion Codebooks::visVersion() const noexcept
-	{
-		return m_visVersion;
-	}
-
-	//----------------------------------------------
-	// Tag creation
-	//----------------------------------------------
-
-	std::optional<MetadataTag> Codebooks::tryCreateTag( CodebookName name, const std::string_view value ) const
-	{
-		return m_codebooks[static_cast<size_t>( name ) - 1].tryCreateTag( value );
-	}
-
-	MetadataTag Codebooks::createTag( CodebookName name, const std::string& value ) const
-	{
-		return m_codebooks[static_cast<size_t>( name ) - 1].createTag( value );
 	}
 }

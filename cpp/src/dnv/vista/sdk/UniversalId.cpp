@@ -4,7 +4,6 @@
 
 #include "dnv/vista/sdk/ImoNumber.h"
 #include "dnv/vista/sdk/LocalId.h"
-#include "dnv/vista/sdk/LocalIdBuilder.h"
 #include "dnv/vista/sdk/ParsingErrors.h"
 #include "dnv/vista/sdk/UniversalIdBuilder.h"
 
@@ -26,50 +25,6 @@ namespace dnv::vista::sdk
 		{
 			throw std::invalid_argument( "Invalid UniversalIdBuilder state" );
 		}
-	}
-
-	//----------------------------------------------
-	// Operators
-	//----------------------------------------------
-
-	bool UniversalId::operator==( const UniversalId& other ) const
-	{
-		return equals( other );
-	}
-
-	bool UniversalId::operator!=( const UniversalId& other ) const
-	{
-		return !equals( other );
-	}
-
-	bool UniversalId::equals( const UniversalId& other ) const
-	{
-		return m_imoNumber == other.m_imoNumber &&
-			   m_localId.equals( other.m_localId );
-	}
-
-	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	const ImoNumber& UniversalId::imoNumber() const
-	{
-		return m_imoNumber;
-	}
-
-	const LocalId& UniversalId::localId() const noexcept
-	{
-		return m_localId;
-	}
-
-	size_t UniversalId::hashCode() const noexcept
-	{
-		size_t hash = 0;
-
-		hash ^= m_imoNumber.hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-		hash ^= m_localId.hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		return hash;
 	}
 
 	//----------------------------------------------

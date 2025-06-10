@@ -94,14 +94,14 @@ namespace dnv::vista::sdk
 		 * @param other The other Location to compare.
 		 * @return True if the location values are equal, false otherwise.
 		 */
-		bool operator==( const Location& other ) const;
+		inline bool operator==( const Location& other ) const;
 
 		/**
 		 * @brief Inequality operator. Compares this Location with another.
 		 * @param other The other Location to compare.
 		 * @return True if the location values are not equal, false otherwise.
 		 */
-		bool operator!=( const Location& other ) const;
+		inline bool operator!=( const Location& other ) const;
 
 		//----------------------------------------------
 		// Conversion Operators
@@ -111,7 +111,7 @@ namespace dnv::vista::sdk
 		 * @brief Implicit conversion to std::string.
 		 * @return The location value as a string.
 		 */
-		[[nodiscard]] operator std::string() const noexcept;
+		[[nodiscard]] inline operator std::string() const noexcept;
 
 		//----------------------------------------------
 		// Accessors
@@ -204,24 +204,14 @@ namespace dnv::vista::sdk
 		 * @param other The other RelativeLocation to compare.
 		 * @return True if the codes are equal, false otherwise.
 		 */
-		bool operator==( const RelativeLocation& other ) const;
+		inline bool operator==( const RelativeLocation& other ) const;
 
 		/**
 		 * @brief Inequality operator. Compares based on the `code` member.
 		 * @param other The other RelativeLocation to compare.
 		 * @return True if the codes are not equal, false otherwise.
 		 */
-		bool operator!=( const RelativeLocation& other ) const;
-
-		//----------------------------------------------
-		// Public methods
-		//----------------------------------------------
-
-		/**
-		 * @brief Gets the hash code of the relative location, based on its `code`.
-		 * @return The hash code.
-		 */
-		[[nodiscard]] size_t hashCode() const noexcept;
+		inline bool operator!=( const RelativeLocation& other ) const;
 
 		//----------------------------------------------
 		// Accessors
@@ -231,25 +221,31 @@ namespace dnv::vista::sdk
 		 * @brief Gets the character code of the relative location.
 		 * @return The character code.
 		 */
-		[[nodiscard]] char code() const noexcept;
+		[[nodiscard]] inline char code() const noexcept;
 
 		/**
 		 * @brief Gets the name of the relative location.
 		 * @return A constant reference to the name string.
 		 */
-		[[nodiscard]] const std::string& name() const noexcept;
+		[[nodiscard]] inline const std::string& name() const noexcept;
 
 		/**
 		 * @brief Gets the optional definition of the relative location.
 		 * @return A constant reference to an optional string containing the definition.
 		 */
-		[[nodiscard]] const std::optional<std::string>& definition() const noexcept;
+		[[nodiscard]] inline const std::optional<std::string>& definition() const noexcept;
 
 		/**
 		 * @brief Gets the `Location` object associated with this relative location.
 		 * @return A constant reference to the `Location` object.
 		 */
-		[[nodiscard]] const Location& location() const noexcept;
+		[[nodiscard]] inline const Location& location() const noexcept;
+
+		/**
+		 * @brief Gets the hash code of the relative location, based on its `code`.
+		 * @return The hash code.
+		 */
+		[[nodiscard]] inline size_t hashCode() const noexcept;
 
 	private:
 		//----------------------------------------------
@@ -538,3 +534,5 @@ namespace dnv::vista::sdk
 		std::unordered_map<LocationGroup, std::vector<RelativeLocation>> m_groups;
 	};
 }
+
+#include "Locations.inl"

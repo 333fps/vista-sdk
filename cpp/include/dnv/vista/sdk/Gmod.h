@@ -100,7 +100,7 @@ namespace dnv::vista::sdk
 		 * @return A const reference to the GmodNode.
 		 * @throws std::out_of_range If no node with the specified key exists.
 		 */
-		const GmodNode& operator[]( std::string_view key ) const;
+		inline const GmodNode& operator[]( std::string_view key ) const;
 
 		//----------------------------------------------
 		// Accessors
@@ -110,7 +110,7 @@ namespace dnv::vista::sdk
 		 * @brief Gets the VIS version of this GMOD instance.
 		 * @return The VisVersion enum value.
 		 */
-		[[nodiscard]] VisVersion visVersion() const;
+		[[nodiscard]] inline VisVersion visVersion() const;
 
 		/**
 		 * @brief Gets the root node of the GMOD hierarchy.
@@ -119,7 +119,7 @@ namespace dnv::vista::sdk
 		 * @return A const reference to the root GmodNode.
 		 * @throws std::runtime_error If the GMOD is not properly initialized or has no root node.
 		 */
-		[[nodiscard]] const GmodNode& rootNode() const;
+		[[nodiscard]] inline const GmodNode& rootNode() const;
 
 		//----------------------------------------------
 		// Node query methods
@@ -170,7 +170,7 @@ namespace dnv::vista::sdk
 		bool tryParseFromFullPath( const std::string& item, std::optional<GmodPath>& path ) const;
 
 		//----------------------------------------------
-		// Static utility methods
+		// Static state inspection methods
 		//----------------------------------------------
 
 		/**
@@ -178,49 +178,49 @@ namespace dnv::vista::sdk
 		 * @param type The node type string (e.g., "SYS", "E", "VE").
 		 * @return True if the type suggests it can be a parent, false otherwise.
 		 */
-		static bool isPotentialParent( const std::string& type );
+		inline static bool isPotentialParent( const std::string& type );
 
 		/**
 		 * @brief Checks if a GMOD node, based on its metadata, is a leaf node.
 		 * @param metadata The metadata of the GmodNode.
 		 * @return True if the node is considered a leaf node, false otherwise.
 		 */
-		static bool isLeafNode( const GmodNodeMetadata& metadata );
+		inline static bool isLeafNode( const GmodNodeMetadata& metadata );
 
 		/**
 		 * @brief Checks if a GMOD node, based on its metadata, is a function node.
 		 * @param metadata The metadata of the GmodNode.
 		 * @return True if the node is a function node, false otherwise.
 		 */
-		static bool isFunctionNode( const GmodNodeMetadata& metadata );
+		inline static bool isFunctionNode( const GmodNodeMetadata& metadata );
 
 		/**
 		 * @brief Checks if a GMOD node, based on its metadata, represents a product selection.
 		 * @param metadata The metadata of the GmodNode.
 		 * @return True if the node is a product selection, false otherwise.
 		 */
-		static bool isProductSelection( const GmodNodeMetadata& metadata );
+		inline static bool isProductSelection( const GmodNodeMetadata& metadata );
 
 		/**
 		 * @brief Checks if a GMOD node, based on its metadata, represents a product type.
 		 * @param metadata The metadata of the GmodNode.
 		 * @return True if the node is a product type, false otherwise.
 		 */
-		static bool isProductType( const GmodNodeMetadata& metadata );
+		inline static bool isProductType( const GmodNodeMetadata& metadata );
 
 		/**
 		 * @brief Checks if a GMOD node, based on its metadata, represents an asset.
 		 * @param metadata The metadata of the GmodNode.
 		 * @return True if the node is an asset, false otherwise.
 		 */
-		static bool isAsset( const GmodNodeMetadata& metadata );
+		inline static bool isAsset( const GmodNodeMetadata& metadata );
 
 		/**
 		 * @brief Checks if a GMOD node, based on its metadata, is an asset function node.
 		 * @param metadata The metadata of the GmodNode.
 		 * @return True if the node is an asset function node, false otherwise.
 		 */
-		static bool isAssetFunctionNode( const GmodNodeMetadata& metadata );
+		inline static bool isAssetFunctionNode( const GmodNodeMetadata& metadata );
 
 		/**
 		 * @brief Checks if the relationship between a parent and child node constitutes a product type assignment.
@@ -228,7 +228,7 @@ namespace dnv::vista::sdk
 		 * @param child Pointer to the child GmodNode. Can be nullptr.
 		 * @return True if it's a product type assignment, false otherwise or if inputs are invalid.
 		 */
-		static bool isProductTypeAssignment( const GmodNode* parent, const GmodNode* child ) noexcept;
+		inline static bool isProductTypeAssignment( const GmodNode* parent, const GmodNode* child ) noexcept;
 
 		/**
 		 * @brief Checks if the relationship between a parent and child node constitutes a product selection assignment.
@@ -236,7 +236,7 @@ namespace dnv::vista::sdk
 		 * @param child Pointer to the child GmodNode. Can be nullptr.
 		 * @return True if it's a product selection assignment, false otherwise or if inputs are invalid.
 		 */
-		static bool isProductSelectionAssignment( const GmodNode* parent, const GmodNode* child );
+		inline static bool isProductSelectionAssignment( const GmodNode* parent, const GmodNode* child );
 
 		//----------------------------------------------
 		// Enumeration
@@ -349,3 +349,5 @@ namespace dnv::vista::sdk
 		ChdDictionary<GmodNode> m_nodeMap;
 	};
 }
+
+#include "Gmod.inl"

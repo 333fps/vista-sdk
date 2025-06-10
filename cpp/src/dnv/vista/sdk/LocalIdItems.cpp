@@ -11,9 +11,13 @@
 
 namespace dnv::vista::sdk
 {
-	//-------------------------------------------------------------------------
-	// Constructors, Destructor, Assignment Operators
-	//-------------------------------------------------------------------------
+	//=====================================================================
+	// LocalIdItems class
+	//=====================================================================
+
+	//----------------------------------------------
+	// Construction / destruction
+	//----------------------------------------------
 
 	LocalIdItems::LocalIdItems( GmodPath&& primaryItem, std::optional<GmodPath>&& secondaryItem )
 		: m_primaryItem( std::move( primaryItem ) ),
@@ -33,28 +37,9 @@ namespace dnv::vista::sdk
 	{
 	}
 
-	//-------------------------------------------------------------------------
-	// Public Accessors (Read-only)
-	//-------------------------------------------------------------------------
-
-	const std::optional<GmodPath>& LocalIdItems::primaryItem() const noexcept
-	{
-		return m_primaryItem;
-	}
-
-	const std::optional<GmodPath>& LocalIdItems::secondaryItem() const noexcept
-	{
-		return m_secondaryItem;
-	}
-
-	bool LocalIdItems::isEmpty() const noexcept
-	{
-		return !m_primaryItem.has_value() && !m_secondaryItem.has_value();
-	}
-
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Public methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	void LocalIdItems::append( std::stringstream& builder, bool verboseMode ) const
 	{
@@ -114,23 +99,9 @@ namespace dnv::vista::sdk
 		}
 	}
 
-	//-------------------------------------------------------------------------
-	// Comparison Operators
-	//-------------------------------------------------------------------------
-
-	bool LocalIdItems::operator==( const LocalIdItems& other ) const noexcept
-	{
-		return m_primaryItem == other.m_primaryItem && m_secondaryItem == other.m_secondaryItem;
-	}
-
-	bool LocalIdItems::operator!=( const LocalIdItems& other ) const noexcept
-	{
-		return !( *this == other );
-	}
-
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 	// Private helper methods
-	//-------------------------------------------------------------------------
+	//----------------------------------------------
 
 	void LocalIdItems::appendCommonName(
 		std::stringstream& builder,

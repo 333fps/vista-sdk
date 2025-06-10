@@ -76,37 +76,37 @@ namespace dnv::vista::sdk
 		 * @brief Gets the VIS version this builder is configured for.
 		 * @return The VisVersion enum value.
 		 */
-		[[nodiscard]] VisVersion visVersion() const noexcept;
+		[[nodiscard]] inline VisVersion visVersion() const noexcept;
 
 		/**
 		 * @brief Gets the numeric component of the location.
 		 * @return Optional integer representing the number component.
 		 */
-		[[nodiscard]] const std::optional<int>& number() const noexcept;
+		[[nodiscard]] inline const std::optional<int>& number() const noexcept;
 
 		/**
 		 * @brief Gets the side component of the location.
 		 * @return Optional character representing the side (e.g., 'P', 'C', 'S').
 		 */
-		[[nodiscard]] const std::optional<char>& side() const noexcept;
+		[[nodiscard]] inline const std::optional<char>& side() const noexcept;
 
 		/**
 		 * @brief Gets the vertical component of the location.
 		 * @return Optional character representing vertical position (e.g., 'U', 'M', 'L').
 		 */
-		[[nodiscard]] const std::optional<char>& vertical() const noexcept;
+		[[nodiscard]] inline const std::optional<char>& vertical() const noexcept;
 
 		/**
 		 * @brief Gets the transverse component of the location.
 		 * @return Optional character representing transverse position (e.g., 'I', 'O').
 		 */
-		[[nodiscard]] const std::optional<char>& transverse() const noexcept;
+		[[nodiscard]] inline const std::optional<char>& transverse() const noexcept;
 
 		/**
 		 * @brief Gets the longitudinal component of the location.
 		 * @return Optional character representing longitudinal position (e.g., 'F', 'A').
 		 */
-		[[nodiscard]] const std::optional<char>& longitudinal() const noexcept;
+		[[nodiscard]] inline const std::optional<char>& longitudinal() const noexcept;
 
 		//----------------------------------------------
 		// Conversion and comparison
@@ -301,3 +301,5 @@ namespace dnv::vista::sdk
 		std::map<char, LocationGroup> m_reversedGroups;
 	};
 }
+
+#include "LocationBuilder.inl"

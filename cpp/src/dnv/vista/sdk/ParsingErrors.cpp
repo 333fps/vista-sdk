@@ -129,26 +129,28 @@ namespace dnv::vista::sdk
 			return "Success";
 		}
 
+		constexpr std::string_view header = "Parsing errors:\n";
+
 		/* Pre-calculate exact capacity */
-		size_t capacity = 15;
+		size_t capacity = header.size();
 		for ( const auto& error : m_errors )
 		{
 			capacity += 1 + error.type.size() + 3 + error.message.size() + 1;
-			/*          ↑                       ↑                          ↑ */
+			/*          ↑                       ↑                          ↑  */
 			/*        '\t'                    " - "                      '\n' */
 		}
 
 		std::string result;
 		result.reserve( capacity );
-		result = "Parsing errors:\n";
+		result = header;
 
 		for ( const auto& error : m_errors )
 		{
-			result.append( 1, '\t' );
-			result.append( error.type );
-			result.append( " - " );
-			result.append( error.message );
-			result.append( 1, '\n' );
+			result += '\t';
+			result += error.type;
+			result += " - ";
+			result += error.message;
+			result += '\n';
 		}
 
 		return result;

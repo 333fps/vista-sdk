@@ -30,4 +30,37 @@ namespace dnv::vista::sdk
 			throw std::invalid_argument( "Invalid LocalIdBuilder" );
 		}
 	}
+
+	//----------------------------------------------
+	// Static parsing methods
+	//----------------------------------------------
+
+	LocalId LocalId::parse( std::string_view localIdStr )
+	{
+		return LocalId( LocalIdBuilder::parse( localIdStr ) );
+	}
+
+	bool LocalId::tryParse( std::string_view localIdStr, ParsingErrors& errors, std::optional<LocalId>& localId )
+	{
+		std::optional<LocalIdBuilder> builder;
+		bool success = LocalIdBuilder::tryParse( localIdStr, errors, builder );
+		if ( success && builder.has_value() )
+		{
+			localId = LocalId( std::move( builder.value() ) );
+		}
+
+		return success;
+	}
+
+	bool LocalId::tryParse( std::string_view localIdStr, std::optional<LocalId>& localId )
+	{
+		std::optional<LocalIdBuilder> builder;
+		bool success = LocalIdBuilder::tryParse( localIdStr, builder );
+		if ( success && builder.has_value() )
+		{
+			localId = LocalId( std::move( builder.value() ) );
+		}
+
+		return success;
+	}
 }

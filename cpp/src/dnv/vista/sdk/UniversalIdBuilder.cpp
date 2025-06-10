@@ -37,85 +37,27 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Operators
-	//----------------------------------------------
-
-	bool UniversalIdBuilder::operator==( const UniversalIdBuilder& other ) const
-	{
-		return equals( other );
-	}
-
-	bool UniversalIdBuilder::operator!=( const UniversalIdBuilder& other ) const
-	{
-		return !equals( other );
-	}
-
-	bool UniversalIdBuilder::equals( const UniversalIdBuilder& other ) const
-	{
-		return m_imoNumber == other.m_imoNumber && m_localIdBuilder == other.m_localIdBuilder;
-	}
-
-	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	const std::optional<ImoNumber>& UniversalIdBuilder::imoNumber() const noexcept
-	{
-		return m_imoNumber;
-	}
-
-	const std::optional<LocalIdBuilder>& UniversalIdBuilder::localId() const noexcept
-	{
-		return m_localIdBuilder;
-	}
-
-	size_t UniversalIdBuilder::hashCode() const noexcept
-	{
-		size_t hash = 0;
-
-		if ( m_imoNumber.has_value() )
-			hash ^= m_imoNumber->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		if ( m_localIdBuilder.has_value() )
-			hash ^= m_localIdBuilder->hashCode() + 0x9e3779b9 + ( hash << 6 ) + ( hash >> 2 );
-
-		return hash;
-	}
-
-	//----------------------------------------------
-	// State inspection methods
-	//----------------------------------------------
-
-	bool UniversalIdBuilder::isValid() const noexcept
-	{
-		return m_imoNumber.has_value() && m_localIdBuilder.has_value() && m_localIdBuilder->isValid();
-	}
-
-	//----------------------------------------------
 	// String conversion
 	//----------------------------------------------
 
 	std::string UniversalIdBuilder::toString() const
 	{
-		if ( !m_imoNumber.has_value() )
-		{
+		if ( !m_imoNumber.has_value() ) [[unlikely]]
 			throw std::invalid_argument( "Invalid Universal Id state: Missing IMO Number" );
-		}
 
-		if ( !m_localIdBuilder.has_value() )
-		{
+		if ( !m_localIdBuilder.has_value() ) [[unlikely]]
 			throw std::invalid_argument( "Invalid Universal Id state: Missing LocalId" );
-		}
 
-		std::ostringstream builder;
+		std::string result;
+		/*  entity + "/" + IMO + localId estimate */
+		result.reserve( namingEntity.size() + 1 + 10 + 200 );
 
-		builder << namingEntity;
-		builder << "/";
-		builder << m_imoNumber->toString();
+		result.append( namingEntity );
+		result.append( "/" );
+		result.append( m_imoNumber->toString() );
+		result.append( m_localIdBuilder->toString() );
 
-		builder << m_localIdBuilder->toString();
-
-		return builder.str();
+		return result;
 	}
 
 	//----------------------------------------------

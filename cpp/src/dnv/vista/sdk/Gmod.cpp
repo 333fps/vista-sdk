@@ -12,27 +12,6 @@
 
 namespace dnv::vista::sdk
 {
-	namespace
-	{
-		//=====================================================================
-		// Constants
-		//=====================================================================
-
-		static constexpr const char* NODE_CATEGORY_PRODUCT = "PRODUCT";
-		static constexpr const char* NODE_CATEGORY_VALUE_FUNCTION = "FUNCTION";
-		static constexpr const char* NODE_CATEGORY_ASSET = "ASSET";
-		static constexpr const char* NODE_CATEGORY_ASSET_FUNCTION = "ASSET FUNCTION";
-
-		static constexpr const char* NODE_TYPE_VALUE_SELECTION = "SELECTION";
-		static constexpr const char* NODE_TYPE_VALUE_TYPE = "TYPE";
-
-		/** List of node types classified as leaf nodes */
-		static const std::unordered_set<std::string> s_leafTypesSet = { "ASSET FUNCTION LEAF", "PRODUCT FUNCTION LEAF" };
-
-		/** List of node types classified as function nodes */
-		static const std::unordered_set<std::string> s_potentialParentScopeTypes = { "SELECTION", "GROUP", "LEAF" };
-	}
-
 	//=====================================================================
 	// Gmod class
 	//=====================================================================
@@ -179,39 +158,6 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Lookup operators
-	//----------------------------------------------
-
-	const GmodNode& Gmod::operator[]( std::string_view key ) const
-	{
-		const GmodNode* nodePtr = nullptr;
-		bool found = m_nodeMap.tryGetValue( key, nodePtr );
-		if ( found && nodePtr != nullptr )
-		{
-			return *nodePtr;
-		}
-		throw std::out_of_range( fmt::format( "Key not found in Gmod node map: {}", key ) );
-	}
-
-	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	VisVersion Gmod::visVersion() const
-	{
-		return m_visVersion;
-	}
-
-	const GmodNode& Gmod::rootNode() const
-	{
-		if ( !m_rootNode )
-		{
-			throw std::runtime_error( "Root node is not initialized or 'VE' was not found." );
-		}
-		return *m_rootNode;
-	}
-
-	//----------------------------------------------
 	// Node query methods
 	//----------------------------------------------
 
@@ -245,73 +191,6 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Static utility methods
-	//----------------------------------------------
-
-	bool Gmod::isPotentialParent( const std::string& type )
-	{
-		return s_potentialParentScopeTypes.find( type ) != s_potentialParentScopeTypes.end();
-	}
-
-	bool Gmod::isLeafNode( const GmodNodeMetadata& metadata )
-	{
-		return s_leafTypesSet.find( metadata.fullType() ) != s_leafTypesSet.end();
-	}
-
-	bool Gmod::isFunctionNode( const GmodNodeMetadata& metadata )
-	{
-		const auto& category = metadata.category();
-		return category != NODE_CATEGORY_PRODUCT && category != NODE_CATEGORY_ASSET;
-	}
-
-	bool Gmod::isProductSelection( const GmodNodeMetadata& metadata )
-	{
-		return metadata.category() == NODE_CATEGORY_PRODUCT && metadata.type() == NODE_TYPE_VALUE_SELECTION;
-	}
-
-	bool Gmod::isProductType( const GmodNodeMetadata& metadata )
-	{
-		return metadata.category() == NODE_CATEGORY_PRODUCT && metadata.type() == NODE_TYPE_VALUE_TYPE;
-	}
-
-	bool Gmod::isAsset( const GmodNodeMetadata& metadata )
-	{
-		return metadata.category() == NODE_CATEGORY_ASSET;
-	}
-
-	bool Gmod::isAssetFunctionNode( const GmodNodeMetadata& metadata )
-	{
-		return metadata.category() == NODE_CATEGORY_ASSET_FUNCTION;
-	}
-
-	bool Gmod::isProductTypeAssignment( const GmodNode* parent, const GmodNode* child ) noexcept
-	{
-		if ( !parent || !child )
-		{
-			return false;
-		}
-
-		const std::string_view parentCategory = parent->metadata().category();
-		const std::string_view childCategory = child->metadata().category();
-		const std::string_view childType = child->metadata().type();
-
-		return parentCategory.find( NODE_CATEGORY_VALUE_FUNCTION ) != std::string_view::npos &&
-			   childCategory == NODE_CATEGORY_PRODUCT &&
-			   childType == NODE_TYPE_VALUE_TYPE;
-	}
-
-	bool Gmod::isProductSelectionAssignment( const GmodNode* parent, const GmodNode* child )
-	{
-		if ( parent == nullptr || child == nullptr )
-			return false;
-		if ( parent->metadata().category().find( NODE_CATEGORY_VALUE_FUNCTION ) == std::string::npos )
-			return false;
-		if ( child->metadata().category().find( NODE_CATEGORY_PRODUCT ) == std::string::npos || child->metadata().type() != NODE_TYPE_VALUE_SELECTION )
-			return false;
-		return true;
-	}
-
-	//----------------------------------------------
 	// Iteration
 	//----------------------------------------------
 
@@ -329,7 +208,8 @@ namespace dnv::vista::sdk
 	//-----------------------------
 
 	Gmod::Enumerator::Enumerator( const ChdDictionary<GmodNode>* map ) noexcept
-		: m_sourceMapPtr( map ), m_isInitialState( true )
+		: m_sourceMapPtr{ map },
+		  m_isInitialState{ true }
 	{
 		if ( m_sourceMapPtr )
 		{

@@ -37,6 +37,7 @@ foreach(benchmark_source ${BENCHMARK_SOURCES})
 
 		target_link_libraries(${benchmark_target_name} PRIVATE
 			vista-sdk-cpp
+			spdlog::spdlog
 			benchmark::benchmark
 			fmt::fmt
 			nlohmann_json::nlohmann_json

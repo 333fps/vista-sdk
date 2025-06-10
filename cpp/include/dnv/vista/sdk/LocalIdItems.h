@@ -23,7 +23,7 @@ namespace dnv::vista::sdk
 	{
 	public:
 		//----------------------------------------------
-		// Construction / destruction
+		// Construction
 		//----------------------------------------------
 
 		/**
@@ -66,6 +66,9 @@ namespace dnv::vista::sdk
 		/** @brief Move constructor */
 		LocalIdItems( LocalIdItems&& other ) noexcept = default;
 
+		//----------------------------------------------
+		// Destruction
+		//----------------------------------------------
 		/** @brief Destructor */
 		~LocalIdItems() = default;
 
@@ -79,31 +82,54 @@ namespace dnv::vista::sdk
 		/** @brief Move assignment operator */
 		LocalIdItems& operator=( LocalIdItems&& other ) noexcept = default;
 
-		//-------------------------------------------------------------------------
-		// Public Accessors (Read-only)
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
+		// Comparison operators
+		//----------------------------------------------
+
+		/**
+		 * @brief Equality comparison operator.
+		 *
+		 * Compares the `m_primaryItem` and `m_secondaryItem` members for equality.
+		 * `std::optional` handles comparisons involving `std::nullopt` correctly.
+		 * Requires `GmodPath` to have `operator==` defined.
+		 *
+		 * @param other The other LocalIdItems instance to compare with.
+		 * @return true if both primary and secondary items are equal, false otherwise.
+		 */
+		[[nodiscard]] inline bool operator==( const LocalIdItems& other ) const noexcept;
+
+		/**
+		 * @brief Inequality comparison operator.
+		 * @param other The other LocalIdItems instance to compare with.
+		 * @return true if the instances are not equal, false otherwise.
+		 */
+		[[nodiscard]] inline bool operator!=( const LocalIdItems& other ) const noexcept;
+
+		//----------------------------------------------
+		// Accessors
+		//----------------------------------------------
 
 		/**
 		 * @brief Gets the primary item.
 		 * @return A const reference to the optional primary GmodPath.
 		 */
-		[[nodiscard]] const std::optional<GmodPath>& primaryItem() const noexcept;
+		[[nodiscard]] inline const std::optional<GmodPath>& primaryItem() const noexcept;
 
 		/**
 		 * @brief Gets the optional secondary item.
 		 * @return A const reference to the optional secondary GmodPath.
 		 */
-		[[nodiscard]] const std::optional<GmodPath>& secondaryItem() const noexcept;
+		[[nodiscard]] inline const std::optional<GmodPath>& secondaryItem() const noexcept;
 
 		/**
 		 * @brief Checks if both primary and secondary items are uninitialized (nullopt).
 		 * @return True if both `m_primaryItem` and `m_secondaryItem` are `std::nullopt`, false otherwise.
 		 */
-		[[nodiscard]] bool isEmpty() const noexcept;
+		[[nodiscard]] inline bool isEmpty() const noexcept;
 
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 		// Public methods
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 
 		/**
 		 * @brief Appends the string representation of the items to a stringstream.
@@ -116,33 +142,10 @@ namespace dnv::vista::sdk
 		 */
 		void append( std::stringstream& builder, bool verboseMode ) const;
 
-		//-------------------------------------------------------------------------
-		// Comparison Operators
-		//-------------------------------------------------------------------------
-
-		/**
-		 * @brief Equality comparison operator.
-		 *
-		 * Compares the `m_primaryItem` and `m_secondaryItem` members for equality.
-		 * `std::optional` handles comparisons involving `std::nullopt` correctly.
-		 * Requires `GmodPath` to have `operator==` defined.
-		 *
-		 * @param other The other LocalIdItems instance to compare with.
-		 * @return true if both primary and secondary items are equal, false otherwise.
-		 */
-		[[nodiscard]] bool operator==( const LocalIdItems& other ) const noexcept;
-
-		/**
-		 * @brief Inequality comparison operator.
-		 * @param other The other LocalIdItems instance to compare with.
-		 * @return true if the instances are not equal, false otherwise.
-		 */
-		[[nodiscard]] bool operator!=( const LocalIdItems& other ) const noexcept;
-
 	private:
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 		// Private helper methods
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
 
 		/**
 		 * @brief Appends a formatted common name with optional location to a stringstream.
@@ -158,9 +161,9 @@ namespace dnv::vista::sdk
 			std::string_view commonName,
 			const std::optional<std::string>& location );
 
-		//-------------------------------------------------------------------------
-		// Member Variables
-		//-------------------------------------------------------------------------
+		//----------------------------------------------
+		// Member variables
+		//----------------------------------------------
 
 		/** @brief The optional primary item path. */
 		std::optional<GmodPath> m_primaryItem;
@@ -169,3 +172,5 @@ namespace dnv::vista::sdk
 		std::optional<GmodPath> m_secondaryItem;
 	};
 }
+
+#include "LocalIdItems.inl"

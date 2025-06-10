@@ -260,11 +260,6 @@ namespace dnv::vista::sdk
 	// Public methods
 	//----------------------------------------------
 
-	size_t CodebookStandardValues::count() const noexcept
-	{
-		return m_standardValues.size();
-	}
-
 	bool CodebookStandardValues::contains( std::string_view tagValue ) const noexcept
 	{
 		if ( m_standardValues.contains( tagValue ) )
@@ -280,20 +275,6 @@ namespace dnv::vista::sdk
 		return false;
 	}
 
-	//----------------------------------------------
-	// Iteration
-	//----------------------------------------------
-
-	CodebookStandardValues::Iterator CodebookStandardValues::begin() const noexcept
-	{
-		return m_standardValues.begin();
-	}
-
-	CodebookStandardValues::Iterator CodebookStandardValues::end() const noexcept
-	{
-		return m_standardValues.end();
-	}
-
 	//=====================================================================
 	// CodebookGroups class
 	//=====================================================================
@@ -305,34 +286,6 @@ namespace dnv::vista::sdk
 	CodebookGroups::CodebookGroups( std::unordered_set<std::string, StringHash, StringEqual>&& groups )
 		: m_groups{ std::move( groups ) }
 	{
-	}
-
-	//----------------------------------------------
-	// Public methods
-	//----------------------------------------------
-
-	size_t CodebookGroups::count() const noexcept
-	{
-		return m_groups.size();
-	}
-
-	bool CodebookGroups::contains( std::string_view group ) const noexcept
-	{
-		return m_groups.contains( group );
-	}
-
-	//----------------------------------------------
-	// Iteration
-	//----------------------------------------------
-
-	CodebookGroups::Iterator CodebookGroups::begin() const noexcept
-	{
-		return m_groups.begin();
-	}
-
-	CodebookGroups::Iterator CodebookGroups::end() const noexcept
-	{
-		return m_groups.end();
 	}
 
 	//=====================================================================
@@ -424,39 +377,6 @@ namespace dnv::vista::sdk
 		SPDLOG_DEBUG( "Codebook '{}' constructed: {} groups, {} values, {} raw entries",
 			CodebookNames::toPrefix( m_name ), m_groups.count(),
 			m_standardValues.count(), m_rawData.size() );
-	}
-
-	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	const CodebookGroups& Codebook::groups() const noexcept
-	{
-		return m_groups;
-	}
-
-	const CodebookStandardValues& Codebook::standardValues() const noexcept
-	{
-		return m_standardValues;
-	}
-
-	const std::unordered_map<std::string, std::vector<std::string>>& Codebook::rawData() const noexcept
-	{
-		return m_rawData;
-	}
-
-	//----------------------------------------------
-	// State inspection methods
-	//----------------------------------------------
-
-	bool Codebook::hasGroup( std::string_view group ) const noexcept
-	{
-		return m_groups.contains( group );
-	}
-
-	bool Codebook::hasStandardValue( std::string_view value ) const noexcept
-	{
-		return m_standardValues.contains( value );
 	}
 
 	//----------------------------------------------

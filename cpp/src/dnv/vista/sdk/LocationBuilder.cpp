@@ -112,40 +112,6 @@ namespace dnv::vista::sdk
 	}
 
 	//----------------------------------------------
-	// Accessors
-	//----------------------------------------------
-
-	VisVersion LocationBuilder::visVersion() const noexcept
-	{
-		return m_visVersion;
-	}
-
-	const std::optional<int>& LocationBuilder::number() const noexcept
-	{
-		return m_number;
-	}
-
-	const std::optional<char>& LocationBuilder::side() const noexcept
-	{
-		return m_side;
-	}
-
-	const std::optional<char>& LocationBuilder::vertical() const noexcept
-	{
-		return m_vertical;
-	}
-
-	const std::optional<char>& LocationBuilder::transverse() const noexcept
-	{
-		return m_transverse;
-	}
-
-	const std::optional<char>& LocationBuilder::longitudinal() const noexcept
-	{
-		return m_longitudinal;
-	}
-
-	//----------------------------------------------
 	// Conversion and comparison
 	//----------------------------------------------
 
